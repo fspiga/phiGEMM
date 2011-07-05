@@ -1,0 +1,44 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=6:gpus=2
+#PBS -l walltime=01:00:00
+#PBS -N phiGEMM-test-suite
+
+cd $PBS_O_WORKDIR
+
+source /ichec/packages/intel/Compiler/11.1/069/bin/iccvars.sh intel64
+source /ichec/packages/intel/Compiler/11.1/069/bin/ifortvars.sh intel64
+source /ichec/packages/intel/Compiler/11.1/069/mkl/tools/environment/mklvarsem64t.sh intel64
+
+module load pbscuda
+module load cuda/4.0-rc2
+
+export OMP_NUM_THREADS=6
+export MKL_NUM_THREADS=$OMP_NUM_THREADS
+export KMP_AFFINITY=verbose,granularity=fine,compact
+
+export SPLIT_COEFF=95
+export PHI_SGEMM_SPLIT=0.${SPLIT_COEFF}
+export PHI_DGEMM_SPLIT=0.${SPLIT_COEFF}
+export PHI_ZGEMM_SPLIT=0.${SPLIT_COEFF}
+
+export PHI_TESTSUITE_REPEATS=5
+
+export TAG=.no-MULTI.PINNED
+export NUMA_CONTROLLER="numactl -c 1 -m 1"
+
+make clean
+make test TEST_DATATYPE_FLAGS="-D__CUDA_TYPE_FLOAT"
+env LD_LIBRARY_PATH=../lib:${LD_LIBRARY_PATH} ${NUMA_CONTROLLER} ../bin/comparative_test.x | tee ./out-comparative.FLOAT.omp-${OMP_NUM_THREADS}_split-${SPLIT_COEFF}_repet-${PHI_TESTSUITE_REPEATS}${TAG}
+
+sleep 1
+
+make clean
+make test TEST_DATATYPE_FLAGS="-D__CUDA_TYPE_DOUBLE" 
+env LD_LIBRARY_PATH=../lib:${LD_LIBRARY_PATH} ${NUMA_CONTROLLER} ../bin/comparative_test.x | tee ./out-comparative.DOUBLE.omp-${OMP_NUM_THREADS}_split-${SPLIT_COEFF}_repet-${PHI_TESTSUITE_REPEATS}${TAG} 
+
+sleep 1
+
+make clean
+make test TEST_DATATYPE_FLAGS="-D__CUDA_TYPE_COMPLEX"
+env LD_LIBRARY_PATH=../lib:${LD_LIBRARY_PATH} ${NUMA_CONTROLLER} ../bin/comparative_test.x | tee ./out-comparative.COMPLEX.omp-${OMP_NUM_THREADS}_split-${SPLIT_COEFF}_repet-${PHI_TESTSUITE_REPEATS}${TAG}
+

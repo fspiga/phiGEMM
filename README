@@ -1,0 +1,207 @@
+Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
+
+All the material included in this distribution is free software;
+you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+
+0. >>> phiGEMM: CPU-GPU hybrid matrix-matrix multiplication library
+
+Authors:
+  Philip Yang, phi@cs.umd.edu
+  Filippo Spiga, filippo.spiga@ichec.ie
+  Ivan Girotto, ivan.girotto@ichec.ie
+
+
+Starting from a previous NVIDIA project*, ICHEC has developed a library
+called phiGEMM. This library allows the target application to perform 
+[S/D/Z]GEMM operations using both CPU and GPU simultaneously. This library 
+implements both the data transfer management and the split logic (amount of 
+computation to be performed in parallel on each device, CPU and GPU, in order
+to achieve an optimal load balance). Since phiGEMM follows standard BLAS 
+interfaces, the users just need to link to the library, like any other 
+common library such as MKL, ACML, ESSL, GotoBLAS, etc. The phiGEMM 
+matrix-matrix multiplication calls simultaneously an external BLAS library 
+single- or multi-threaded) for the CPU-side and one CUBLAS kernel instance 
+on the GPU, as efficiently as possible.
+
+* M. Fatica, "Accelerating LINPACK with CUDA on heterogeneous clusters." 
+GPGPU-2: Proceedings of 2nd Workshop on General Purpose Processing on 
+Graphics Processing Units (New York, NY, USA), ACM, 2009, pp. 46--51.
+
+
+1. >>> Requirements
+
+- NVIDIA cards
+- CUDA SDK (version >=4.0)
+- GCC/GFORTRAN or Intel compilers  (version >=11.x)
+- MKL (version >=10.x)
+
+
+2. >>> Quick installation instructions
+
+- Edit the file make.inc
+- run "make"
+
+The "libphigemm.a" and "libphigemm.so" will be placed under "./lib"
+
+
+3. >>> phiGEMM supported flags (GEMM_OPT)
+
+-D__PHIGEMM_MEM_ASYNC     : allow the library to use cublasSetMatrixAsync 
+                            routines. Device memory must be page-locked.
+-D__PHIGEMM_DEBUG         : print some useful information on the stdout like
+                            internal calls, bandwidth measurements and GFlops. 
+                            Quite verbose.                           
+-D__PHIGEMM_PROFILE       : allow to save on a file called "phigemm.profile"
+                            some useful information of each phi*gemm call. Be
+                            careful, this flag changes the prototypes of the 
+                            phi*gemm calls! Look in "include/phigemm.h"
+-D__PHIGEMM_PARA          : allows the library to manage correctly a MPI 
+                            environment (experimental)
+
+5. >>> the SPLIT factor
+
+During the usage of the library, it is mandatory to specify through a 
+environmental variable the SPLIT FACTOR. There are one recognized variables, 
+PHIGEMM_SPLIT_FACTOR, common for each *GEMM routine implemented. This factor,
+a value strictly between 0 and 1, tells to the library how much of the 
+calculation has to be performed on the CPU and how much on the GPU. In detail, 
+if PHIGEMM_SPLIT_FACTOR is 0.9 it means that the 90% of the computation will be
+performed by the GPU, the 10% by the CPU.
+
+The overall performances of the library, compared to the pure CUBLAS calls, are
+strongly dependent by this split factor.
+
+Only the test-suit is able to calculate the optimal split factor comparing 
+the performance of the GPU and the CPU, varying the size and the type of the 
+data (FLOAT, DOUBLE, COMPLEX).
+
+Further improvements (like dynamic adjustment of the split factor if phiGEMM is
+called multiple times inside a code) will be added as soon as a full assessment 
+will be performed.
+ 
+6. >>> Internal test-suite 
+
+This package contains a small test-suite able to perform calculation using 
+CUBLAS, MKL and phiGEMM comparing the results. The test-suite does not 
+perform a check of the results, pleas use for single test "single_test.c".
+In order to auto-tune the split factor using the best CPU and the best (pure) 
+CPU performance, it is necessary to recompile the library with 
+"-D__PHIGEMM_EXPLICIT_SPLITFACTOR" (see the file comparative_test.c)
+
+These hard-coded parameters inside the file "single_test.c" allow you
+to test and compare a multi-threaded BLAS, a pure CUBLAS + data transfer and a 
+phiGEMM call.
+
+
+Performances are in GFlops. It is possible to specify additional flags, see 
+"testing/Makefile" for additional details.
+
+In order to compile the test-suite:
+- first compile the phiGEMM library
+- move to the "testing" directory
+- "make"
+
+The binary will be placed under "./bin" 
+
+
+7. >>> How to use phiGEMM in your code
+
+The usage of the phiGEMM library in your code is quite straightforward. The 
+library itself has two "way" to work:
+CASE 1: for every call, phiGEMM allocates the proper amount of memory required 
+to run the calculation. This is default.
+CASE 2: in order to speed-up the memory allocation on the GPU memory, it is 
+possible to preallocate a fixed amount of memory on the GPU card and pass a 
+pointer to phiGEMM. This memory can be larger than the one really needed. This 
+is very useful because if you use phiGEMM in a real code, the dimensions of the
+matrices involved in *GEMM operation can change.
+
+At the beginning at and the end of your program, to initialize the phiGEMM
+library (case 2) you have to add these lines:
+
+
+   void * scratch_pointer;
+   size_t gpu_mem_allocated;
+
+   // Allocate 1 GByte of GPU memory
+   
+   gpu_memory_to_allocate = (size_t) 1000000000;
+   
+   ierr = cudaMalloc ( (void**) &dev_scratch_QE, (size_t) gpu_mem_allocated );
+   if ( ierr != cudaSuccess) {
+       fprintf( stderr, "Error in memory allocation (%d)!", ierr );
+       exit(EXIT_FAILURE);
+   }
+           
+   cublasInit();
+   phiGemmInit((void**)&scratch_pointer, &gpu_mem_allocated);
+
+
+To "clean" the environment at the end of your program (strongly suggested!) 
+simply  add before the final exit:
+ 
+   ierr = cudaFree ( dev_scratch_QE );
+   phiGemmShutdown();
+
+
+Let's assume that we want to use the phiGEMM library inside a file called 
+"pippo.f90" or "pippo.c". In order to have a fine-grain control of which *GEMM 
+operations will work using CPU+GPU, you can simply substitute the 
+"{S/D/Z}GEMM" names with the "{phiS, phiD, phiZ}gemm" routine names. 
+
+So for example this DGEMM call in C language:
+
+   DGEMM(&ta, &tb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &m);
+
+will become:
+ 
+   phiDgemm(&ta, &tb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &m);
+
+
+If you want to use phiGEMM for all the DGEMM in your file or in your program 
+you can easily add at the beginning of the files these lines:
+
+  #define DGEMM phidgemm
+  #define ZGEMM phizgemm
+  #define SGEMM phisgemm
+
+and at compile-time all the substitutions will be automatic.
+ 
+phiGEMM will provide a way to link directly the library without any change of 
+the source code. However at the beginning it is better to keep a control about 
+what, where and how a standard *GEMM operation is replaced with a phiGEMM ones.
+
+ 
+8. >>> Releases
+
+v1.0   - July 4, 2011      ( First official version )
+v0.9   - July 2, 2011      ( Important fixes for multi-GPU )
+v0.8   - June 29, 2011     ( Compatible with version for CUDA >=4.0 only! )
+v0.7   - May 29, 2011
+v0.6   - May 9, 2011
+v0.5.1 - May 5, 2011
+v0.5   - May 3, 2011
+v0.4   - March 24, 2011
+v0.3   - March 24, 2011
+v0.2   - February 21, 2011
+v0.1   - January 27, 2011
+
+
+9. >>> Contacts
+
+For any additional information or suggestion please contact 
+- Ivan Girotto, ivan.girotto@ichec.ie)
+- Filippo Spiga, filippo.spiga@ichec.ie) 

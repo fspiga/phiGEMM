@@ -1,0 +1,26 @@
+#
+# Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
+#
+# This file is distributed under the terms of the
+# GNU General Public License. See the file `License'
+# in the root directory of the present package,
+# or http://www.gnu.org/copyleft/gpl.txt .
+#
+# author(s):   Filippo Spiga (filippo.spiga@ichec.ie)
+ 
+PHIGEMM_TOP = .
+
+AR      = @ar@
+ARFLAGS = @arflags@
+
+CC = @nvcc@
+LD = @nvcc@
+CFLAGS  = -O3 --compiler-options '-fPIC'
+LD_FLAGS = --shared --ptxas-options=-v 
+
+EXT_INC = @cuda_include@
+CUDA_LIB= @cuda_libs@
+
+LD_LIB  = @blas_libs@ @ld_libs@
+
+GEMM_OPT= @phigemm_opts@
