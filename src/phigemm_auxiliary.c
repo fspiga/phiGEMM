@@ -48,7 +48,7 @@ cudaStream_t  phiStreams[ NSTREAM_PER_DEVICE * MAX_GPUS ];
 cublasHandle_t phiHandles[ NSTREAM_PER_DEVICE * MAX_GPUS ];
 int phiGemmNumDevices;
 
-float phiGemmSplitFactor;
+float phiGemmSplitFactor[3];
 phiGemmMemDevPtr dev_scratch;
 phiGemmMemSizes scratch_size;
 phiGemmDeviceIds deviceIds;
@@ -116,11 +116,20 @@ int stringCmp( const void *a, const void *b)
 }
 
 
-void phigemmSetSplitFactor(float x) {
+void phigemmSetSplitFactor(float *x) {
 #ifdef __PHIGEMM_EXPLICIT_SPLITFACTOR
-	float tmp =  (100.0f * x)/( 1.0f - x);
-	float tmp2 = 100.0f;
-	phiGemmSplitFactor = tmp / (tmp + tmp2);
+	float tmp,tmp2;
+	int i;
+
+	for ( i = 0 ; i < 3 ; i++ ) {
+		/* 0:SGEMM, 1:DGEMM, 2:ZGEMM */
+		tmp =  (100.0f * x[i])/( 1.0f - x[i]);
+		tmp2 = 100.0f;
+		phiGemmSplitFactor[i] = tmp / (tmp + tmp2);
+	}
+#else
+	/* read from environment */
+	estmSplitFactor("xxx", 'n', 'n');
 #endif
 	return;
 }
@@ -128,37 +137,63 @@ void phigemmSetSplitFactor(float x) {
 
 void estmSplitFactor(const char* optype, char transa, char transb)
 {
-	float gflops_cpu[4], gflops_gpu[4];
-	int i;
 	float envar_split;
-
 	char *value = NULL;
 
-	if ( !strcmp(optype, "sgemm") )
-		value = getenv("PHI_SGEMM_SPLIT");
-	else if ( !strcmp(optype, "dgemm") )
-		value = getenv("PHI_DGEMM_SPLIT");
-	else if ( !strcmp(optype, "zgemm") )
-		value = getenv("PHI_ZGEMM_SPLIT");
-	else
-		value = getenv("PHIGEMM_SPLIT_FACTOR");
+	/* split factor may vary between S/D/Z GEMMs */
 
+	/* SGEMM */
+	value = getenv("PHI_SGEMM_SPLIT");
 	if (value != NULL)
 	{
 		envar_split = atof(value);
 #ifdef __PHIGEMM_DEBUG
-		printf ("*** phiGEMM *** split factor from environment variable: %f \n", envar_split);
+		printf ("*** phiGEMM *** SGEMM split factor from environment variable: %f \n", envar_split);
+#endif
+	} else {
+		/* Default split if no env variables are specified */
+		envar_split = 0.85;
+#ifdef __PHIGEMM_DEBUG
+		printf ("*** phiGEMM *** SGEMM default split factor: %f \n", envar_split);
+#endif
+	}
+	phiGemmSplitFactor[0] = envar_split;
+
+	/* SGEMM */
+	value = getenv("PHI_DGEMM_SPLIT");
+	if (value != NULL)
+	{
+		envar_split = atof(value);
+#ifdef __PHIGEMM_DEBUG
+		printf ("*** phiGEMM *** DGEMM split factor from environment variable: %f \n", envar_split);
+#endif
+	} else {
+		/* Default split if no env variables are specified */
+		envar_split = 0.875;
+#ifdef __PHIGEMM_DEBUG
+		printf ("*** phiGEMM *** DGEMM default split factor: %f \n", envar_split);
+#endif
+	}
+	phiGemmSplitFactor[1] = envar_split;
+
+	/* ZGEMM */
+	value = getenv("PHI_ZGEMM_SPLIT");
+	if (value != NULL)
+	{
+		envar_split = atof(value);
+#ifdef __PHIGEMM_DEBUG
+		printf ("*** phiGEMM *** ZGEMM split factor from environment variable: %f \n", envar_split);
 #endif
 	} else {
 
 		/* Default split if no env variables are specified */
-		envar_split = 0.875;
+		envar_split = 0.9;
 #ifdef __PHIGEMM_DEBUG
-		printf ("*** phiGEMM *** default split factor: %f \n", envar_split);
+		printf ("*** phiGEMM *** ZGEMM  default split factor: %f \n", envar_split);
 #endif
 	}
+	phiGemmSplitFactor[2] = envar_split;
 
-	phiGemmSplitFactor = envar_split;
 }
 
 
@@ -199,7 +234,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 #ifdef __PHIGEMM_EXPLICIT_SPLITFACTOR
 
 #ifdef __PHIGEMM_DEBUG
-	printf("*** phiGEMM *** The (explicit) split factor is %g\n", phiGemmSplitFactor);
+	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2]);
 	fflush(stdout);
 #endif
 

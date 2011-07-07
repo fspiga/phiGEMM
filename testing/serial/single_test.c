@@ -65,7 +65,7 @@
 #endif
 
 
-#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.9
+#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.95
 
 phiGemmMemDevPtr test_scratch;
 phiGemmMemSizes memsize;
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
 
 	byte_GPU_buffer = ( size_t ) ( ( m * k + k * n + m * n ) * sizeof(XTYPE ) );
 
-#ifdef __USE_PINNED_MEMORY
+#ifdef __PHIGEMM_MEM_ASYNC
 	if( cudaHostAlloc( ( void ** ) &GPU_buffer_memory_ptr, byte_GPU_buffer, cudaHostAllocPortable ) != cudaSuccess )
 	{
 		printf( "*** ERROR allocating PINNED MEMORY on cpu\n" );
@@ -436,7 +436,11 @@ int main(int argc, char **argv)
 
 			/* Optimal.... but probably not optimal anymore! */
 			//			currentSplitFactor = (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU / ((( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU + (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / cpu_time) );
-			phigemmSetSplitFactor((float)currentSplitFactor);
+			float splits[3];
+			splits[0] = currentSplitFactor;
+			splits[1] = currentSplitFactor;
+			splits[2] = currentSplitFactor;
+			phigemmSetSplitFactor((float *)&splits);
 
 			t1 = seconds();
 #if defined  __PHIGEMM_PROFILE
@@ -543,7 +547,7 @@ int main(int argc, char **argv)
 	free( C_mkl );
 	if ( !(mem_gpu > memsize[ 0 ]) ) free( C_cuda );
 
-#ifdef __USE_PINNED_MEMORY
+#ifdef __PHIGEMM_MEM_ASYNC
 	cudaFreeHost( GPU_buffer_memory_ptr );
 #else
 	free( GPU_buffer_memory_ptr );

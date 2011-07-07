@@ -32,7 +32,7 @@ int phiGemmIsInit();
 
 int phiGemmGetRank();
 
-void phigemmSetSplitFactor(float x);
+void phigemmSetSplitFactor(float *x);
 
 #if defined __PHIGEMM_PROFILE
 void phiSgemm (const char *transa, const char *transb, const int *m,
@@ -79,6 +79,8 @@ void phigemmshutdown_();
 int phigemmisinit_();
 
 int phigemmgetrank_();
+
+void phigemmsetsplitfactor_(float *x);
 
 #if defined __PHIGEMM_PROFILE
 void phisgemm_ (const char *transa, const char *transb, const int *m,

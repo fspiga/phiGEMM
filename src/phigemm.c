@@ -76,7 +76,7 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 extern phiGemmMemSizes scratch_size;
 extern phiGemmMemDevPtr dev_scratch;
 extern phiGemmDeviceIds deviceIds;
-extern float phiGemmSplitFactor;
+extern float phiGemmSplitFactor[3];
 extern int phiGemmNumDevices;
 
 #ifdef __PHIGEMM_PROFILE
@@ -102,6 +102,7 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	size_t memsize_gpu, mem_gpu;
 	float split;
 	static int ground_level = 1;
+	static int splitting_steps;
 	int first_call = 0;
 
 	/* determine which matrix is to be splitted */
@@ -132,6 +133,7 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 #ifdef __PHIGEMM_PROFILE
 	if ( ground_level) {
 		first_call = 1;
+		splitting_steps = 0;
 		start = phigemm_cclock();
 	}
 #endif
@@ -152,7 +154,13 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	is_splitA = (*n > *m) ? 0:1;
 
 	/* Assign the split factor */
-	split = phiGemmSplitFactor;
+#if defined CUDA_TYPE_FLOAT
+	split = phiGemmSplitFactor[0];
+#elif defined  CUDA_TYPE_DOUBLE
+	split = phiGemmSplitFactor[1];
+#elif defined  CUDA_TYPE_COMPLEX
+	split = phiGemmSplitFactor[2];
+#endif
 
 	/* smart padding for Fermi & CUDA 3.x - no needed anymore */
 	//	m_gpu = ceil(*m/64.0)*64;
@@ -172,10 +180,12 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	/* recursive splitting */
 	/* There is an assumption here: all the cards has the same amount of memory.
 	 * This can be not true at all! */
-	memsize_gpu = scratch_size[0] * phiGemmNumDevices;
+	memsize_gpu = scratch_size[deviceIds[0]] * phiGemmNumDevices;
 
 	if ( is_splitA )
 	{
+		splitting_steps++;
+
 		tmp = (*m) * split;
 		m_gpu = floor(tmp/64.0)*64;
 
@@ -211,6 +221,8 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		}
 
 	} else {
+		splitting_steps++;
+
 		tmp = (*n) * split;
 		n_gpu = floor(tmp/64.0)*64;
 
@@ -247,15 +259,9 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 #ifdef __PHIGEMM_PROFILE
 	if ( first_call) {
 		ground_level = 1;
+		splitting_steps = 0;
 		stop = phigemm_cclock() - start;
-		fprintf (phiProfileFile, "[%s:%d]\tm:%d\tn:%d\tk:%d\t[%c%c]\t%g GFlops\n", file, line, *m, *n, *k, *transa, *transb, ( 2.e-9*(*m)*(*n)*(*k)/stop));
-	}
-#endif
-
-#if !defined __PHIGEMM_PARA
-	if ( cudaSetDevice(0) != cudaSuccess) {
-		printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
-		exit(EXIT_FAILURE);
+		fprintf (phiProfileFile, "[%s:%d]\tm:%d\tn:%d\tk:%d\t[%c%c]\t(deep: %d, split: %g)\t%g GFlops\n", file, line, *m, *n, *k, *transa, *transb, splitting_steps, split, ( 2.e-9*(*m)*(*n)*(*k)/stop));
 	}
 #endif
 }
@@ -652,8 +658,8 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 
 				/* For best split, the time to asynchronously move data to device and compute the MxM should be equal
 				 * to the time that CPU spent to perform its portion of the GEMM.
-				 * NOTE: if (unbalance > 0) the CPU has too less work to do (and the GPU too much)
-				 * 		 if (unbalance < 0) the GPU has too less work to do (and the CPU too much)
+				 * NOTE: if (unbalance > 0) the CPU has too less work to do (and the GPU too much) -> decrease the split
+				 * 		 if (unbalance < 0) the GPU has too less work to do (and the CPU too much) -> increase the split
 				 * */
 				unbalance = (time_mem_h2d + time_dgemm_cuda + time_mem_d2h) - time_mkl;
 
