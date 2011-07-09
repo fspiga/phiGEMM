@@ -244,7 +244,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	estmSplitFactor("xxx", 'n', 'n');
 
 #ifdef __PHIGEMM_DEBUG
-	printf("*** phiGEMM *** The (initial) split factor is %g\n", phiGemmSplitFactor);
+	printf("*** phiGEMM *** The (initial) split factors are: %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2]);
 	fflush(stdout);
 #endif
 

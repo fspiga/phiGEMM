@@ -47,6 +47,12 @@ void phiDgemm (const char *transa, const char *transb, const int *m,
 		const int *ldb, const double *beta, double *C, const int *ldc,
 		const char *file, const int line );
 
+void phiCgemm (const char *transa, const char *transb, const int *m,
+		const int *n, const int *k, const cuComplex *alpha,
+		const cuComplex *A, const int *lda, const cuComplex *B,
+		const int *ldb, const cuComplex *beta, cuComplex *C,
+		const int *ldc, const char *file, const int line );
+
 void phiZgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuDoubleComplex *alpha,
 		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
@@ -62,6 +68,12 @@ void phiDgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
 		const int *ldb, const double *beta, double *C, const int *ldc);
+
+void phiCgemm (const char *transa, const char *transb, const int *m,
+		const int *n, const int *k, const cuComplex *alpha,
+		const cuComplex *A, const int *lda, const cuComplex *B,
+		const int *ldb, const cuComplex *beta, cuComplex *C,
+		const int *ldc);
 
 void phiZgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuDoubleComplex *alpha,
@@ -95,6 +107,12 @@ void phidgemm_ (const char *transa, const char *transb, const int *m,
 		const int *ldb, const double *beta, double *C, const int *ldc,
 		const char *file, const int line );
 
+void phicgemm_ (const char *transa, const char *transb, const int *m,
+		const int *n, const int *k, const cuComplex *alpha,
+		const cuComplex *A, const int *lda, const cuComplex *B,
+		const int *ldb, const cuComplex *beta, cuComplex *C,
+		const int *ldc, const char *file, const int line );
+
 void phizgemm_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuDoubleComplex *alpha,
 		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
@@ -110,6 +128,12 @@ void phidgemm_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
 		const int *ldb, const double *beta, double *C, const int *ldc);
+
+void phicgemm_ (const char *transa, const char *transb, const int *m,
+		const int *n, const int *k, const cuComplex *alpha,
+		const cuComplex *A, const int *lda, const cuComplex *B,
+		const int *ldb, const cuComplex *beta, cuComplex *C,
+		const int *ldc);
 
 void phizgemm_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuDoubleComplex *alpha,

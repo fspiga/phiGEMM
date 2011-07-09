@@ -51,10 +51,19 @@
 #define PHIGEMM_CALL phidgemm_
 #define CUBLAS_GEMM cublasDgemm
 
+/*
+ * vim M definitions
+ */
+#elif defined __CUDA_TYPE_COMPLEX
+#define XTYPE cuComplex
+#define MKL_CALL cgemm_
+#define PHIGEMM_CALL phicgemm_
+#define CUBLAS_GEMM cublasCgemm
+
 /**
  * ZGEMM definitions
  */
-#elif defined __CUDA_TYPE_COMPLEX
+#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
 #define MKL_CALL zgemm_
 #define PHIGEMM_CALL phizgemm_
 #define CUBLAS_GEMM cublasZgemm
@@ -224,6 +233,12 @@ int main(int argc, char **argv)
 #elif (defined __CUDA_TYPE_DOUBLE)
 	double alpha=1.33, beta=-0.25;
 #elif (defined __CUDA_TYPE_COMPLEX)
+	cuComplex alpha, beta;
+	alpha.x = 2.0;
+	alpha.y = 1.0;
+	beta.x = 1.0;
+	beta.y = -0.5;
+#elif (defined __CUDA_TYPE_DOUBLE_COMPLEX)
 	cuDoubleComplex alpha, beta;
 	alpha.x = 2.0;
 	alpha.y = 1.0;
@@ -235,6 +250,9 @@ int main(int argc, char **argv)
 		for ( i = 0; i < k; i++ ) {
 			int index = i * m + j;
 #if defined __CUDA_TYPE_COMPLEX
+			A[ index ].x = ( float ) rand() / (RAND_MAX / 10 + 1);
+			A[ index ].y = ( float ) rand() / (RAND_MAX / 10 + 1);
+#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
 			A[ index ].x = ( double ) rand() / (RAND_MAX / 10 + 1);
 			A[ index ].y = ( double ) rand() / (RAND_MAX / 10 + 1);
 #else
@@ -247,6 +265,9 @@ int main(int argc, char **argv)
 		for ( i = 0; i < n; i++ ) {
 			int index = i * k + j;
 #if defined __CUDA_TYPE_COMPLEX
+			B[ index ].x = ( float ) rand() / (RAND_MAX / 10 + 1);
+			B[ index ].y = ( float ) rand() / (RAND_MAX / 10 + 1);
+#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
 			B[ index ].x = ( double ) rand() / (RAND_MAX / 10 + 1);
 			B[ index ].y = ( double ) rand() / (RAND_MAX / 10 + 1);
 #else
@@ -259,6 +280,9 @@ int main(int argc, char **argv)
 		for ( i = 0; i < n; i++ ) {
 			int index = i * m + j;
 #if defined __CUDA_TYPE_COMPLEX
+			C[ index ].x = ( float ) (rand() / (RAND_MAX / 10 + 1));
+			C[ index ].y  = ( float ) (rand() / (RAND_MAX / 10 + 1));
+#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
 			C[ index ].x = ( double ) (rand() / (RAND_MAX / 10 + 1));
 			C[ index ].y  = ( double ) (rand() / (RAND_MAX / 10 + 1));
 #else
@@ -273,7 +297,7 @@ int main(int argc, char **argv)
 	is_transa[0] = 0;
 	is_transb[0] = 0;
 
-#if defined __CUDA_TYPE_COMPLEX
+#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 	transa[1] = 'c'; // 'c' for conjugate complex
 #else
 	transa[1] = 't';
@@ -283,7 +307,7 @@ int main(int argc, char **argv)
 	is_transb[1] = 0;
 
 	transa[2] = 'n';
-#if defined __CUDA_TYPE_COMPLEX
+#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 	transb[2] = 'c'; // 'c' for conjugate complex
 #else
 	transb[2] = 't';
@@ -291,7 +315,7 @@ int main(int argc, char **argv)
 
 	is_transa[2] = 0;
 	is_transb[2] = 1;
-#if defined __CUDA_TYPE_COMPLEX
+#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 	transa[3] = 'c'; // 'c' for conjugate complex
 	transb[3] = 'c'; // 'c' for conjugate complex
 #else
@@ -316,7 +340,7 @@ int main(int argc, char **argv)
 		for ( j = 0; j < m; j++ ) {
 			for ( i = 0; i < n; i++ ) {
 				int index = i * m + j;
-#if defined __CUDA_TYPE_COMPLEX
+#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 				C_mkl[ index ].x = C[ index ].x;
 				C_mkl[ index ].y = C[ index ].y;
 #else
@@ -352,7 +376,7 @@ int main(int argc, char **argv)
 			for ( j = 0; j < m; j++ ) {
 				for ( i = 0; i < n; i++ ) {
 					int index = i * m + j;
-#if defined __CUDA_TYPE_COMPLEX
+#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 					C_cuda[ index ].x = C[ index ].x;
 					C_cuda[ index ].y = C[ index ].y;
 #else
@@ -422,7 +446,7 @@ int main(int argc, char **argv)
 			for ( j = 0; j < m; j++ ) {
 				for ( i = 0; i < n; i++ ) {
 					int index = i * m + j;
-#if defined __CUDA_TYPE_COMPLEX
+#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 					C_phigemm[ index ].x = C[ index ].x;
 					C_phigemm[ index ].y = C[ index ].y;
 #else
@@ -455,14 +479,14 @@ int main(int argc, char **argv)
 
 #ifdef __CHECK_ERROR
 
-#ifdef __CUDA_TYPE_COMPLEX
+#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 			double error = 0;
 			double tmp_error;
 
 #pragma omp parallel for reduction (+ : error)
 			for( i = 0; i < m * n ; i++ ) {
 
-				tmp_error = abs( (double)C_mkl[ i ].x - (double)C_phigemm[ i ].x );
+				tmp_error = (double) abs( (float)C_mkl[ i ].x - (double)C_phigemm[ i ].x );
 				if (tmp_error > MAX_ERROR ) {
 					//				fprintf( stdout, "\nC_mkl[ %d ].x=%15.13e  C_phigemm[ %d ].x=%15.13e", i, C_mkl[ i ].x, i, C_phigemm[ i ].x);fflush(stdout);
 					//				exit(EXIT_FAILURE);

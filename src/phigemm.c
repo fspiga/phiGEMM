@@ -20,11 +20,7 @@
  */
 #if defined CUDA_TYPE_FLOAT
 #define XTYPE float
-#ifdef __PHIGEMM_MAGMA
-#define cublasGemm magmablas_fermi_sgemm
-#else
 #define cublasGemm cublasSgemm
-#endif
 #define gemm_mkl SGEMM_
 #define CUBLAS_GEMM phisgemm_
 #define CUBLAS_GEMM_MF CUBLAS_SGEMM_MF
@@ -37,11 +33,7 @@
  */
 #elif defined CUDA_TYPE_DOUBLE
 #define XTYPE double
-#ifdef __PHIGEMM_MAGMA
-#define cublasGemm magmablas_fermi_dgemm
-#else
 #define cublasGemm cublasDgemm
-#endif
 #define gemm_mkl DGEMM_
 #define CUBLAS_GEMM phidgemm_
 #define CUBLAS_GEMM_MF CUBLAS_DGEMM_MF
@@ -50,9 +42,22 @@
 #define phiDgemm CUBLAS_GEMM
 
 /*
- * ZGEMM definitions
+ * CGEMM definitions
  */
 #elif defined CUDA_TYPE_COMPLEX
+#define XTYPE cuComplex
+#define cublasGemm cublasCgemm
+#define gemm_mkl CGEMM_
+#define CUBLAS_GEMM phicgemm_
+#define CUBLAS_GEMM_MF CUBLAS_CGEMM_MF
+#define dgemm CUBLAS_GEMM
+#define dgemm_ CUBLAS_GEMM
+#define phiCgemm CUBLAS_GEMM
+
+/*
+ * ZGEMM definitions
+ */
+#elif defined CUDA_TYPE_DOUBLE_COMPLEX
 #define XTYPE cuDoubleComplex
 #define cublasGemm cublasZgemm
 #define gemm_mkl ZGEMM_
@@ -187,7 +192,10 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		splitting_steps++;
 
 		tmp = (*m) * split;
-		m_gpu = floor(tmp/64.0)*64;
+		if (*m < 128)
+			m_gpu = tmp;
+		else
+			m_gpu = floor(tmp/64.0)*64;
 
 		mem_gpu = ( m_gpu*k_gpu/phiGemmNumDevices + k_gpu*n_gpu + m_gpu*n_gpu/phiGemmNumDevices ) * sizeof(XTYPE);
 		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
@@ -224,7 +232,10 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		splitting_steps++;
 
 		tmp = (*n) * split;
-		n_gpu = floor(tmp/64.0)*64;
+		if (*n < 128)
+			n_gpu = tmp;
+		else
+			n_gpu = floor(tmp/64.0)*64;
 
 		size_t mem_gpu = ( m_gpu*k_gpu + k_gpu*n_gpu/phiGemmNumDevices + m_gpu*n_gpu/phiGemmNumDevices ) * sizeof(XTYPE);
 		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
@@ -316,7 +327,7 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 	if (is_splitA)
 	{
 		tmp = (*m) * split;
-		tmp = floor(tmp/64.0)*64;
+		if (*m > 128) tmp = floor(tmp/64.0)*64;
 		m_cpu = *m - tmp;
 
 		for (iDevice = 0; iDevice < phiGemmNumDevices * NSTREAM_PER_DEVICE; iDevice++) {
@@ -348,7 +359,7 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 	} else {
 
 		tmp = (*n) * split ;
-		tmp = floor(tmp/64.0)*64;
+		if (*n > 128) tmp = floor(tmp/64.0)*64;
 		n_cpu = *n - tmp;
 
 		for (iDevice = 0; iDevice < phiGemmNumDevices * NSTREAM_PER_DEVICE; iDevice++) {
@@ -486,7 +497,7 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 		/* set the matrix C to device */
 		devPtrC[iDevice] = devPtrB[iDevice] + k_gpu[iDevice] * n_gpu[iDevice];
 
-#ifndef CUDA_TYPE_COMPLEX
+#if (!defined CUDA_TYPE_COMPLEX && !defined CUDA_TYPE_DOUBLE_COMPLEX)
 		if ( (* beta) != (XTYPE)0.0 ) {
 #else
 			if ( beta->x != 0.0 || beta->y != 0.0 ) {
@@ -637,7 +648,7 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 			time_mem_h2d += (time_temp / 1000);
 			cudaEventElapsedTime( &time_temp, eventPointers[iDevice][2], eventPointers[iDevice][3] );
 			time_mem_h2d += (time_temp / 1000);
-#ifndef CUDA_TYPE_COMPLEX
+#if (!defined CUDA_TYPE_COMPLEX && !defined CUDA_TYPE_DOUBLE_COMPLEX)
 			if ( (* beta) != (XTYPE)0.0 ) {
 #else
 				if ( beta->x != 0.0 || beta->y != 0.0 ) {
