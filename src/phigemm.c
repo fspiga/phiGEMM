@@ -80,7 +80,7 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 extern phiGemmMemSizes scratch_size;
 extern phiGemmMemDevPtr dev_scratch;
 extern phiGemmDeviceIds deviceIds;
-extern float phiGemmSplitFactor[3];
+extern float phiGemmSplitFactor[4];
 extern int phiGemmNumDevices;
 
 #ifdef __PHIGEMM_PROFILE
