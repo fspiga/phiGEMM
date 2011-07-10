@@ -13,7 +13,6 @@
 
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
-#include <sys/time.h>
 
 /*
  * SGEMM definitions
@@ -150,10 +149,11 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		return;
 	}
 
-	if ( ground_level && !phiGemmIsInit() )
+	if ( ground_level && !phiGemmIsInit()  )
 	{
-		fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization\n"); fflush(stdout);
-		exit(EXIT_FAILURE);
+		fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do self-init.\n"); fflush(stdout);
+		selfPhigemmInit();
+		// exit(EXIT_FAILURE);
 	}
 
 	is_splitA = (*n > *m) ? 0:1;

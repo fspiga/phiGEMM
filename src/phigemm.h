@@ -30,8 +30,6 @@ void phiGemmShutdown();
 
 int phiGemmIsInit();
 
-int phiGemmGetRank();
-
 void phigemmSetSplitFactor(float *x);
 
 #if defined __PHIGEMM_PROFILE
@@ -89,8 +87,6 @@ void phigemminit_(int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 void phigemmshutdown_();
 
 int phigemmisinit_();
-
-int phigemmgetrank_();
 
 void phigemmsetsplitfactor_(float *x);
 

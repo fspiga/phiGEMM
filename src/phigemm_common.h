@@ -28,11 +28,12 @@
 
 #include "cublas_api.h"
 
+#if (defined __PHIGEMM_DEBUG || defined __PHIGEMM_PROFILE)
 #include <time.h>
-
 #include <sys/types.h>
 #include <sys/times.h>
 #include <sys/time.h>
+#endif
 
 #if defined (__PHIGEMM_MULTI_STREAMS) && defined(__PHIGEMM_MEM_ASYNC)
 #define MAX_GPUS 8

@@ -28,20 +28,35 @@ extern "C"
 {
 #endif
 
+#if (defined __PHIGEMM_DEBUG || defined __PHIGEMM_PROFILE)
 typedef struct timestruct
 {
 	unsigned int sec;
 	unsigned int usec;
 } TimeStruct;
-
-void estmSplitFactor(const char* optype, char transa, char transb);
 TimeStruct get_current_time(void);
 double GetTimerValue(TimeStruct time_1, TimeStruct time_2);
+#endif
 
+void selfPhigemmInit();
+
+void estmSplitFactor(const char* optype, char transa, char transb);
+
+cudaStream_t  phiStreams[ NSTREAM_PER_DEVICE * MAX_GPUS ];
+cublasHandle_t phiHandles[ NSTREAM_PER_DEVICE * MAX_GPUS ];
+int phiGemmNumDevices;
+
+float phiGemmSplitFactor[3];
+phiGemmMemDevPtr dev_scratch;
+phiGemmMemSizes scratch_size;
+phiGemmDeviceIds deviceIds;
+
+#ifdef __PHIGEMM_DEBUG
 double phigemm_cclock(void);
+#endif
 
-extern cudaStream_t phiStreams[MAX_GPUS*NSTREAM_PER_DEVICE];
-extern cublasHandle_t phiHandles[MAX_GPUS*NSTREAM_PER_DEVICE];
+//extern cudaStream_t phiStreams[MAX_GPUS*NSTREAM_PER_DEVICE];
+//extern cublasHandle_t phiHandles[MAX_GPUS*NSTREAM_PER_DEVICE];
 
 #ifdef __cplusplus
 }

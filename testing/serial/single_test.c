@@ -18,6 +18,7 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "phigemm.h"
+
 #include <sys/time.h>
 
 #include "cublas_v2.h"
@@ -76,9 +77,15 @@
 
 #define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.95
 
-phiGemmMemDevPtr test_scratch;
-phiGemmMemSizes memsize;
-phiGemmDeviceIds devicesToBond;
+#define MAX_GPU_SERIAL_TEST 8
+
+typedef void* serialTestMemDevPtr[MAX_GPU_SERIAL_TEST];
+typedef size_t serialTestMemSizes[MAX_GPU_SERIAL_TEST];
+typedef int serialTestDeviceIds[MAX_GPU_SERIAL_TEST];
+
+serialTestMemDevPtr test_scratch;
+serialTestMemSizes memsize;
+serialTestDeviceIds devicesToBond;
 
 typedef struct timestruct
 {
@@ -152,6 +159,7 @@ int main(int argc, char **argv)
 		memsize[ i ] =  0;
 	}
 
+#if defined __PERFORM_PHIGEMM_INIT
 	/* GPU environment initialization */
 	for ( i = 0; i < nGPU; i++ ) {
 
@@ -193,6 +201,7 @@ int main(int argc, char **argv)
 
 		cudaMemset( test_scratch[ i ], 0, memsize[ i ] );
 	}
+#endif
 
 	byte_GPU_buffer = ( size_t ) ( ( m * k + k * n + m * n ) * sizeof(XTYPE ) );
 
@@ -325,7 +334,7 @@ int main(int argc, char **argv)
 	is_transa[3] = 1;
 	is_transb[3] = 1;
 
-	for( count = 0; count < 4; count +=1 ){
+	for( count = 0; count < 1; count +=1 ){
 
 		int lda = m;
 		int ldb = k;
@@ -362,6 +371,13 @@ int main(int argc, char **argv)
 		/* ----------------------------------------------------------- */
 
 		/* --------------------- test the CUBLAS --------------------- */
+
+		/* if "__PERFORM_PHIGEMM_INIT" not defined, this test does not make sense
+		 * because there is no memory allocated on the device. CUBLAS fails but
+		 * the program can continue because we do not capture the error of
+		 * cudaGetMatrix (that fails because there is no data to retrieve)
+		 * */
+
 		mem_gpu = ( m*k + k*n + m*n ) * sizeof(XTYPE);
 
 		if (mem_gpu > memsize[ 0 ] ) {
@@ -439,7 +455,6 @@ int main(int argc, char **argv)
 		/* ----------------------------------------------------------- */
 
 		/* --------------------- Run MxM using PHIGEMM -------------------- */
-		/* ATTENZIONE: SE SI USA IL LOOP NON FUNZIONA IL TEST DI CORRETTEZZA. DA FISSARE */
 		currentSplitFactor = lowerSplitFactor;
 		do {
 
@@ -455,7 +470,9 @@ int main(int argc, char **argv)
 				}
 			}
 
-			phiGemmInit( nGPU, (phiGemmMemDevPtr*)&test_scratch, (phiGemmMemSizes *)&memsize, (int *)&devicesToBond);
+#if defined __PERFORM_PHIGEMM_INIT
+			phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond);
+#endif
 			cudaDeviceSynchronize();
 
 			/* Optimal.... but probably not optimal anymore! */
@@ -474,7 +491,7 @@ int main(int argc, char **argv)
 #endif
 			hybrid_time = seconds() - t1;
 
-			phiGemmShutdown();
+			//phiGemmShutdown();
 
 
 #ifdef __CHECK_ERROR
@@ -552,6 +569,7 @@ int main(int argc, char **argv)
 		/* end */
 	}
 
+#if defined __PERFORM_PHIGEMM_INIT
 	for( i = 0 ; i < nGPU ; i++) {
 
 		if( cudaSetDevice( devicesToBond[i] ) != cudaSuccess )
@@ -566,8 +584,12 @@ int main(int argc, char **argv)
 			exit( EXIT_FAILURE );
 		}
 	}
+#endif
 
 	/* RELEASE RESOURCES */
+
+	phiGemmShutdown();
+
 	free( C_mkl );
 	if ( !(mem_gpu > memsize[ 0 ]) ) free( C_cuda );
 
