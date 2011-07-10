@@ -26,7 +26,7 @@ Last update: July 2, 2011
     4.2.3 Add a parallel test case (Cannon algorithm?)
     
 4.3 Performance enhancements:
-  4.3 split factor not for S/D/Z but for {NN,NT,TN,TT} cases
+  4.3 split factor not for S/D/C/Z but for {NN,NT,TN,TT} cases
   
 4.4 Cleanup:
   4.4.1 Remove dead lines of code

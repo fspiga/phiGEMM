@@ -26,7 +26,7 @@ Authors:
 
 Starting from a previous NVIDIA project*, ICHEC has developed a library
 called phiGEMM. This library allows the target application to perform 
-[S/D/Z]GEMM operations using both CPU and GPU simultaneously. This library 
+[S/D/C/Z]GEMM operations using both CPU and GPU simultaneously. This library 
 implements both the data transfer management and the split logic (amount of 
 computation to be performed in parallel on each device, CPU and GPU, in order
 to achieve an optimal load balance). Since phiGEMM follows standard BLAS 
@@ -68,29 +68,31 @@ The "libphigemm.a" and "libphigemm.so" will be placed under "./lib"
                             some useful information of each phi*gemm call. Be
                             careful, this flag changes the prototypes of the 
                             phi*gemm calls! Look in "include/phigemm.h"
--D__PHIGEMM_PARA          : allows the library to manage correctly a MPI 
-                            environment (experimental)
+
 
 5. >>> the SPLIT factor
 
 During the usage of the library, it is mandatory to specify through a 
-environmental variable the SPLIT FACTOR. There are one recognized variables, 
-PHIGEMM_SPLIT_FACTOR, common for each *GEMM routine implemented. This factor,
-a value strictly between 0 and 1, tells to the library how much of the 
-calculation has to be performed on the CPU and how much on the GPU. In detail, 
-if PHIGEMM_SPLIT_FACTOR is 0.9 it means that the 90% of the computation will be
-performed by the GPU, the 10% by the CPU.
-
+environmental variable the SPLIT FACTOR. There are 3 recognized variables, 
+one for each *GEMM routine implemented. This factor, a value strictly between 
+0 and 1, tells to the library how much of the calculation has to be performed 
+on the CPU and how much on the GPU. In detail, if PHI_DGEMM_SPLIT is 0.95 it 
+means that the 95% of the computation will be performed by the GPU, the 5% by 
+the CPU.
+ 
+Here an example:
+ 
+export PHI_SGEMM_SPLIT=0.75
+export PHI_DGEMM_SPLIT=0.8
+export PHI_CGEMM_SPLIT=0.9
+export PHI_ZGEMM_SPLIT=0.95
+ 
 The overall performances of the library, compared to the pure CUBLAS calls, are
 strongly dependent by this split factor.
-
+ 
 Only the test-suit is able to calculate the optimal split factor comparing 
 the performance of the GPU and the CPU, varying the size and the type of the 
-data (FLOAT, DOUBLE, COMPLEX).
-
-Further improvements (like dynamic adjustment of the split factor if phiGEMM is
-called multiple times inside a code) will be added as soon as a full assessment 
-will be performed.
+data (FLOAT, DOUBLE, SINGLE COMPLEX and COMPLEX).
  
 6. >>> Internal test-suite 
 
@@ -160,7 +162,7 @@ simply  add before the final exit:
 Let's assume that we want to use the phiGEMM library inside a file called 
 "pippo.f90" or "pippo.c". In order to have a fine-grain control of which *GEMM 
 operations will work using CPU+GPU, you can simply substitute the 
-"{S/D/Z}GEMM" names with the "{phiS, phiD, phiZ}gemm" routine names. 
+"{S/D/C/Z}GEMM" names with the "{phiS, phiD, phiC, phiZ}gemm" routine names. 
 
 So for example this DGEMM call in C language:
 
@@ -174,9 +176,10 @@ will become:
 If you want to use phiGEMM for all the DGEMM in your file or in your program 
 you can easily add at the beginning of the files these lines:
 
-  #define DGEMM phidgemm
-  #define ZGEMM phizgemm
   #define SGEMM phisgemm
+  #define DGEMM phidgemm
+  #define CGEMM phicgemm
+  #define ZGEMM phizgemm
 
 and at compile-time all the substitutions will be automatic.
  
