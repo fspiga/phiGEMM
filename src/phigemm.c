@@ -187,7 +187,7 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	/* recursive splitting */
 	/* There is an assumption here: all the cards has the same amount of memory.
 	 * This can be not true at all! */
-	memsize_gpu = scratch_size[deviceIds[0]] * phiGemmNumDevices;
+	memsize_gpu = scratch_size[0] * phiGemmNumDevices;
 
 	if ( is_splitA )
 	{
