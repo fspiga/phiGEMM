@@ -37,25 +37,25 @@ void phiSgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const float *alpha,
 		const float *A, const int *lda, const float *B,
 		const int *ldb, const float *beta, float *C, const int *ldc,
-		const char *file, const int line );
+		const char *file, const char * line );
 
 void phiDgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
 		const int *ldb, const double *beta, double *C, const int *ldc,
-		const char *file, const int line );
+		const char *file, const char * line );
 
 void phiCgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuComplex *alpha,
 		const cuComplex *A, const int *lda, const cuComplex *B,
 		const int *ldb, const cuComplex *beta, cuComplex *C,
-		const int *ldc, const char *file, const int line );
+		const int *ldc, const char *file, const char * line );
 
 void phiZgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuDoubleComplex *alpha,
 		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
 		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
-		const int *ldc, const char *file, const int line );
+		const int *ldc, const char *file, const char * line );
 #else
 void phiSgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const float *alpha,
@@ -95,25 +95,25 @@ void phisgemm_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const float *alpha,
 		const float *A, const int *lda, const float *B,
 		const int *ldb, const float *beta, float *C, const int *ldc,
-		const char *file, const int line );
+		const char *file, const char * line );
 
 void phidgemm_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
 		const int *ldb, const double *beta, double *C, const int *ldc,
-		const char *file, const int line );
+		const char *file, const char * line );
 
 void phicgemm_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuComplex *alpha,
 		const cuComplex *A, const int *lda, const cuComplex *B,
 		const int *ldb, const cuComplex *beta, cuComplex *C,
-		const int *ldc, const char *file, const int line );
+		const int *ldc, const char *file, const char * line );
 
 void phizgemm_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuDoubleComplex *alpha,
 		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
 		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
-		const int *ldc, const char *file, const int line );
+		const int *ldc, const char *file, const char * line );
 #else
 void phisgemm_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const float *alpha,

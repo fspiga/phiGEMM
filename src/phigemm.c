@@ -92,7 +92,7 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const XTYPE *alpha,
 		const XTYPE *A, const int *lda, const XTYPE *B,
 		const int *ldb, const XTYPE *beta, XTYPE *C, const int *ldc,
-		const char *file, const int line)
+		const char *file, const char * line)
 #else
 void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const XTYPE *alpha,
@@ -108,6 +108,7 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	static int ground_level = 1;
 	static int splitting_steps;
 	int first_call = 0;
+	int local_init = 0;
 
 	/* determine which matrix is to be splitted */
 	int is_splitA = -1;
@@ -152,6 +153,7 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	if ( ground_level && !phiGemmIsInit()  )
 	{
 		fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do self-init.\n"); fflush(stdout);
+		local_init = 1;
 		selfPhigemmInit();
 		// exit(EXIT_FAILURE);
 	}
@@ -272,9 +274,16 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		ground_level = 1;
 		splitting_steps = 0;
 		stop = phigemm_cclock() - start;
-		fprintf (phiProfileFile, "[%s:%d]\tm:%d\tn:%d\tk:%d\t[%c%c]\t(deep: %d, split: %g)\t%g GFlops\n", file, line, *m, *n, *k, *transa, *transb, splitting_steps, split, ( 2.e-9*(*m)*(*n)*(*k)/stop));
+		fprintf (phiProfileFile, "[%s:%s]\tm:%d\tn:%d\tk:%d\t[%c%c]\t(deep: %d, split: %g)\t%g GFlops\n", file, line, *m, *n, *k, *transa, *transb, splitting_steps, split, ( 2.e-9*(*m)*(*n)*(*k)/stop));
 	}
 #endif
+
+	if ( local_init ) {
+		/* local init -> local shutdown */
+		phiGemmShutdown();
+	}
+
+	return;
 }
 
 
@@ -389,19 +398,6 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 		c_offset = (*ldc) * tmp ;
 	}
 
-	/* unused... */
-#ifdef __CUDA_MATRIX_PADDING
-#ifdef __PHIGEMM_MAGMA
-	m_gpu[iDevice] = ceil(m_h2d[iDevice]/64.0)*64;
-	n_gpu[iDevice] = ceil(n_h2d[iDevice]/64.0)*64;
-	k_gpu[iDevice] = ceil(k_h2d[iDevice]/64.0)*64;
-#else
-	m_gpu[iDevice] = ceil(m_h2d[iDevice]/64.0)*64;
-	n_gpu[iDevice] = ceil(n_h2d[iDevice]/16.0)*16;
-	k_gpu[iDevice] = ceil(k_h2d[iDevice]/16.0)*16;
-#endif
-#endif	
-
 	shiftA = 0;
 	shiftB = 0;
 	shiftC = 0;
@@ -498,232 +494,224 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 		devPtrC[iDevice] = devPtrB[iDevice] + k_gpu[iDevice] * n_gpu[iDevice];
 
 #if (!defined CUDA_TYPE_COMPLEX && !defined CUDA_TYPE_DOUBLE_COMPLEX)
-		if ( (* beta) != (XTYPE)0.0 ) {
+		if ( (* beta) != (XTYPE)0.0 )
 #else
-			if ( beta->x != 0.0 || beta->y != 0.0 ) {
+		if ( beta->x != 0.0 || beta->y != 0.0 )
 #endif
+		{
 
 #ifdef __PHIGEMM_DEBUG
-				cudaEventRecord(eventPointers[iDevice][4], phiStreams[iDevice] );
+			cudaEventRecord(eventPointers[iDevice][4], phiStreams[iDevice] );
 #endif
 
 #ifdef __PHIGEMM_MEM_ASYNC
-				status = cublasSetMatrixAsync (m_h2d[iDevice], n_h2d[iDevice], sizeof(C[0]), C+shiftC, *ldc, devPtrC[iDevice], m_gpu[iDevice], phiStreams[iDevice]);
+			status = cublasSetMatrixAsync (m_h2d[iDevice], n_h2d[iDevice], sizeof(C[0]), C+shiftC, *ldc, devPtrC[iDevice], m_gpu[iDevice], phiStreams[iDevice]);
 #else
-				status = cublasSetMatrix (m_h2d[iDevice], n_h2d[iDevice], sizeof(C[0]), C+shiftC, *ldc, devPtrC[iDevice], m_gpu[iDevice]);
+			status = cublasSetMatrix (m_h2d[iDevice], n_h2d[iDevice], sizeof(C[0]), C+shiftC, *ldc, devPtrC[iDevice], m_gpu[iDevice]);
 #endif
 
 #ifdef __PHIGEMM_DEBUG
 				cudaEventRecord(eventPointers[iDevice][5], phiStreams[iDevice] );
 #endif
-			}
+		}
 
-			int gpu_lda = m_gpu[iDevice];
-			int gpu_ldb = k_gpu[iDevice];
+		int gpu_lda = m_gpu[iDevice];
+		int gpu_ldb = k_gpu[iDevice];
 
-			if ( is_transa ) gpu_lda = k_gpu[iDevice];
-			if ( is_transb ) gpu_ldb = n_gpu[iDevice];
+		if ( is_transa ) gpu_lda = k_gpu[iDevice];
+		if ( is_transb ) gpu_ldb = n_gpu[iDevice];
 
-			cublasOperation_t cu_transa, cu_transb;
-			cu_transa =  ( (*transa == 'c') || (*transa == 'C') ) ? CUBLAS_OP_C : -1;
-			cu_transa =  ( (*transa == 't') || (*transa == 'T') ) ? CUBLAS_OP_T : cu_transa;
-			cu_transa =  ( (*transa == 'n') || (*transa == 'N') ) ? CUBLAS_OP_N : cu_transa;
-			cu_transb =  ( (*transb == 'c') || (*transb == 'C') ) ? CUBLAS_OP_C : -1;
-			cu_transb =  ( (*transb == 't') || (*transb == 'T') ) ? CUBLAS_OP_T : cu_transb;
-			cu_transb =  ( (*transb == 'n') || (*transb == 'N') ) ? CUBLAS_OP_N : cu_transb;
+		cublasOperation_t cu_transa, cu_transb;
+		cu_transa =  ( (*transa == 'c') || (*transa == 'C') ) ? CUBLAS_OP_C : -1;
+		cu_transa =  ( (*transa == 't') || (*transa == 'T') ) ? CUBLAS_OP_T : cu_transa;
+		cu_transa =  ( (*transa == 'n') || (*transa == 'N') ) ? CUBLAS_OP_N : cu_transa;
+		cu_transb =  ( (*transb == 'c') || (*transb == 'C') ) ? CUBLAS_OP_C : -1;
+		cu_transb =  ( (*transb == 't') || (*transb == 'T') ) ? CUBLAS_OP_T : cu_transb;
+		cu_transb =  ( (*transb == 'n') || (*transb == 'N') ) ? CUBLAS_OP_N : cu_transb;
 
 #ifdef __PHIGEMM_DEBUG
-			cudaEventRecord(eventPointers[iDevice][6], phiStreams[iDevice] );
+		cudaEventRecord(eventPointers[iDevice][6], phiStreams[iDevice] );
 #endif
 
-			cublasGemm (phiHandles[ iDevice ], cu_transa, cu_transb, m_gpu[iDevice], n_gpu[iDevice], k_gpu[iDevice], alpha, devPtrA[iDevice], gpu_lda, devPtrB[iDevice], gpu_ldb, beta, devPtrC[iDevice], m_gpu[iDevice]);
+		cublasGemm (phiHandles[ iDevice ], cu_transa, cu_transb, m_gpu[iDevice], n_gpu[iDevice], k_gpu[iDevice], alpha, devPtrA[iDevice], gpu_lda, devPtrB[iDevice], gpu_ldb, beta, devPtrC[iDevice], m_gpu[iDevice]);
 
 #ifdef __PHIGEMM_DEBUG
-			cudaEventRecord(eventPointers[iDevice][7], phiStreams[iDevice] );
+		cudaEventRecord(eventPointers[iDevice][7], phiStreams[iDevice] );
 #endif
 
-			//			if (is_splitA) {
-			//				shiftB = 0;
-			//				shiftC += m_h2d[iDevice]; //Da cambiare splitB
-			//			} else {
-			//				shiftA = 0;
-			//				shiftC += n_h2d[iDevice] * (*ldc);
-			//			}
-			//		}
+		//			if (is_splitA) {
+		//				shiftB = 0;
+		//				shiftC += m_h2d[iDevice]; //Da cambiare splitB
+		//			} else {
+		//				shiftA = 0;
+		//				shiftC += n_h2d[iDevice] * (*ldc);
+		//			}
+		//		}
 
-			//		gemm_mkl(transa, transb, &m_cpu, &n_cpu, &k_cpu, alpha, A+a_offset, lda, B+b_offset, ldb, beta, C+c_offset, ldc);
+		//		gemm_mkl(transa, transb, &m_cpu, &n_cpu, &k_cpu, alpha, A+a_offset, lda, B+b_offset, ldb, beta, C+c_offset, ldc);
 
-			//shiftC = 0;
-			//			for (iDevice = 0; iDevice < phiGemmNumDevices * NSTREAM_PER_DEVICE; iDevice++) {
-			//		    cudaSetDevice(iDevice % phiGemmNumDevices);
+		//shiftC = 0;
+		//			for (iDevice = 0; iDevice < phiGemmNumDevices * NSTREAM_PER_DEVICE; iDevice++) {
+		//		    cudaSetDevice(iDevice % phiGemmNumDevices);
 
 #ifdef __PHIGEMM_DEBUG
-			cudaEventRecord(eventPointers[iDevice][8], phiStreams[iDevice] );
+		cudaEventRecord(eventPointers[iDevice][8], phiStreams[iDevice] );
 #endif
 
 #ifdef __PHIGEMM_MEM_ASYNC
-			status = cublasGetMatrixAsync (m_h2d[iDevice], n_h2d[iDevice], sizeof(C[0]), devPtrC[iDevice], m_gpu[iDevice], C+shiftC, *ldc, phiStreams[iDevice]);
+		status = cublasGetMatrixAsync (m_h2d[iDevice], n_h2d[iDevice], sizeof(C[0]), devPtrC[iDevice], m_gpu[iDevice], C+shiftC, *ldc, phiStreams[iDevice]);
 #else
-			status = cublasGetMatrix (m_h2d[iDevice], n_h2d[iDevice], sizeof(C[0]), devPtrC[iDevice], m_gpu[iDevice], C+shiftC, *ldc);
+		status = cublasGetMatrix (m_h2d[iDevice], n_h2d[iDevice], sizeof(C[0]), devPtrC[iDevice], m_gpu[iDevice], C+shiftC, *ldc);
 #endif
 
 #ifdef __PHIGEMM_DEBUG
-			cudaEventRecord(eventPointers[iDevice][9], phiStreams[iDevice] );
+		cudaEventRecord(eventPointers[iDevice][9], phiStreams[iDevice] );
 #endif
 
-			//			if (is_splitA)
-			//				shiftC += m_h2d[iDevice];
-			//			else
-			//				shiftC += n_h2d[iDevice] * (*ldc);
+		//			if (is_splitA)
+		//				shiftC += m_h2d[iDevice];
+		//			else
+		//				shiftC += n_h2d[iDevice] * (*ldc);
 
-			if (is_splitA) {
-				shiftB = 0;
-				shiftC += m_h2d[iDevice]; //Da cambiare splitB
-			} else {
-				shiftA = 0;
-				shiftC += n_h2d[iDevice] * (*ldc);
-			}
-
-			if (status != CUBLAS_STATUS_SUCCESS) {
-				fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDevice, status); fflush(stderr);
-			}
+		if (is_splitA) {
+			shiftB = 0;
+			shiftC += m_h2d[iDevice]; //Da cambiare splitB
+		} else {
+			shiftA = 0;
+			shiftC += n_h2d[iDevice] * (*ldc);
 		}
+
+		if (status != CUBLAS_STATUS_SUCCESS) {
+			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDevice, status); fflush(stderr);
+		}
+	}
 #ifdef __PHIGEMM_DEBUG
-		stop_lunchers = phigemm_cclock();
-		start_mkl = phigemm_cclock();
+	stop_lunchers = phigemm_cclock();
+	start_mkl = phigemm_cclock();
 #endif
 
-		gemm_mkl(transa, transb, &m_cpu, &n_cpu, &k_cpu, alpha, A+a_offset, lda, B+b_offset, ldb, beta, C+c_offset, ldc);
+	gemm_mkl(transa, transb, &m_cpu, &n_cpu, &k_cpu, alpha, A+a_offset, lda, B+b_offset, ldb, beta, C+c_offset, ldc);
 
 
 #ifdef __PHIGEMM_DEBUG
-		stop_mkl= phigemm_cclock();
-		start_sync = phigemm_cclock();
+	stop_mkl= phigemm_cclock();
+	start_sync = phigemm_cclock();
 #endif
 
-		for (iDevice = 0; iDevice < phiGemmNumDevices * NSTREAM_PER_DEVICE; iDevice++) {
+	for (iDevice = 0; iDevice < phiGemmNumDevices * NSTREAM_PER_DEVICE; iDevice++) {
 
-			cudaSetDevice(deviceIds[iDevice % phiGemmNumDevices]);
+		cudaSetDevice(deviceIds[iDevice % phiGemmNumDevices]);
 
 #ifdef __PHIGEMM_MEM_ASYNC
-			cudaErr = cudaStreamSynchronize( phiStreams[ iDevice ] );
+		cudaErr = cudaStreamSynchronize( phiStreams[ iDevice ] );
 #else
-			cudaErr = cudaDeviceSynchronize();
+		cudaErr = cudaDeviceSynchronize();
 #endif
-			if (cudaErr != cudaSuccess) {
-				printf ( "!!!! 4 - cudaDeviceSynchronize error (C) %d\n", cudaErr); fflush(stdout);
-			}
+		if (cudaErr != cudaSuccess) {
+			printf ( "!!!! 4 - cudaDeviceSynchronize error (C) %d\n", cudaErr); fflush(stdout);
 		}
+	}
 
 #ifdef __PHIGEMM_DEBUG
-		stop_sync= phigemm_cclock();
-		stop_total = phigemm_cclock();
+	stop_sync= phigemm_cclock();
+	stop_total = phigemm_cclock();
 #endif
 
-		/* is it necessary? no multi-GPU this part! */
-#ifdef __CUDA_MATRIX_PADDING
-		cudaMemset(dev_scratch, 0, sizeof(C[iDevice])*(m_gpu[iDevice]*k_gpu[iDevice] + k_gpu[iDevice]*n_gpu[iDevice] + m_gpu[iDevice]*n_gpu[iDevice]));
-
-		m_gpu[iDevice] = m_h2d[iDevice];
-		n_gpu[iDevice] = n_h2d[iDevice];
-		k_gpu[iDevice] = k_h2d[iDevice];
-#endif  
-
 #ifdef __PHIGEMM_DEBUG
+	float time_temp, time_mem_h2d, time_dgemm_cuda, time_mem_d2h;
+	double time_total = stop_total - start_total;
+	double time_lunchers = stop_lunchers - start_lunchers;
+	double time_sync = stop_sync - start_sync;
+	double time_mkl = stop_mkl - start_mkl;
+	double unbalance;
 
-		float time_temp, time_mem_h2d, time_dgemm_cuda, time_mem_d2h;
-		double time_total = stop_total - start_total;
-		double time_lunchers = stop_lunchers - start_lunchers;
-		double time_sync = stop_sync - start_sync;
-		double time_mkl = stop_mkl - start_mkl;
-		double unbalance;
+	for (iDevice = 0; iDevice < phiGemmNumDevices * NSTREAM_PER_DEVICE; iDevice++) {
 
-		for (iDevice = 0; iDevice < phiGemmNumDevices * NSTREAM_PER_DEVICE; iDevice++) {
+		cudaSetDevice(deviceIds[iDevice % phiGemmNumDevices]);
 
-			cudaSetDevice(deviceIds[iDevice % phiGemmNumDevices]);
-
-			/* H2D */
-			time_mem_h2d = 0.0;
-			cudaEventElapsedTime( &time_temp, eventPointers[iDevice][0], eventPointers[iDevice][1] );
-			time_mem_h2d += (time_temp / 1000);
-			cudaEventElapsedTime( &time_temp, eventPointers[iDevice][2], eventPointers[iDevice][3] );
-			time_mem_h2d += (time_temp / 1000);
+		/* H2D */
+		time_mem_h2d = 0.0;
+		cudaEventElapsedTime( &time_temp, eventPointers[iDevice][0], eventPointers[iDevice][1] );
+		time_mem_h2d += (time_temp / 1000);
+		cudaEventElapsedTime( &time_temp, eventPointers[iDevice][2], eventPointers[iDevice][3] );
+		time_mem_h2d += (time_temp / 1000);
 #if (!defined CUDA_TYPE_COMPLEX && !defined CUDA_TYPE_DOUBLE_COMPLEX)
-			if ( (* beta) != (XTYPE)0.0 ) {
+		if ( (* beta) != (XTYPE)0.0 )
 #else
-				if ( beta->x != 0.0 || beta->y != 0.0 ) {
+		if ( beta->x != 0.0 || beta->y != 0.0 )
 #endif
-					cudaEventElapsedTime( &time_temp, eventPointers[iDevice][4], eventPointers[iDevice][5] );
-					time_mem_h2d += (time_temp / 1000);
-				}
-
-				/* CUBLAS*/
-				time_dgemm_cuda = 0.0;
-				cudaEventElapsedTime( &time_temp, eventPointers[iDevice][6], eventPointers[iDevice][7] );
-				time_dgemm_cuda += (time_temp / 1000);
-
-				/* D2H */
-				time_mem_d2h = 0.0;
-				cudaEventElapsedTime( &time_temp, eventPointers[iDevice][8], eventPointers[iDevice][9] );
-				time_mem_d2h += (time_temp / 1000);
-
-				/* For best split, the time to asynchronously move data to device and compute the MxM should be equal
-				 * to the time that CPU spent to perform its portion of the GEMM.
-				 * NOTE: if (unbalance > 0) the CPU has too less work to do (and the GPU too much) -> decrease the split
-				 * 		 if (unbalance < 0) the GPU has too less work to do (and the CPU too much) -> increase the split
-				 * */
-				unbalance = (time_mem_h2d + time_dgemm_cuda + time_mem_d2h) - time_mkl;
-
-				if ( is_splitA ) {
-					printf ("[STATS GPU%d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
-							iDevice % phiGemmNumDevices,
-							*m,
-							m_gpu[iDevice],
-							m_cpu,
-							split,
-							*k,
-							*n,
-							time_mem_h2d,
-							(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(128*1024*1024),
-							time_mkl,
-							2.e-9* m_cpu *(int)(*n)*(int)(*k)/time_mkl,
-							time_dgemm_cuda,
-							2.e-9* m_gpu[iDevice] *(int)(*n)*(int)(*k)/time_dgemm_cuda,
-							time_mem_d2h,
-							m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(128*1024*1024),
-							unbalance,
-							time_total,
-							2.e-9* (int)(*m) *(int)(*n)*(int)(*k)/time_total);
-
-				} else {
-					printf ("[STATS GPU%d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-							iDevice % phiGemmNumDevices,
-							*m,
-							*k,
-							*n,
-							n_gpu[iDevice],
-							n_cpu,
-							split,
-							time_mem_h2d,
-							(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(128*1024*1024),
-							time_mkl,
-							2.e-9* (int)(*m) * n_cpu *(int)(*k)/time_mkl,
-							time_dgemm_cuda,
-							2.e-9* (int)(*m) * n_gpu[iDevice] *(int)(*k)/time_dgemm_cuda,
-							time_mem_d2h,
-							m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(128*1024*1024),
-							unbalance,
-							time_total,
-							2.e-9* (int)(*m) *(int)(*n)*(int)(*k)/time_total);
-				}
-
-			}
-
-			/* Destroy CUDA events */
-			for (i = 0; i < phiGemmNumDevices * NSTREAM_PER_DEVICE; i++) {
-				cudaSetDevice(deviceIds[i % phiGemmNumDevices]);
-				for (j = 0; j < 10; j++)
-					cudaEventDestroy(eventPointers[i][j]);
-			}
-#endif
+		{
+			cudaEventElapsedTime( &time_temp, eventPointers[iDevice][4], eventPointers[iDevice][5] );
+			time_mem_h2d += (time_temp / 1000);
 		}
+
+		/* CUBLAS*/
+		time_dgemm_cuda = 0.0;
+		cudaEventElapsedTime( &time_temp, eventPointers[iDevice][6], eventPointers[iDevice][7] );
+		time_dgemm_cuda += (time_temp / 1000);
+
+		/* D2H */
+		time_mem_d2h = 0.0;
+		cudaEventElapsedTime( &time_temp, eventPointers[iDevice][8], eventPointers[iDevice][9] );
+		time_mem_d2h += (time_temp / 1000);
+
+		/* For best split, the time to asynchronously move data to device and compute the MxM should be equal
+		 * to the time that CPU spent to perform its portion of the GEMM.
+		 * NOTE: if (unbalance > 0) the CPU has too less work to do (and the GPU too much) -> decrease the split
+		 * 		 if (unbalance < 0) the GPU has too less work to do (and the CPU too much) -> increase the split
+		 * */
+		unbalance = (time_mem_h2d + time_dgemm_cuda + time_mem_d2h) - time_mkl;
+
+		if ( is_splitA ) {
+			printf ("[STATS GPU%d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
+					iDevice % phiGemmNumDevices,
+					*m,
+					m_gpu[iDevice],
+					m_cpu,
+					split,
+					*k,
+					*n,
+					time_mem_h2d,
+					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
+					time_mkl,
+					2.e-9* m_cpu *(int)(*n)*(int)(*k)/time_mkl,
+					time_dgemm_cuda,
+					2.e-9* m_gpu[iDevice] *(int)(*n)*(int)(*k)/time_dgemm_cuda,
+					time_mem_d2h,
+					m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(1024*1024*1024/sizeof(XTYPE)),
+					unbalance,
+					time_total,
+					2.e-9*(*m)*(*n)*(*k)/time_total);
+
+		} else {
+			printf ("[STATS GPU%d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
+					iDevice % phiGemmNumDevices,
+					*m,
+					*k,
+					*n,
+					n_gpu[iDevice],
+					n_cpu,
+					split,
+					time_mem_h2d,
+					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
+					time_mkl,
+					2.e-9* (int)(*m) * n_cpu *(int)(*k)/time_mkl,
+					time_dgemm_cuda,
+					2.e-9* (int)(*m) * n_gpu[iDevice] *(int)(*k)/time_dgemm_cuda,
+					time_mem_d2h,
+					m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(1024*1024*1024/sizeof(XTYPE)),
+					unbalance,
+					time_total,
+					2.e-9*(*m)*(*n)*(*k)/time_total);
+		}
+
+	}
+
+	/* Destroy CUDA events */
+	for (i = 0; i < phiGemmNumDevices * NSTREAM_PER_DEVICE; i++) {
+		cudaSetDevice(deviceIds[i % phiGemmNumDevices]);
+		for (j = 0; j < 10; j++)
+			cudaEventDestroy(eventPointers[i][j]);
+	}
+#endif
+}

@@ -27,6 +27,10 @@
 
 #include <assert.h>
 
+#define _STRING_LINE_(s) #s
+#define _STRING_LINE2_(s) _STRING_LINE_(s)
+#define __LINESTR__ _STRING_LINE2_(__LINE__)
+
 /* CHECK_ERROR has problems with FLOAT... why? */
 #if defined __CUDA_TYPE_FLOAT
 #define MAX_ERROR 0.0000001
@@ -218,6 +222,11 @@ int main(int argc, char **argv)
 		exit( EXIT_FAILURE );
 	}
 #endif
+
+#if defined __PERFORM_PHIGEMM_INIT
+	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond);
+#endif
+	cudaDeviceSynchronize();
 
 	// initialize host memory pointers
 	A = ( XTYPE* ) GPU_buffer_memory_ptr;
@@ -470,10 +479,6 @@ int main(int argc, char **argv)
 				}
 			}
 
-#if defined __PERFORM_PHIGEMM_INIT
-			phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond);
-#endif
-			cudaDeviceSynchronize();
 
 			/* Optimal.... but probably not optimal anymore! */
 			//			currentSplitFactor = (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU / ((( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU + (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / cpu_time) );
@@ -485,13 +490,11 @@ int main(int argc, char **argv)
 
 			t1 = seconds();
 #if defined  __PHIGEMM_PROFILE
-			PHIGEMM_CALL(&transa[ count ], &transb[ count ], &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C_phigemm, &m, __FILE__, __LINE__);
+			PHIGEMM_CALL(&transa[ count ], &transb[ count ], &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C_phigemm, &m, __FILE__, __LINESTR__);
 #else
 			PHIGEMM_CALL(&transa[ count ], &transb[ count ], &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C_phigemm, &m);
 #endif
 			hybrid_time = seconds() - t1;
-
-			//phiGemmShutdown();
 
 
 #ifdef __CHECK_ERROR
@@ -587,8 +590,9 @@ int main(int argc, char **argv)
 #endif
 
 	/* RELEASE RESOURCES */
-
+#if defined __PERFORM_PHIGEMM_INIT
 	phiGemmShutdown();
+#endif
 
 	free( C_mkl );
 	if ( !(mem_gpu > memsize[ 0 ]) ) free( C_cuda );
