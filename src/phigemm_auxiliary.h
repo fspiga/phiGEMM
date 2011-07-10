@@ -46,7 +46,7 @@ cudaStream_t  phiStreams[ NSTREAM_PER_DEVICE * MAX_GPUS ];
 cublasHandle_t phiHandles[ NSTREAM_PER_DEVICE * MAX_GPUS ];
 int phiGemmNumDevices;
 
-float phiGemmSplitFactor[3];
+float phiGemmSplitFactor[4];
 phiGemmMemDevPtr dev_scratch;
 phiGemmMemSizes scratch_size;
 phiGemmDeviceIds deviceIds;

@@ -167,6 +167,8 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	split = phiGemmSplitFactor[1];
 #elif defined  CUDA_TYPE_COMPLEX
 	split = phiGemmSplitFactor[2];
+#elif defined  CUDA_TYPE_DOUBLE_COMPLEX
+	split = phiGemmSplitFactor[3];
 #endif
 
 	/* smart padding for Fermi & CUDA 3.x - no needed anymore */

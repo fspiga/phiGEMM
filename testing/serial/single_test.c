@@ -482,10 +482,11 @@ int main(int argc, char **argv)
 
 			/* Optimal.... but probably not optimal anymore! */
 			//			currentSplitFactor = (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU / ((( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU + (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / cpu_time) );
-			float splits[3];
+			float splits[4];
 			splits[0] = currentSplitFactor;
 			splits[1] = currentSplitFactor;
 			splits[2] = currentSplitFactor;
+			splits[4] = currentSplitFactor;
 			phigemmSetSplitFactor((float *)&splits);
 
 			t1 = seconds();

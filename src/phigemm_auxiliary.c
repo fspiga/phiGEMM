@@ -48,15 +48,6 @@ extern "C"
 {
 #endif
 
-//cudaStream_t  phiStreams[ NSTREAM_PER_DEVICE * MAX_GPUS ];
-//cublasHandle_t phiHandles[ NSTREAM_PER_DEVICE * MAX_GPUS ];
-//int phiGemmNumDevices;
-//
-//float phiGemmSplitFactor[3];
-//phiGemmMemDevPtr dev_scratch;
-//phiGemmMemSizes scratch_size;
-//phiGemmDeviceIds deviceIds;
-
 #ifdef __PHIGEMM_PROFILE
 FILE *phiProfileFile;
 #endif
@@ -177,6 +168,24 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	}
 	phiGemmSplitFactor[1] = envar_split;
 
+	/* CGEMM */
+	value = getenv("PHI_CGEMM_SPLIT");
+	if (value != NULL)
+	{
+		envar_split = atof(value);
+#ifdef __PHIGEMM_DEBUG
+		printf ("*** phiGEMM *** CGEMM split factor from environment variable: %f \n", envar_split);
+#endif
+	} else {
+
+		/* Default split if no env variables are specified */
+		envar_split = 0.9;
+#ifdef __PHIGEMM_DEBUG
+		printf ("*** phiGEMM *** CGEMM  default split factor: %f \n", envar_split);
+#endif
+	}
+	phiGemmSplitFactor[2] = envar_split;
+
 	/* ZGEMM */
 	value = getenv("PHI_ZGEMM_SPLIT");
 	if (value != NULL)
@@ -188,12 +197,12 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	} else {
 
 		/* Default split if no env variables are specified */
-		envar_split = 0.9;
+		envar_split = 0.925;
 #ifdef __PHIGEMM_DEBUG
 		printf ("*** phiGEMM *** ZGEMM  default split factor: %f \n", envar_split);
 #endif
 	}
-	phiGemmSplitFactor[2] = envar_split;
+	phiGemmSplitFactor[3] = envar_split;
 
 }
 
@@ -235,7 +244,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 #ifdef __PHIGEMM_EXPLICIT_SPLITFACTOR
 
 #ifdef __PHIGEMM_DEBUG
-	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2]);
+	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[2]);
 	fflush(stdout);
 #endif
 
@@ -245,7 +254,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	estmSplitFactor("xxx", 'n', 'n');
 
 #ifdef __PHIGEMM_DEBUG
-	printf("*** phiGEMM *** The (initial) split factors are: %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2]);
+	printf("*** phiGEMM *** The (initial) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
 	fflush(stdout);
 #endif
 
