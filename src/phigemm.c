@@ -274,9 +274,9 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 #ifdef __PHIGEMM_PROFILE
 	if ( first_call) {
 		ground_level = 1;
-		splitting_steps = 0;
+		first_call = 0;
 		stop = phigemm_cclock() - start;
-		fprintf (phiProfileFile, "[%s:%s]\tm:%d\tn:%d\tk:%d\t[%c%c]\t(deep: %d, split: %g)\t%g GFlops\n", file, line, *m, *n, *k, *transa, *transb, splitting_steps, split, ( 2.e-9*(*m)*(*n)*(*k)/stop));
+		fprintf (phiProfileFile, "[%s:%s]\tm: %d\tn: %d\tk: %d\t[%c%c]\t(deep: %d, split: %g)\tTime: %gs\t%g GFlops\n", file, line, *m, *n, *k, *transa, *transb, splitting_steps, split, stop, ( 2.e-9*(int)(*m)*(int)(*n)*(int)(*k)/stop));
 	}
 #endif
 

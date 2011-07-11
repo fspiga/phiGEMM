@@ -51,7 +51,7 @@ phiGemmMemDevPtr dev_scratch;
 phiGemmMemSizes scratch_size;
 phiGemmDeviceIds deviceIds;
 
-#ifdef __PHIGEMM_DEBUG
+#if (defined __PHIGEMM_DEBUG || defined __PHIGEMM_PROFILE)
 double phigemm_cclock(void);
 #endif
 

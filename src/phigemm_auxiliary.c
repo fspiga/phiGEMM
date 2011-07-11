@@ -21,11 +21,9 @@
 #include <mpi.h>
 #endif
 
-#if (defined __PHIGEMM_DEBUG || defined __PHIGEMM_PROFILE)
 #include <time.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#endif
 
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
@@ -54,6 +52,10 @@ FILE *phiProfileFile;
 
 static int is_phigemm_init = 0;
 static int is_alloc_external = 0;
+
+#if defined __PHIGEMM_PROFILE
+const char base[] = "phigemm.profile";
+#endif
 
 int phiGemmIsInit()
 {
@@ -316,7 +318,18 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	is_phigemm_init = 1;
 
 #ifdef __PHIGEMM_PROFILE
-	phiProfileFile = fopen ("phigemm.profile", "a");
+
+#ifdef __PHIGEMM_PARA
+    char finalFileName [ FILENAME_MAX ];
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &i);
+
+    sprintf(finalFileName, "%s.rank-%d", base, i);
+
+    phiProfileFile = fopen (finalFileName, "a");
+#else
+	phiProfileFile = fopen (base, "a");
+#endif
 #endif
 }
 
@@ -458,7 +471,7 @@ void selfPhigemmInit(){
 
 		/* query the real free memory, taking into account the "stack" */
 		if ( cudaSetDevice(deviceIds[i]) != cudaSuccess) {
-			printf("*** ERROR *** cudaSetDevice(%d) failed!", qe_gpu_bonded[i] );
+			printf("*** ERROR *** cudaSetDevice(%d) failed!", deviceIds[i] );
 			exit(EXIT_FAILURE);
 		}
 
