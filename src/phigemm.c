@@ -285,6 +285,11 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		phiGemmShutdown();
 	}
 
+	if ( cudaSetDevice(deviceIds[0]) != cudaSuccess) {
+		printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
+		exit(EXIT_FAILURE);
+	}
+
 	return;
 }
 
