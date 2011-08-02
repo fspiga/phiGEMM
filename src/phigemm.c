@@ -193,7 +193,6 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 
 	if ( is_splitA )
 	{
-		splitting_steps++;
 
 		tmp = (*m) * split;
 		if (*m < 128)
@@ -204,6 +203,7 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		mem_gpu = ( m_gpu*k_gpu/phiGemmNumDevices + k_gpu*n_gpu + m_gpu*n_gpu/phiGemmNumDevices ) * sizeof(XTYPE);
 		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
 		{
+			splitting_steps++;
 			ground_level = 0;
 
 #ifdef __PHIGEMM_DEBUG
@@ -233,7 +233,7 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		}
 
 	} else {
-		splitting_steps++;
+
 
 		tmp = (*n) * split;
 		if (*n < 128)
@@ -245,6 +245,8 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
 		{
 			ground_level = 0;
+			splitting_steps++;
+
 #ifdef __PHIGEMM_DEBUG
 			printf("*** phiGEMM *** matrix size (%lu Bytes) too big to fit in GPU memory (%lu Bytes), splitting B( %d, %d ) recursively\n",
 					(unsigned long)mem_gpu, (unsigned long)memsize_gpu, k_gpu, n_gpu); fflush(stdout);
@@ -281,7 +283,7 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 #endif
 
 	if ( local_init ) {
-		/* local init -> local shutdown */
+		/* local init -> local shutdown (only at the end )*/
 		phiGemmShutdown();
 	}
 
