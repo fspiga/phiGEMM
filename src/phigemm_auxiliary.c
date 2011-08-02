@@ -115,7 +115,7 @@ void phigemmSetSplitFactor(float *x) {
 	float tmp,tmp2;
 	int i;
 
-	for ( i = 0 ; i < 3 ; i++ ) {
+	for ( i = 0 ; i < 4 ; i++ ) {
 		/* 0:SGEMM, 1:DGEMM, 2:ZGEMM */
 		tmp =  (100.0f * x[i])/( 1.0f - x[i]);
 		tmp2 = 100.0f;
@@ -246,7 +246,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 #ifdef __PHIGEMM_EXPLICIT_SPLITFACTOR
 
 #ifdef __PHIGEMM_DEBUG
-	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[2]);
+	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
 	fflush(stdout);
 #endif
 
@@ -613,7 +613,7 @@ void selfPhigemmInit(){
 #ifdef __PHIGEMM_EXPLICIT_SPLITFACTOR
 
 #ifdef __PHIGEMM_DEBUG
-	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2]);
+	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
 	fflush(stdout);
 #endif
 
@@ -623,7 +623,7 @@ void selfPhigemmInit(){
 	estmSplitFactor("xxx", 'n', 'n');
 
 #ifdef __PHIGEMM_DEBUG
-	printf("*** phiGEMM *** The (initial) split factors are: %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2]);
+	printf("*** phiGEMM *** The (initial) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
 	fflush(stdout);
 #endif
 

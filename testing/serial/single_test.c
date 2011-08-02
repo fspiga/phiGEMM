@@ -343,7 +343,7 @@ int main(int argc, char **argv)
 	is_transa[3] = 1;
 	is_transb[3] = 1;
 
-	for( count = 0; count < 1; count +=1 ){
+	for( count = 0; count < 4; count +=1 ){
 
 		int lda = m;
 		int ldb = k;
@@ -486,7 +486,7 @@ int main(int argc, char **argv)
 			splits[0] = currentSplitFactor;
 			splits[1] = currentSplitFactor;
 			splits[2] = currentSplitFactor;
-			splits[4] = currentSplitFactor;
+			splits[3] = currentSplitFactor;
 			phigemmSetSplitFactor((float *)&splits);
 
 			t1 = seconds();
