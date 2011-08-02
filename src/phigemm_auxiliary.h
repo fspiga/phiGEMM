@@ -42,6 +42,11 @@ void selfPhigemmInit();
 
 void estmSplitFactor(const char* optype, char transa, char transb);
 
+size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in);
+
+void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2);
+
+
 cudaStream_t  phiStreams[ NSTREAM_PER_DEVICE * MAX_GPUS ];
 cublasHandle_t phiHandles[ NSTREAM_PER_DEVICE * MAX_GPUS ];
 int phiGemmNumDevices;

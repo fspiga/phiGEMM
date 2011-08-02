@@ -57,6 +57,93 @@ static int is_alloc_external = 0;
 const char base[] = "phigemm.profile";
 #endif
 
+extern int phiGemmNumDevices;
+
+// ----
+
+/* This routine computes the memory required to store the consideres matrices */
+size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
+
+	int m_split, n_split, tmp;
+
+	if (is_splitA) {
+		tmp = (m_in) * split;
+		if (m_in < 128)
+			m_split = tmp;
+		else
+			m_split = floor(tmp/64.0)*64;
+
+		return ( m_split*k_in/phiGemmNumDevices + k_in*n_in + m_split*n_in/phiGemmNumDevices );
+
+	} else {
+		tmp = (n_in) * split;
+		if (n_in < 128)
+			n_split = tmp;
+		else
+			n_split = floor(tmp/64.0)*64;
+
+		return( m_in*k_in + k_in*n_split/phiGemmNumDevices + m_in*n_split/phiGemmNumDevices );
+	}
+}
+
+/* This routine computes the recursive split */
+void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2) {
+
+	size_t memsize_gpu = scratch_size[0] * phiGemmNumDevices;
+	size_t mem_gpu = memOccupancy(is_splitA, split, m, n, k) * type_size;
+
+	int tmp_m = m;
+	int tmp_n = n;
+
+	const int step = 64;
+
+#if 0
+	/* repeat until the "new" matrices fit the GPU memory */
+	while (mem_gpu > memsize_gpu) {
+		if (is_splitA) {
+			/* I can assume (to check!!!) that tmp_m is never too small ... */
+			tmp_m = tmp_m - step;
+
+			*p1 = tmp_m;
+			*p2 = m - (*p1);
+
+			/* A:(p1*split x k), B:(k x n), C: (p1*split x n)
+			 * ---> do they fit the GPU memory?
+			 */
+			mem_gpu = memOccupancy(is_splitA, split, *p1, n, k) * type_size;
+		} else {
+			/* I can assume (to check!!!) that tmp_n is never too small ... */
+			tmp_n = tmp_n - step;
+
+			*p1 = tmp_n;
+			*p2 = n - (*p1);
+
+			/* A:(m x k), B:(k x p1*split), C: (m x p1*split)
+			 * ---> do they fit the GPU memory?
+			 */
+			mem_gpu = memOccupancy(is_splitA, split, m, *p1, k) * type_size;
+		}
+#ifdef __PHIGEMM_DEBUG_2
+		fprintf( stdout,"*** phiGEMM *** > p1: %d\tp2: %d\tsize:%lu\n", *p1, *p2, mem_gpu); fflush(stdout);
+#endif
+	}
+#else
+	/* ORIGINAL */
+	if (is_splitA) {
+		*p1 = m/2;
+		*p2 = m - (*p1);
+	} else {
+		*p1 = n/2;
+		*p2 = n - (*p1);
+	}
+#endif
+	return;
+}
+
+
+// ----
+
+
 int phiGemmIsInit()
 {
 	return is_phigemm_init;
