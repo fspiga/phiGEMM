@@ -70,12 +70,20 @@
 #error Missing flag at compile-time
 #endif
 
-
+#ifdef __PHIGEMM_PROFILE
+void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
+		const int *n, const int *k, const XTYPE *alpha,
+		const XTYPE *A, const int *lda, const XTYPE *B,
+		const int *ldb, const XTYPE *beta, XTYPE *C, const int *ldc,
+		int is_splitA, float split,
+		const char *file, const char * line);
+#else
 void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const XTYPE *alpha,
 		const XTYPE *A, const int *lda, const XTYPE *B,
 		const int *ldb, const XTYPE *beta, XTYPE *C, const int *ldc,
 		int is_splitA, float split);
+#endif
 
 extern phiGemmMemSizes scratch_size;
 extern phiGemmMemDevPtr dev_scratch;
@@ -101,7 +109,8 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 #endif
 {
 	double time_call;
-	int tmp, p1, p2, m_gpu, n_gpu, k_gpu;
+	int tmp, p1, p2;
+//	int m_gpu, n_gpu, k_gpu;
 	int a_offset, b_offset, c_offset;
 	size_t memsize_gpu, mem_gpu;
 	float split;
@@ -182,9 +191,9 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	//	k_gpu = ceil(*k/16.0)*16;
 
 	/* padding seems not required anymore with CUDA 4.x */
-	m_gpu = *m;
-	n_gpu = *n;
-	k_gpu = *k;
+//	m_gpu = *m;
+//	n_gpu = *n;
+//	k_gpu = *k;
 
 	/* recursive splitting */
 	/* There is an assumption here: all the cards has the same amount of memory.
@@ -194,31 +203,29 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	if ( is_splitA )
 	{
 
-		tmp = (*m) * split;
-		if (*m < 128)
-			m_gpu = tmp;
-		else
-			m_gpu = floor(tmp/64.0)*64;
+		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(XTYPE);
 
-		mem_gpu = ( m_gpu*k_gpu/phiGemmNumDevices + k_gpu*n_gpu + m_gpu*n_gpu/phiGemmNumDevices ) * sizeof(XTYPE);
 		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
 		{
 			splitting_steps++;
 			ground_level = 0;
 
 #ifdef __PHIGEMM_DEBUG
-			printf("*** phiGEMM *** Dimensions\t%d\t%d\t%d\t( %lu bytes) too big to fit in GPU memory (%lu bytes), splitting A(%d, %d) recursively\n",
-					*m, *n, *k, (unsigned long)mem_gpu, (unsigned long)memsize_gpu, m, n);  fflush(stdout);
+			printf("*** phiGEMM *** Dimensions\t%d\t%d\t%d\t( %lu bytes) too big to fit the GPU memory (%lu bytes), split A(%d, %d)...\n",
+					*m, *n, *k, (unsigned long)mem_gpu, (unsigned long)memsize_gpu, *m, *n);  fflush(stdout);
 #endif
 
-			/* this can be improved and be a function of the split factor (NdFilippo) */
-			p1 = (*m)/2;
-			p2 = (*m) - p1;
-//#ifdef __PHIGEMM_DEBUG
-//			fprintf( stdout,"*** phiGEMM *** > SPLIT A: ( %d %d ) %d %d (transa: %c, transb: %c)\n", p1, p2, *n, *k, *transa, *transb); fflush(stdout);
-//#endif
+//			p1 = (*m)/2;
+//			p2 = (*m) - p1;
+			bestFit(is_splitA, split, *m, *n, *k, sizeof(XTYPE), &p1, &p2);
+
+#ifdef __PHIGEMM_DEBUG_2
+			fprintf( stdout,"*** phiGEMM *** > SPLIT A: ( %d %d ) %d %d (transa: %c, transb: %c)\n", p1, p2, *n, *k, *transa, *transb); fflush(stdout);
+#endif
+
 			a_offset = ( *transa == 'n' || *transa == 'N' )? p1 : ((*lda)*p1);
 			c_offset = p1;
+
 #ifdef __PHIGEMM_PROFILE
 			CUBLAS_GEMM(transa, transb, &p1, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
 			CUBLAS_GEMM(transa, transb, &p2, n, k, alpha, A + a_offset, lda, B, ldb, beta, C + c_offset, ldc, file, line);
@@ -227,38 +234,43 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 			CUBLAS_GEMM(transa, transb, &p2, n, k, alpha, A + a_offset, lda, B, ldb, beta, C + c_offset, ldc);
 #endif
 		} else {
-//#ifdef __PHIGEMM_DEBUG
-//			fprintf( stdout,"*** phiGEMM *** > MxM (A): %d, %d, %d (transa: %c, transb: %c)\n", *m, *n, *k, *transa, *transb); fflush(stdout);
-//#endif
+
+#ifdef __PHIGEMM_DEBUG_2
+			fprintf( stdout,"*** phiGEMM *** > MxM (A): %d, %d, %d (transa: %c, transb: %c)\n", *m, *n, *k, *transa, *transb); fflush(stdout);
+#endif
+
+#ifdef __PHIGEMM_PROFILE
+			CUBLAS_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
+#else
 			CUBLAS_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
+#endif
 		}
 
 	} else {
 
+		 mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(XTYPE);
 
-		tmp = (*n) * split;
-		if (*n < 128)
-			n_gpu = tmp;
-		else
-			n_gpu = floor(tmp/64.0)*64;
-
-		size_t mem_gpu = ( m_gpu*k_gpu + k_gpu*n_gpu/phiGemmNumDevices + m_gpu*n_gpu/phiGemmNumDevices ) * sizeof(XTYPE);
 		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
 		{
 			ground_level = 0;
 			splitting_steps++;
 
 #ifdef __PHIGEMM_DEBUG
-			printf("*** phiGEMM *** Dimensions\t%d\t%d\t%d\t( %lu bytes) too big to fit in GPU memory (%lu bytes), splitting B( %d, %d ) recursively\n",
+			printf("*** phiGEMM *** Dimensions\t%d\t%d\t%d\t( %lu bytes) too big to fit the GPU memory (%lu bytes), split B( %d, %d )...\n",
 					*m, *n, *k, (unsigned long)mem_gpu, (unsigned long)memsize_gpu, *k, *n); fflush(stdout);
 #endif
-			p1 = (*n)/2;
-			p2 = (*n) - p1;
-//#ifdef __PHIGEMM_DEBUG
-//			fprintf( stdout,"*** phiGEMM *** > SPLIT B: %d (%d %d) %d (transa: %c, transb: %c)\n", *m, p1, p2, *k, *transa, *transb); fflush(stdout);
-//#endif
+
+//			p1 = (*n)/2;
+//			p2 = (*n) - p1;
+			bestFit(is_splitA, split, *m, *n, *k, sizeof(XTYPE), &p1, &p2);
+
+#ifdef __PHIGEMM_DEBUG_2
+			fprintf( stdout,"*** phiGEMM *** > SPLIT B: %d (%d %d) %d (transa: %c, transb: %c)\n", *m, p1, p2, *k, *transa, *transb); fflush(stdout);
+#endif
+
 			b_offset = ( *transb == 'n' || *transb == 'N' )? ((*ldb)*p1) : p1;
 			c_offset = (*ldc)*p1;
+
 #ifdef __PHIGEMM_PROFILE
 			CUBLAS_GEMM(transa, transb, m, &p1, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
 			CUBLAS_GEMM(transa, transb, m, &p2, k, alpha, A, lda, B + b_offset, ldb, beta, C + c_offset, ldc, file, line);
@@ -267,10 +279,16 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 			CUBLAS_GEMM(transa, transb, m, &p2, k, alpha, A, lda, B + b_offset, ldb, beta, C + c_offset, ldc);
 #endif
 		} else {
-//#ifdef __PHIGEMM_DEBUG
-//			fprintf( stdout,"*** phiGEMM *** > MxM (B): %d, %d, %d (transa: %c, transb: %c)\n", *m, *n, *k, *transa, *transb); fflush(stdout);
-//#endif
+
+#ifdef __PHIGEMM_DEBUG_2
+			fprintf( stdout,"*** phiGEMM *** > MxM (B): %d, %d, %d (transa: %c, transb: %c)\n", *m, *n, *k, *transa, *transb); fflush(stdout);
+#endif
+
+#ifdef __PHIGEMM_PROFILE
+			CUBLAS_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
+#else
 			CUBLAS_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
+#endif
 		}
 	}
 
@@ -296,12 +314,20 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	return;
 }
 
-
+#ifdef __PHIGEMM_PROFILE
+void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
+		const int *n, const int *k, const XTYPE *alpha,
+		const XTYPE *A, const int *lda, const XTYPE *B,
+		const int *ldb, const XTYPE *beta, XTYPE *C, const int *ldc,
+		int is_splitA, float split,
+		const char *file, const char * line)
+#else
 void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const XTYPE *alpha,
 		const XTYPE *A, const int *lda, const XTYPE *B,
 		const int *ldb, const XTYPE *beta, XTYPE *C, const int *ldc,
 		int is_splitA, float split)
+#endif
 {
 	int iDevice;
 	int m_gpu[NSTREAM_PER_DEVICE *MAX_GPUS], n_gpu[NSTREAM_PER_DEVICE *MAX_GPUS], k_gpu[NSTREAM_PER_DEVICE *MAX_GPUS];
@@ -672,8 +698,29 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 		 * */
 		unbalance = (time_mem_h2d + time_dgemm_cuda + time_mem_d2h) - time_mkl;
 
-		if ( is_splitA )
-			printf ("[STATS GPU%d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
+		if ( is_splitA ) {
+#ifdef __PHIGEMM_PROFILE
+			printf ("[%s:%s - GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
+					file, line, iDevice % phiGemmNumDevices,
+					*m,
+					m_gpu[iDevice],
+					m_cpu,
+					split,
+					*k,
+					*n,
+					time_mem_h2d,
+					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
+					time_mkl,
+					2.e-9* m_cpu *(int)(*n)*(int)(*k)/time_mkl,
+					time_dgemm_cuda,
+					2.e-9* m_gpu[iDevice] *(int)(*n)*(int)(*k)/time_dgemm_cuda,
+					time_mem_d2h,
+					m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(1024*1024*1024/sizeof(XTYPE)),
+					unbalance,
+					time_total,
+					2.e-9*(*m)*(*n)*(*k)/time_total);
+#else
+			printf ("[STATS GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
 					iDevice % phiGemmNumDevices,
 					*m,
 					m_gpu[iDevice],
@@ -692,8 +739,30 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 					unbalance,
 					time_total,
 					2.e-9*(*m)*(*n)*(*k)/time_total);
-		else
-			printf ("[STATS GPU%d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
+#endif
+		} else {
+#ifdef __PHIGEMM_PROFILE
+			printf ("[%s:%s - GPU %d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
+					file, line, iDevice % phiGemmNumDevices,
+					*m,
+					*k,
+					*n,
+					n_gpu[iDevice],
+					n_cpu,
+					split,
+					time_mem_h2d,
+					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
+					time_mkl,
+					2.e-9* (int)(*m) * n_cpu *(int)(*k)/time_mkl,
+					time_dgemm_cuda,
+					2.e-9* (int)(*m) * n_gpu[iDevice] *(int)(*k)/time_dgemm_cuda,
+					time_mem_d2h,
+					m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(1024*1024*1024/sizeof(XTYPE)),
+					unbalance,
+					time_total,
+					2.e-9*(*m)*(*n)*(*k)/time_total);
+#else
+			printf ("[STATS GPU %d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
 					iDevice % phiGemmNumDevices,
 					*m,
 					*k,
@@ -712,6 +781,8 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 					unbalance,
 					time_total,
 					2.e-9*(*m)*(*n)*(*k)/time_total);
+#endif
+		}
 		fflush(stdout);
 	}
 
