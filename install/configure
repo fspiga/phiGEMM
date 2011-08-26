@@ -621,11 +621,15 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-enable_multithread
+enable_cpu_multithread
+enable_parallel
 enable_debug
+enable_profiling
+enable_pinned_support
+enable_multi_gpu
 with_cuda_dir
 with_gpu_arch
-enable_cuda_timing
+with_split_by_hand
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1250,11 +1254,16 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-multithread    enable multi-threading BLAS library for CPU
+  --enable-cpu-multithread
+                          enable multi-threading BLAS library for CPU
+                          (default: yes)
+  --enable-parallel       enable the MPI support in case of self-init
                           (default: no)
   --enable-debug          compile Fortran with debug flags (default: no)
-  --enable-cuda-timing    enable the profiling of CUDA kernels using internal
-                          clocks (default: yes)
+  --enable-profiling      enable the profiling of phiGEMM calls (default: no)
+  --enable-pinned-support support async transfer because memory is supposed to
+                          be allocated as non-pageable (default: yes)
+  --enable-multi-gpu      enable multi GPU support (default: no)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1262,6 +1271,8 @@ Optional Packages:
   --with-cuda-dir=<path>  specify CUDA installation directory (default is
                           /usr/local/cuda/)
   --with-gpu-arch=<arch>  specify the GPU target architecture (default: 20)
+  --with-split-by-hand    the split factor has to be specified in the code
+                          instead of using env variables (default: no)
 
 Some influential environment variables:
   CC          C compiler command
@@ -1789,19 +1800,30 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-# Check whether --enable-multithread was given.
-if test "${enable_multithread+set}" = set; then :
-  enableval=$enable_multithread; if   test "$enableval" = "yes" ; then
+# Check whether --enable-cpu_multithread was given.
+if test "${enable_cpu_multithread+set}" = set; then :
+  enableval=$enable_cpu_multithread; if   test "$enableval" = "yes" ; then
       use_multithread=1
    else
       use_multithread=0
    fi
 else
-  use_multithread=0
+  use_multithread=1
 fi
 
 
-# debug flags are implemented only for a few cases
+# Check whether --enable-parallel was given.
+if test "${enable_parallel+set}" = set; then :
+  enableval=$enable_parallel; if   test "$enableval" = "yes" ; then
+      use_parallel=1
+   else
+      use_parallel=0
+   fi
+else
+  use_parallel=0
+fi
+
+
 # Check whether --enable-debug was given.
 if test "${enable_debug+set}" = set; then :
   enableval=$enable_debug; if   test "$enableval" = "yes" ; then
@@ -1811,6 +1833,42 @@ if test "${enable_debug+set}" = set; then :
    fi
 else
   use_debug=0
+fi
+
+
+ # Check whether --enable-profiling was given.
+if test "${enable_profiling+set}" = set; then :
+  enableval=$enable_profiling; if   test "$enableval" = "yes" ; then
+      use_profile=1
+   else
+      use_profile=0
+   fi
+else
+  use_profile=0
+fi
+
+
+# Check whether --enable-pinned_support was given.
+if test "${enable_pinned_support+set}" = set; then :
+  enableval=$enable_pinned_support; if   test "$enableval" = "yes" ; then
+      use_pinned=1
+   else
+      use_pinned=0
+   fi
+else
+  use_pinned=1
+fi
+
+
+# Check whether --enable-multi_gpu was given.
+if test "${enable_multi_gpu+set}" = set; then :
+  enableval=$enable_multi_gpu; if  test "$enableval" = "yes" ; then
+      use_multigpu=1
+   else
+      use_multigpu=0
+   fi
+else
+  use_multigpu=0
 fi
 
 
@@ -1832,20 +1890,16 @@ else
 fi
 
 
-# debug flags are implemented only for a few cases
-# Check whether --enable-cuda_timing was given.
-if test "${enable_cuda_timing+set}" = set; then :
-  enableval=$enable_cuda_timing; if   test "$enableval" = "yes" ; then
-      use_cudatiming=1
+
+# Check whether --with-split_by_hand was given.
+if test "${with_split_by_hand+set}" = set; then :
+  withval=$with_split_by_hand; if   test "$withval" = "yes" ; then
+      use_explicit_factor=1
    else
-      use_cudatiming=0
+      use_explicit_factor=0
    fi
 else
-  if test "$use_cuda" -eq 0 ; then
-      use_cudatiming=1
-   else
-      use_cudatiming=0
-   fi
+  use_explicit_factor=0
 fi
 
 
@@ -2772,10 +2826,10 @@ if test "$have_mkl" -eq 0  ; then
 as_fn_error $? "Please check if MKL libraries are correctly installed, DGEMM symbol missing." "$LINENO" 5
 fi
 
-    # check for CUDA bin
+# check for CUDA bin
 
-    have_valid_cuda_compiler=1
-    # Extract the first word of "nvcc", so it can be a program name with args.
+have_valid_cuda_compiler=1
+# Extract the first word of "nvcc", so it can be a program name with args.
 set dummy nvcc; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
@@ -2815,52 +2869,52 @@ $as_echo "no" >&6; }
 fi
 
 
-    if test -n "$nvcc"; then
-        have_valid_cuda_compiler=0
-    fi
+if test -n "$nvcc"; then
+    have_valid_cuda_compiler=0
+fi
 
-    # check for CUDA headers
-    have_valid_cuda_header=0
-    if test -e "$cuda_path/include/cuda.h"; then
-        have_valid_cuda_header=1
-    fi
+# check for CUDA headers
+have_valid_cuda_header=0
+if test -e "$cuda_path/include/cuda.h"; then
+    have_valid_cuda_header=1
+fi
 
-    if test "$have_valid_cuda_header" == 1  &&
-        test "$have_valid_cuda_compiler" == 1
-    then
-        # check for CUDA libs
-    	nvcc=$NVCC
+if test "$have_valid_cuda_header" == 1  &&
+    test "$have_valid_cuda_compiler" == 1
+then
+    # check for CUDA libs
+	nvcc=$NVCC
 
-    	# AC_EGREP_HEADER does not work... yet
-    	# AC_EGREP_HEADER("4000", fileh, , try_dflags="$try_dflags -D__CUDA_3")
-    	val="`egrep "CUDA_VERSION 40" $cuda_path/include/cuda.h`"
-    	if test -z $val;  then
-    	   cudamajor=3
-    	   try_dflags="$try_dflags -D__CUDA_3"
-    	else
-    	   cudamajor=4
-    	fi
+	# AC_EGREP_HEADER does not work... yet
+	# AC_EGREP_HEADER("4000", fileh, , try_dflags="$try_dflags -D__CUDA_3")
+	val="`egrep "CUDA_VERSION 40" $cuda_path/include/cuda.h`"
+	if test -z "$val" ; then
+	   cudamajor=3
+	   try_dflags="$try_dflags -D__CUDA_3"
+	else
+	   cudamajor=4
+	fi
 
-    	try_libdirs="$cuda_path/lib64 /usr/lib64/nvidia"
-        try_libdirs="$try_libdirs $libdirs $ld_library_path"
-        for dir in $try_libdirs
-        do
-            unset ac_cv_search_cudaGetDeviceCount # clear cached value
-            unset ac_cv_search_cublasInit
-            unset ac_cv_search_cuMemGetInfo_v2
-            if test "$dir" = "none"
-            then
-                    try_loption=
-            else
-                    try_loption="-L$dir"
-            fi
-			CFLAGS="$test_cflags"
-			# $test_ldflags
-            LDFLAGS="$try_loption"
-            LIBS=""
+	try_libdirs="$cuda_path/lib64 /usr/lib64/nvidia"
+    try_libdirs="$try_libdirs $libdirs $ld_library_path"
+    for dir in $try_libdirs
+    do
+        unset ac_cv_search_cudaGetDeviceCount # clear cached value
+        unset ac_cv_search_cublasInit
+        unset ac_cv_search_cuMemGetInfo_v2
+        if test "$dir" = "none"
+        then
+                try_loption=
+        else
+                try_loption="-L$dir"
+        fi
+		CFLAGS="$test_cflags"
+		# $test_ldflags
+        LDFLAGS="$try_loption"
+        LIBS=""
 
-            echo $ECHO_N "in $dir: " $ECHO_C
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cudaGetDeviceCount" >&5
+        echo $ECHO_N "in $dir: " $ECHO_C
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cudaGetDeviceCount" >&5
 $as_echo_n "checking for library containing cudaGetDeviceCount... " >&6; }
 if test "${ac_cv_search_cudaGetDeviceCount+set}" = set; then :
   $as_echo_n "(cached) " >&6
@@ -2916,9 +2970,9 @@ if test "$ac_res" != no; then :
   cuda_libs="$cuda_libs $LIBS"
 fi
 
-			LIBS=""
-			echo $ECHO_N "in $dir: " $ECHO_C
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cublasInit" >&5
+		LIBS=""
+		echo $ECHO_N "in $dir: " $ECHO_C
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cublasInit" >&5
 $as_echo_n "checking for library containing cublasInit... " >&6; }
 if test "${ac_cv_search_cublasInit+set}" = set; then :
   $as_echo_n "(cached) " >&6
@@ -2975,11 +3029,11 @@ if test "$ac_res" != no; then :
 fi
 
 
-		 	cuda_libs="$try_loption $cuda_libs"
+	 	cuda_libs="$try_loption $cuda_libs"
 
-		 	LDFLAGS=""
-		 	LIBS=""
-            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cuMemGetInfo_v2" >&5
+	 	LDFLAGS=""
+	 	LIBS=""
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cuMemGetInfo_v2" >&5
 $as_echo_n "checking for library containing cuMemGetInfo_v2... " >&6; }
 if test "${ac_cv_search_cuMemGetInfo_v2+set}" = set; then :
   $as_echo_n "(cached) " >&6
@@ -3036,49 +3090,69 @@ if test "$ac_res" != no; then :
 fi
 
 
-			if test "$ac_cv_search_cudaGetDeviceCount" != "no" &&
-				test "$ac_cv_search_cublasInit" != "no"
-			then
+		if test "$ac_cv_search_cudaGetDeviceCount" != "no" &&
+			test "$ac_cv_search_cublasInit" != "no"
+		then
 
-				try_dflags="$try_dflags -D__PHIGEMM_MEM_PINNED"
+			try_dflags="$try_dflags -D__PHIGEMM_MEM_PINNED"
 
-				have_cuda=1
-				break
-			fi
-    	done
-    	ac_ext=c
+			have_cuda=1
+			break
+		fi
+	done
+	ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-    else
-        as_fn_error $? "Please check if CUDA is correctly installed." "$LINENO" 5
-    fi
-
-
-    # GPU architecture
-    if  test "$cuda_arch" = "20" ; then
-        nvccflags="-O3 --ptxas-options=-v -arch sm_20 -gencode arch=compute_20,code=compute_20"
-    fi
-    if test "$cuda_arch" = "13" ; then
-        nvccflags="-O3 --ptxas-options=-v -arch sm_13 -gencode arch=compute_13,code=compute_13"
-    fi
-
-        phigemm_opts="-D__PHIGEMM_MEM_ASYNC"
-	    cuda_include="-I$cuda_path/include -I$topdir/include"
-        blas_libs="$topdir/lib/libphigemm.a $blas_libs"
-
-    try_iflags="$try_iflags $cuda_include"
-	ld_libs="$ld_libs $cuda_libs"
-
-	echo setting CUDA_LIBS... $cuda_libs
-
-
-# Allow to profile relevant *GEMM calls for GPU. Works with and without CUDA
-if test "$use_cudatiming" -eq 1; then
-    phigemm_opts="$phigemm_opts -D__CUDA_QE_TIMING"
+else
+    as_fn_error $? "Please check if CUDA is correctly installed." "$LINENO" 5
 fi
+
+
+# GPU architecture
+if  test "$cuda_arch" = "20" ; then
+    nvccflags="-O3 --ptxas-options=-v -arch sm_20 -gencode arch=compute_20,code=compute_20"
+fi
+if test "$cuda_arch" = "13" ; then
+    nvccflags="-O3 --ptxas-options=-v -arch sm_13 -gencode arch=compute_13,code=compute_13"
+fi
+
+# Starting from empty flags....
+phigemm_opts=
+
+if test "$use_pinned" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_MEM_ASYNC"
+fi
+
+if test "$use_debug" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_DEBUG"
+fi
+
+if test "$use_multigpu" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU"
+fi
+
+if test "$use_profile" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_PROFILE"
+fi
+
+if test "$use_parallel" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_PARA"
+fi
+
+if test "$use_explicit_factor" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
+fi
+
+cuda_include="-I$cuda_path/include -I$topdir/include"
+blas_libs="$topdir/lib/libphigemm.a $blas_libs"
+
+try_iflags="$try_iflags $cuda_include"
+ld_libs="$ld_libs $cuda_libs"
+
+echo setting CUDA_LIBS... $cuda_libs
 
 if test "$have_cuda" -eq 1; then
    cuda_line="CUDA_LIBS=$cuda_libs"
