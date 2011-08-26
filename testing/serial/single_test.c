@@ -27,6 +27,15 @@
 
 #include <assert.h>
 
+
+// Flops formula
+#define GEMM_MULADD(m, n, k) ((m) * (n) * (k))
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX) || defined(__CUDA_TYPE_COMPLEX)
+#define PHIGEMM_FLOPS(m, n, k) ( 6. * GEMM_MULADD(m, n, k) + 2. * GEMM_MULADD(m, n, k))
+#else
+#define PHIGEMM_FLOPS(m, n, k) (      GEMM_MULADD(m, n, k) +      GEMM_MULADD(m, n, k))
+#endif
+
 #define _STRING_LINE_(s) #s
 #define _STRING_LINE2_(s) _STRING_LINE_(s)
 #define __LINESTR__ _STRING_LINE2_(__LINE__)
@@ -343,7 +352,7 @@ int main(int argc, char **argv)
 	is_transa[3] = 1;
 	is_transb[3] = 1;
 
-	for( count = 0; count < 4; count +=1 ){
+	for( count = 0; count < 1; count +=1 ){
 
 		int lda = m;
 		int ldb = k;
@@ -374,7 +383,7 @@ int main(int argc, char **argv)
 
 #ifdef __LONG_OUTPUT
 		fprintf( stdout, "\nsizeof(XTYPE) = %d", sizeof(XTYPE) );
-		fprintf( stdout, "\nMKL ( %d cores ) GEMM: Elapsed time = %.3g sec. - RPeak = %.3g GFlop/s", atoi( getenv( "MKL_NUM_THREADS" ) ), cpu_time, ( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / cpu_time );
+		fprintf( stdout, "\nMKL ( %d cores ) GEMM: Elapsed time = %.3g sec. - RPeak = %.3g GFlop/s", atoi( getenv( "MKL_NUM_THREADS" ) ), cpu_time, ( 2.e-9 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / cpu_time );
 		fflush( stdout );
 #endif
 		/* ----------------------------------------------------------- */
@@ -457,7 +466,7 @@ int main(int argc, char **argv)
 			/* gpu_time =  H2D + COMPUTATION + D2H */
 			gpu_time = seconds() - t1;
 #ifdef __LONG_OUTPUT
-			fprintf( stdout, "\nCUBLAS: Elapsed time = %.3g sec. - RPeak = %.3g GFlop/s\n",  gpu_time, ( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / gpu_time );
+			fprintf( stdout, "\nCUBLAS: Elapsed time = %.3g sec. - RPeak = %.3g GFlop/s\n",  gpu_time, ( 2.e-9 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / gpu_time );
 			fflush( stdout );
 #endif
 		}
@@ -553,7 +562,7 @@ int main(int argc, char **argv)
 			//	   fflush(stdout);
 
 #ifdef __LONG_OUTPUT
-			fprintf( stdout, "\nPhiGEMM ( %d CPU / %d GPUs ) GEMM: ETime = %.3g s\tRPeak = %.3g GFlop/s\tSplit = %.3g", atoi( getenv( "MKL_NUM_THREADS" ) ), nGPU, hybrid_time, ( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / hybrid_time, currentSplitFactor );
+			fprintf( stdout, "\nPhiGEMM ( %d CPU / %d GPUs ) GEMM: ETime = %.3g s\tRPeak = %.3g GFlop/s\tSplit = %.3g", atoi( getenv( "MKL_NUM_THREADS" ) ), nGPU, hybrid_time, ( 2.e-9 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / hybrid_time, currentSplitFactor );
 			fflush( stdout );
 #else
 			fprintf( stdout, "[%c%c] MKL (%2d) RPeak = %g\t\tCUBLAS RPeak = %g (kernel RPeak = %g)\t\tphiGEMM (GPU: %d, split: %5.3g) RPeak = %g [errors %c]\n\n",
