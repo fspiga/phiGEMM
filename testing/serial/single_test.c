@@ -29,11 +29,12 @@
 
 
 // Flops formula
-#define GEMM_MULADD(m, n, k) ((m) * (n) * (k))
+#define GEMM_ADD(m, n, k) ((m) * (n) * (k))
+#define GEMM_MUL(m, n, k) ((m) * (n) * (k))
 #if defined(__CUDA_TYPE_DOUBLE_COMPLEX) || defined(__CUDA_TYPE_COMPLEX)
-#define PHIGEMM_FLOPS(m, n, k) ( 6. * GEMM_MULADD(m, n, k) + 2. * GEMM_MULADD(m, n, k))
+#define PHIGEMM_FLOPS(m, n, k) ( 6. * GEMM_MUL(m, n, k) + 2. * GEMM_ADD(m, n, k))
 #else
-#define PHIGEMM_FLOPS(m, n, k) (      GEMM_MULADD(m, n, k) +      GEMM_MULADD(m, n, k))
+#define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
 #endif
 
 #define _STRING_LINE_(s) #s
@@ -237,6 +238,17 @@ int main(int argc, char **argv)
 #endif
 	cudaDeviceSynchronize();
 
+
+	fprintf( stdout, "\nsizeof(XTYPE) = %d", sizeof(XTYPE) );
+#if defined __CUDA_TYPE_FLOAT
+	fprintf( stdout, "\nPERFORMING SGEMM operations\n");
+#elif defined __CUDA_TYPE_COMPLEX
+	fprintf( stdout, "\nPERFORMING CGEMM operations\n");
+#elif defined __CUDA_TYPE_DOUBLE
+	fprintf( stdout, "\nPERFORMING DGEMM operations\n");
+#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
+	fprintf( stdout, "\nPERFORMING ZGEMM operations\n");
+#endif
 	// initialize host memory pointers
 	A = ( XTYPE* ) GPU_buffer_memory_ptr;
 	B = A + (m * k);
@@ -352,7 +364,7 @@ int main(int argc, char **argv)
 	is_transa[3] = 1;
 	is_transb[3] = 1;
 
-	for( count = 0; count < 1; count +=1 ){
+	for( count = 0; count < 4; count +=1 ){
 
 		int lda = m;
 		int ldb = k;
@@ -381,9 +393,8 @@ int main(int argc, char **argv)
 		MKL_CALL(&transa[ count ], &transb[ count ], &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C_mkl, &m);
 		cpu_time = seconds() - t1;
 
-#ifdef __LONG_OUTPUT
-		fprintf( stdout, "\nsizeof(XTYPE) = %d", sizeof(XTYPE) );
-		fprintf( stdout, "\nMKL ( %d cores ) GEMM: Elapsed time = %.3g sec. - RPeak = %.3g GFlop/s", atoi( getenv( "MKL_NUM_THREADS" ) ), cpu_time, ( 2.e-9 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / cpu_time );
+#ifndef __LONG_OUTPUT
+		fprintf( stdout, "\nMKL ( %d cores ) GEMM: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s", atoi( getenv( "MKL_NUM_THREADS" ) ), cpu_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (cpu_time*1000) );
 		fflush( stdout );
 #endif
 		/* ----------------------------------------------------------- */
@@ -465,8 +476,8 @@ int main(int argc, char **argv)
 
 			/* gpu_time =  H2D + COMPUTATION + D2H */
 			gpu_time = seconds() - t1;
-#ifdef __LONG_OUTPUT
-			fprintf( stdout, "\nCUBLAS: Elapsed time = %.3g sec. - RPeak = %.3g GFlop/s\n",  gpu_time, ( 2.e-9 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / gpu_time );
+#ifndef __LONG_OUTPUT
+			fprintf( stdout, "\nCUBLAS: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\n",  gpu_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (gpu_time*1000) );
 			fflush( stdout );
 #endif
 		}
@@ -561,17 +572,17 @@ int main(int argc, char **argv)
 			//	   fprintf( stdout, "\n\n");
 			//	   fflush(stdout);
 
-#ifdef __LONG_OUTPUT
-			fprintf( stdout, "\nPhiGEMM ( %d CPU / %d GPUs ) GEMM: ETime = %.3g s\tRPeak = %.3g GFlop/s\tSplit = %.3g", atoi( getenv( "MKL_NUM_THREADS" ) ), nGPU, hybrid_time, ( 2.e-9 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / hybrid_time, currentSplitFactor );
+#ifndef __LONG_OUTPUT
+			fprintf( stdout, "[%c%c]  PhiGEMM ( %d CPU / %d GPUs ) phiGEMM: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\n", transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ), nGPU, hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor );
 			fflush( stdout );
 #else
-			fprintf( stdout, "[%c%c] MKL (%2d) RPeak = %g\t\tCUBLAS RPeak = %g (kernel RPeak = %g)\t\tphiGEMM (GPU: %d, split: %5.3g) RPeak = %g [errors %c]\n\n",
+			fprintf( stdout, "[%c%c] MKL (%2d) RPeak = %10.4f\t\tCUBLAS RPeak = %10.4f (kernel RPeak = %g)\t\tphiGEMM (GPU: %d, split: %.3f) RPeak = %10.4f [errors %c]\n\n",
 					transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ),
-					( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / cpu_time,
-					( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / gpu_time,
-					( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time,
+					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (cpu_time*1000),
+					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (gpu_time*1000),
+					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (kernel_time*1000),
 					nGPU, currentSplitFactor,
-					( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / hybrid_time,
+					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000),
 					(error > 0 ? 'Y' : (error == 0 ? 'N' : 'X')) );
 			fflush( stdout );
 #endif

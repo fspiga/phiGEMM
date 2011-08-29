@@ -14,6 +14,15 @@
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
+// Flops formula
+#define GEMM_ADD(m, n, k) ((m) * (n) * (k))
+#define GEMM_MUL(m, n, k) ((m) * (n) * (k))
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX) || defined(__CUDA_TYPE_COMPLEX)
+#define PHIGEMM_FLOPS(m, n, k) ( 6. * GEMM_MUL(m, n, k) + 2. * GEMM_ADD(m, n, k))
+#else
+#define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
+#endif
+
 /*
  * SGEMM definitions
  */
@@ -90,6 +99,7 @@ extern phiGemmMemDevPtr dev_scratch;
 extern phiGemmDeviceIds deviceIds;
 extern float phiGemmSplitFactor[4];
 extern int phiGemmNumDevices;
+// not used yet // extern int phiGemmOMPNumThread;
 
 #ifdef __PHIGEMM_PROFILE
 extern FILE *phiProfileFile;
@@ -297,7 +307,9 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 		ground_level = 1;
 		first_call = 0;
 		stop = phigemm_cclock() - start;
-		fprintf (phiProfileFile, "[%s:%s]\tm: %d\tn: %d\tk: %d\t[%c%c]\t(deep: %d, split: %g)\tTime: %gs\t%g GFlops\n", file, line, *m, *n, *k, *transa, *transb, splitting_steps, split, stop, ( 2.e-9*(int)(*m)*(int)(*n)*(int)(*k)/stop));
+		/* Comma-Separated Value (csv) format:
+		 * file, line, nGPU, nThreads, transA, transB, m, n, k, spliting_steps, split_factor, time, GFlops */
+		fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, atoi( getenv( "OMP_NUM_THREADS" ) ), *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 	}
 #endif
 
@@ -711,14 +723,14 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 					time_mem_h2d,
 					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
 					time_mkl,
-					2.e-9* m_cpu *(int)(*n)*(int)(*k)/time_mkl,
+					1.e-6 * PHIGEMM_FLOPS( m_cpu, (int)(*n), (int)(*k) )/(time_mkl*1000),
 					time_dgemm_cuda,
-					2.e-9* m_gpu[iDevice] *(int)(*n)*(int)(*k)/time_dgemm_cuda,
+					1.e-6 * PHIGEMM_FLOPS( m_gpu[iDevice], (int)(*n), (int)(*k) )/(time_dgemm_cuda*1000),
 					time_mem_d2h,
 					m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(1024*1024*1024/sizeof(XTYPE)),
 					unbalance,
 					time_total,
-					2.e-9*(*m)*(*n)*(*k)/time_total);
+					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 #else
 			printf ("[STATS GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
 					iDevice % phiGemmNumDevices,
@@ -731,14 +743,14 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 					time_mem_h2d,
 					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
 					time_mkl,
-					2.e-9* m_cpu *(int)(*n)*(int)(*k)/time_mkl,
+					1.e-6 * PHIGEMM_FLOPS( m_cpu, (int)(*n), (int)(*k) )/(time_mkl*1000)),
 					time_dgemm_cuda,
-					2.e-9* m_gpu[iDevice] *(int)(*n)*(int)(*k)/time_dgemm_cuda,
+					1.e-6 * PHIGEMM_FLOPS( m_gpu[iDevice], (int)(*n), (int)(*k) )/(time_dgemm_cuda*1000),
 					time_mem_d2h,
 					m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(1024*1024*1024/sizeof(XTYPE)),
 					unbalance,
 					time_total,
-					2.e-9*(*m)*(*n)*(*k)/time_total);
+					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 #endif
 		} else {
 #ifdef __PHIGEMM_PROFILE
@@ -753,14 +765,14 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 					time_mem_h2d,
 					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
 					time_mkl,
-					2.e-9* (int)(*m) * n_cpu *(int)(*k)/time_mkl,
+					1.e-6 * PHIGEMM_FLOPS( (int)(*m), n_cpu, (int)(*k) )/(time_mkl*1000),
 					time_dgemm_cuda,
-					2.e-9* (int)(*m) * n_gpu[iDevice] *(int)(*k)/time_dgemm_cuda,
+					1.e-6 * PHIGEMM_FLOPS( (int)(*m), n_gpu[iDevice], (int)(*k) )/(time_dgemm_cuda*1000),
 					time_mem_d2h,
 					m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(1024*1024*1024/sizeof(XTYPE)),
 					unbalance,
 					time_total,
-					2.e-9*(*m)*(*n)*(*k)/time_total);
+					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k))/(time_total*1000));
 #else
 			printf ("[STATS GPU %d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
 					iDevice % phiGemmNumDevices,
@@ -773,14 +785,14 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 					time_mem_h2d,
 					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
 					time_mkl,
-					2.e-9* (int)(*m) * n_cpu *(int)(*k)/time_mkl,
+					1.e-6 * PHIGEMM_FLOPS( (int)(*m), n_cpu, (int)(*k) )/(time_mkl*1000),
 					time_dgemm_cuda,
-					2.e-9* (int)(*m) * n_gpu[iDevice] *(int)(*k)/time_dgemm_cuda,
+					1.e-6 * PHIGEMM_FLOPS( (int)(*m), n_gpu[iDevice], (int)(*k) )/(time_dgemm_cuda*1000),
 					time_mem_d2h,
 					m_gpu[iDevice]*n_gpu[iDevice]/time_mem_d2h/(1024*1024*1024/sizeof(XTYPE)),
 					unbalance,
 					time_total,
-					2.e-9*(*m)*(*n)*(*k)/time_total);
+					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 #endif
 		}
 		fflush(stdout);

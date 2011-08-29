@@ -50,6 +50,7 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 cudaStream_t  phiStreams[ NSTREAM_PER_DEVICE * MAX_GPUS ];
 cublasHandle_t phiHandles[ NSTREAM_PER_DEVICE * MAX_GPUS ];
 int phiGemmNumDevices;
+// not used yet // int phiGemmOMPNumThread;
 
 float phiGemmSplitFactor[4];
 phiGemmMemDevPtr dev_scratch;

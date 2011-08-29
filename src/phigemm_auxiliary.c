@@ -406,17 +406,27 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 #ifdef __PHIGEMM_PROFILE
 
+	char *value = NULL;
+	char finalFileName [ FILENAME_MAX ];
+
+	value = getenv("PHIGEMM_PROFILE_PREFIX");
+
 #ifdef __PHIGEMM_PARA
-    char finalFileName [ FILENAME_MAX ];
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &i);
-
-    sprintf(finalFileName, "%s.rank-%d", base, i);
-
-    phiProfileFile = fopen (finalFileName, "a");
+	if (value != NULL)
+		sprintf(finalFileName, "%s.%d.%s.csv", base, i, value);
+	else
+		sprintf(finalFileName, "%s.%d.csv", base, i);
 #else
-	phiProfileFile = fopen (base, "a");
+	if (value != NULL)
+		sprintf(finalFileName, "%s.%s.csv", base, value);
+	else
+		sprintf(finalFileName, "%s.csv", base);
 #endif
+
+	phiProfileFile = fopen (finalFileName, "a");
+
 #endif
 }
 
@@ -753,7 +763,28 @@ void selfPhigemmInit(){
 	is_phigemm_init = 1;
 
 #ifdef __PHIGEMM_PROFILE
-	phiProfileFile = fopen ("phigemm.profile", "a");
+
+	char *value = NULL;
+	char finalFileName [ FILENAME_MAX ];
+
+	value = getenv("PHIGEMM_PROFILE_PREFIX");
+
+#ifdef __PHIGEMM_PARA
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &i);
+	if (value != NULL)
+		sprintf(finalFileName, "%s.%d.%s.csv", base, i, value);
+	else
+		sprintf(finalFileName, "%s.%d.csv", base, i);
+#else
+	if (value != NULL)
+		sprintf(finalFileName, "%s.%s.csv", base, value);
+	else
+		sprintf(finalFileName, "%s.csv", base);
+#endif
+
+	phiProfileFile = fopen (finalFileName, "a");
+
 #endif
 }
 
