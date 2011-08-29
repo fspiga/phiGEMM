@@ -217,6 +217,8 @@ int main(int argc, char **argv)
 	}
 #endif
 
+
+	/* Allocating memory on the CPU ... */
 	byte_GPU_buffer = ( size_t ) ( ( m * k + k * n + m * n ) * sizeof(XTYPE ) );
 
 #ifdef __PHIGEMM_MEM_ASYNC
