@@ -162,6 +162,11 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 	}
 #endif
 
+
+#if __PHIGEMM_HACK_CPUONLY
+	gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
+#else
+
 	/* if the input matrix if pretty small, we will perform the computation on CPU */
 	if ( (*n) < 254 && (*m) < 254 && (*k) < 254 )
 	{
@@ -301,6 +306,8 @@ void CUBLAS_GEMM (const char *transa, const char *transb, const int *m,
 #endif
 		}
 	}
+
+#endif
 
 #ifdef __PHIGEMM_PROFILE
 	if ( first_call) {
