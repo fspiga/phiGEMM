@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 
 	if( argc != 8 )
 	{
-		fprintf( stderr, "\nLaunch ERROR: Use ${Executable} <nGPU> <m> <k> <n> <lower split-factor> <upper split-factor> <step>\nfor matrix multiplication C( m, n ) = A( m, k ) x B( k, n )\n" );
+		fprintf( stderr, "\nLaunch ERROR: Use ${Executable} <nGPU> <m> <n> <k> <lower split-factor> <upper split-factor> <step>\nfor matrix multiplication C( m, n ) = A( m, k ) x B( k, n )\n" );
 		exit(EXIT_FAILURE );
 	}
 
