@@ -17,7 +17,7 @@
 // Flops formula
 #define GEMM_ADD(m, n, k) ((m) * (n) * (k))
 #define GEMM_MUL(m, n, k) ((m) * (n) * (k))
-#if defined(__CUDA_TYPE_DOUBLE_COMPLEX) || defined(__CUDA_TYPE_COMPLEX)
+#if defined(CUDA_TYPE_DOUBLE_COMPLEX) || defined(CUDA_TYPE_COMPLEX)
 #define PHIGEMM_FLOPS(m, n, k) ( 6. * GEMM_MUL(m, n, k) + 2. * GEMM_ADD(m, n, k))
 #else
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
@@ -387,6 +387,16 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 	int step;
 	int residual;
 
+	int gpu_lda, gpu_ldb;
+
+	cublasOperation_t cu_transa, cu_transb;
+	cu_transa =  ( (*transa == 'c') || (*transa == 'C') ) ? CUBLAS_OP_C : -1;
+	cu_transa =  ( (*transa == 't') || (*transa == 'T') ) ? CUBLAS_OP_T : cu_transa;
+	cu_transa =  ( (*transa == 'n') || (*transa == 'N') ) ? CUBLAS_OP_N : cu_transa;
+	cu_transb =  ( (*transb == 'c') || (*transb == 'C') ) ? CUBLAS_OP_C : -1;
+	cu_transb =  ( (*transb == 't') || (*transb == 'T') ) ? CUBLAS_OP_T : cu_transb;
+	cu_transb =  ( (*transb == 'n') || (*transb == 'N') ) ? CUBLAS_OP_N : cu_transb;
+
 	/* split A only */
 	if (is_splitA)
 	{
@@ -570,19 +580,11 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 #endif
 		}
 
-		int gpu_lda = m_gpu[iDevice];
-		int gpu_ldb = k_gpu[iDevice];
+		gpu_lda = m_gpu[iDevice];
+		gpu_ldb = k_gpu[iDevice];
 
 		if ( is_transa ) gpu_lda = k_gpu[iDevice];
 		if ( is_transb ) gpu_ldb = n_gpu[iDevice];
-
-		cublasOperation_t cu_transa, cu_transb;
-		cu_transa =  ( (*transa == 'c') || (*transa == 'C') ) ? CUBLAS_OP_C : -1;
-		cu_transa =  ( (*transa == 't') || (*transa == 'T') ) ? CUBLAS_OP_T : cu_transa;
-		cu_transa =  ( (*transa == 'n') || (*transa == 'N') ) ? CUBLAS_OP_N : cu_transa;
-		cu_transb =  ( (*transb == 'c') || (*transb == 'C') ) ? CUBLAS_OP_C : -1;
-		cu_transb =  ( (*transb == 't') || (*transb == 'T') ) ? CUBLAS_OP_T : cu_transb;
-		cu_transb =  ( (*transb == 'n') || (*transb == 'N') ) ? CUBLAS_OP_N : cu_transb;
 
 #ifdef __PHIGEMM_DEBUG
 		cudaEventRecord(eventPointers[iDevice][6], phiStreams[iDevice] );
@@ -725,8 +727,8 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 					m_gpu[iDevice],
 					m_cpu,
 					split,
-					*k,
 					*n,
+					*k,
 					time_mem_h2d,
 					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
 					time_mkl,
@@ -745,8 +747,8 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 					m_gpu[iDevice],
 					m_cpu,
 					split,
-					*k,
 					*n,
+					*k,
 					time_mem_h2d,
 					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
 					time_mkl,
@@ -761,14 +763,14 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 #endif
 		} else {
 #ifdef __PHIGEMM_PROFILE
-			printf ("[%s:%s - GPU %d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
+			printf ("[%s:%s - GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
 					file, line, iDevice % phiGemmNumDevices,
 					*m,
-					*k,
 					*n,
 					n_gpu[iDevice],
 					n_cpu,
 					split,
+					*k,
 					time_mem_h2d,
 					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
 					time_mkl,
@@ -781,14 +783,14 @@ void CUBLAS_GEMM_MF (const char *transa, const char *transb, const int *m,
 					time_total,
 					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k))/(time_total*1000));
 #else
-			printf ("[STATS GPU %d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
+			printf ("[STATS GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
 					iDevice % phiGemmNumDevices,
 					*m,
-					*k,
 					*n,
 					n_gpu[iDevice],
 					n_cpu,
 					split,
+					*k,
 					time_mem_h2d,
 					(k_gpu[iDevice]*(m_gpu[iDevice]+n_gpu[iDevice])+m_gpu[iDevice]*n_gpu[iDevice])/time_mem_h2d/(1024*1024*1024/sizeof(XTYPE)),
 					time_mkl,
