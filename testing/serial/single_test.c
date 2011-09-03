@@ -127,8 +127,8 @@ int main(int argc, char **argv)
 {  
 	size_t byte_GPU_buffer = 0L;
 
-	double cpu_time, gpu_time, hybrid_time, kernel_time;
-	double t1, t2;
+	double cpu_time, gpu_time, hybrid_time, kernel_time, d2h_time, h2d_time;
+	double t1, t2, t3;
 	XTYPE buf_size;
 
 	size_t freeMem, totalMem, mem_gpu;
@@ -218,28 +218,28 @@ int main(int argc, char **argv)
 #endif
 
 
-	/* Allocating memory on the CPU ... */
-	byte_GPU_buffer = ( size_t ) ( ( m * k + k * n + m * n ) * sizeof(XTYPE ) );
-
-#ifdef __PHIGEMM_MEM_ASYNC
-	if( cudaHostAlloc( ( void ** ) &GPU_buffer_memory_ptr, byte_GPU_buffer, cudaHostAllocPortable ) != cudaSuccess )
-	{
-		printf( "*** ERROR allocating PINNED MEMORY on cpu\n" );
-		exit( EXIT_FAILURE );
-	}
-#else
-	if( ( GPU_buffer_memory_ptr = ( XTYPE * ) malloc( byte_GPU_buffer ) ) == NULL )
-	{
-		printf( "*** ERROR allocating MEMORY on cpu\n"  );
-		exit( EXIT_FAILURE );
-	}
-#endif
 
 #if defined __PERFORM_PHIGEMM_INIT
 	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond);
 #endif
 	cudaDeviceSynchronize();
 
+	/* Allocating memory on the CPU ... */
+	byte_GPU_buffer = ( size_t ) ( ( m * k + k * n + m * n ) * sizeof(XTYPE ) );
+
+#ifdef __PHITEST_MEM_PINNED
+	if( cudaHostAlloc( ( void ** ) &GPU_buffer_memory_ptr, byte_GPU_buffer, cudaHostAllocPortable ) != cudaSuccess )
+	{
+		printf( "*** ERROR allocating PINNED MEMORY on CPU\n" );
+		exit( EXIT_FAILURE );
+	}
+#else
+	if( ( GPU_buffer_memory_ptr = ( XTYPE * ) malloc( byte_GPU_buffer ) ) == NULL )
+	{
+		printf( "*** ERROR allocating MEMORY on CPU\n"  );
+		exit( EXIT_FAILURE );
+	}
+#endif
 
 	fprintf( stdout, "\nsizeof(XTYPE) = %d", sizeof(XTYPE) );
 #if defined __CUDA_TYPE_FLOAT
@@ -257,7 +257,16 @@ int main(int argc, char **argv)
 	C_phigemm = B + (k * n);
 	memset( GPU_buffer_memory_ptr, 0, byte_GPU_buffer );
 
+#ifdef __PHITEST_MEM_PINNED
+	if( cudaHostAlloc( ( void ** ) &C, m * n * sizeof( XTYPE ), cudaHostAllocPortable ) != cudaSuccess )
+	{
+		printf( "*** ERROR allocating PINNED MEMORY on cpu\n" );
+		exit( EXIT_FAILURE );
+	}
+#else
 	C = ( XTYPE* ) malloc( m * n * sizeof( XTYPE ) );
+#endif
+
 	memset( C, 0, m * n * sizeof( XTYPE ) );
 
 
@@ -366,7 +375,14 @@ int main(int argc, char **argv)
 	is_transa[3] = 1;
 	is_transb[3] = 1;
 
-	for( count = 0; count < 4; count +=1 ){
+
+	// Edit only to perform one single test ...
+//	transa[0] = 'c';
+//	transb[0] = 'n';
+//	is_transa[0] = 1;
+//	is_transb[0] = 0;
+
+	for( count = 0; count < 1; count +=1 ){
 
 		int lda = m;
 		int ldb = k;
@@ -395,10 +411,9 @@ int main(int argc, char **argv)
 		MKL_CALL(&transa[ count ], &transb[ count ], &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C_mkl, &m);
 		cpu_time = seconds() - t1;
 
-#ifndef __LONG_OUTPUT
 		fprintf( stdout, "\nMKL ( %d cores ) GEMM: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s", atoi( getenv( "MKL_NUM_THREADS" ) ), cpu_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (cpu_time*1000) );
 		fflush( stdout );
-#endif
+
 		/* ----------------------------------------------------------- */
 
 		/* --------------------- test the CUBLAS --------------------- */
@@ -415,9 +430,24 @@ int main(int argc, char **argv)
 			/* I simply cannot run this GEMM on one single GPU ... */
 			gpu_time = 0;
 		} else {
-			cublasHandle_t handle[2];
+			cublasHandle_t handle;
 
+			/* Attempt to establish a runtime API context */
+			if ( cudaSetDevice( devicesToBond[0] ) != cudaSuccess ) {
+				printf( "*** ERROR cudaSetDevice( %d ) failed!",i );
+				exit( EXIT_FAILURE );
+			}
+
+#ifdef __PHITEST_MEM_PINNED
+			if( cudaHostAlloc( ( void ** ) &C_cuda, m * n * sizeof( XTYPE ), cudaHostAllocPortable ) != cudaSuccess )
+			{
+				printf( "*** ERROR allocating PINNED MEMORY on cpu\n" );
+				exit( EXIT_FAILURE );
+			}
+#else
 			C_cuda = ( XTYPE* ) malloc( m * n * sizeof( XTYPE ) );
+#endif
+
 			memset( C_cuda, 0, m * n * sizeof( XTYPE ) );
 
 			for ( j = 0; j < m; j++ ) {
@@ -438,50 +468,55 @@ int main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			}
 
-			if ( cublasCreate(&handle[0]) != CUBLAS_STATUS_SUCCESS ) {
+			if ( cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS ) {
 				printf ("CUBLAS initialization failed\n");
 				return EXIT_FAILURE;
 			}
 
 			d_A[0] = (XTYPE*) test_scratch[0];
-			d_B[0] = d_A[0] + m * k;
-			d_C[0] = d_B[0] + k * n;
+			d_B[0] = d_A[0] + (m * k);
+			d_C[0] = d_B[0] + (k * n);
+
+			cublasOperation_t cu_transa, cu_transb;
+			cu_transa =  ( (transa[ count ] == 'c') || (transa[ count ] == 'C') ) ? CUBLAS_OP_C : CUBLAS_OP_N;
+			cu_transa =  ( (transa[ count ] == 't') || (transa[ count ] == 'T') ) ? CUBLAS_OP_T : cu_transa;
+			cu_transa =  ( (transa[ count ] == 'n') || (transa[ count ] == 'N') ) ? CUBLAS_OP_N : cu_transa;
+			cu_transb =  ( (transb[ count ] == 'c') || (transb[ count ] == 'C') ) ? CUBLAS_OP_C : CUBLAS_OP_N;
+			cu_transb =  ( (transb[ count ] == 't') || (transb[ count ] == 'T') ) ? CUBLAS_OP_T : cu_transb;
+			cu_transb =  ( (transb[ count ] == 'n') || (transb[ count ] == 'N') ) ? CUBLAS_OP_N : cu_transb;
 
 			t1 = seconds();
 
-			if ( is_transa )
+			if ( is_transa[count] )
 				cublasSetMatrix(k, m, sizeof(XTYPE), A, lda, d_A[0], lda);
 			else
 				cublasSetMatrix(m, k, sizeof(XTYPE), A, lda, d_A[0], lda);
 
-			if ( is_transb )
+			if ( is_transb[count] )
 				cublasSetMatrix(n, k, sizeof(XTYPE), B, ldb, d_B[0], ldb);
 			else
 				cublasSetMatrix(k, n, sizeof(XTYPE), B, ldb, d_B[0], ldb);
 
 			cublasSetMatrix(m, n, sizeof(XTYPE), C_cuda, m, d_C[0], m);
 
-			cublasOperation_t cu_transa, cu_transb;
-			cu_transa =  ( (transa[ count ] == 'c') || (transa[ count ] == 'C') ) ? CUBLAS_OP_C : -1;
-			cu_transa =  ( (transa[ count ] == 't') || (transa[ count ] == 'T') ) ? CUBLAS_OP_T : cu_transa;
-			cu_transa =  ( (transa[ count ] == 'n') || (transa[ count ] == 'N') ) ? CUBLAS_OP_N : cu_transa;
-			cu_transb =  ( (transb[ count ] == 'c') || (transb[ count ] == 'C') ) ? CUBLAS_OP_C : -1;
-			cu_transb =  ( (transb[ count ] == 't') || (transb[ count ] == 'T') ) ? CUBLAS_OP_T : cu_transb;
-			cu_transb =  ( (transb[ count ] == 'n') || (transb[ count ] == 'N') ) ? CUBLAS_OP_N : cu_transb;
+			h2d_time = seconds() - t1;
 
 			t2 = seconds();
-			CUBLAS_GEMM(handle[0], cu_transa, cu_transb, m, n, k, &alpha, d_A[0], lda, d_B[0], ldb, &beta, d_C[0], m);
+			CUBLAS_GEMM(handle, cu_transa, cu_transb, m, n, k, &alpha, d_A[0], lda, d_B[0], ldb, &beta, d_C[0], m);
 			cudaDeviceSynchronize();
 			kernel_time = seconds() - t2;
 
+			t3 = seconds();
 			cublasGetMatrix(m, n, sizeof(XTYPE), d_C[0], m, C_cuda, m);
 
 			/* gpu_time =  H2D + COMPUTATION + D2H */
 			gpu_time = seconds() - t1;
-#ifndef __LONG_OUTPUT
-			fprintf( stdout, "\nCUBLAS: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\n",  gpu_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (gpu_time*1000) );
+			d2h_time = seconds() - t3;
+
+			fprintf( stdout, "\nCUBLAS (kernel + transfer)\t: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s (H2D: %9.6fs, D2H: %9.6fs)\n",  gpu_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (gpu_time*1000), h2d_time, d2h_time );
+			fprintf( stdout, "CUBLAS (only kernel)\t\t: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\n\n",  kernel_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (kernel_time*1000) );
 			fflush( stdout );
-#endif
+
 		}
 		/* ----------------------------------------------------------- */
 
@@ -526,10 +561,11 @@ int main(int argc, char **argv)
 			double error = 0;
 			double tmp_error;
 
+			// A easy way to check "both" ...
 #pragma omp parallel for reduction (+ : error)
 			for( i = 0; i < m * n ; i++ ) {
 
-				tmp_error = (double) abs( (float)C_mkl[ i ].x - (double)C_phigemm[ i ].x );
+				tmp_error = (double) abs( (float)C_cuda[ i ].x - (double)C_phigemm[ i ].x );
 				if (tmp_error > MAX_ERROR ) {
 					//				fprintf( stdout, "\nC_mkl[ %d ].x=%15.13e  C_phigemm[ %d ].x=%15.13e", i, C_mkl[ i ].x, i, C_phigemm[ i ].x);fflush(stdout);
 					//				exit(EXIT_FAILURE);
@@ -554,7 +590,7 @@ int main(int argc, char **argv)
 
 #pragma omp parallel for reduction (+ : error)
 			for( i = 0; i < m * n ; i++ ) {
-				tmp_error = (XTYPE) abs( (XTYPE)(C_mkl[ i ] - C_phigemm[ i ]) );
+				tmp_error = (XTYPE) abs( (XTYPE)(C_cuda[ i ] - C_phigemm[ i ]) );
 				if (tmp_error > MAX_ERROR ) {
 					//				fprintf( stdout, "\nC_mkl[ %d ]=%g  C_phigemm[ %d ]=%g", i, C_mkl[ i ], i, C_phigemm[ i ]);fflush(stdout);
 					//				exit(EXIT_FAILURE);
@@ -574,20 +610,17 @@ int main(int argc, char **argv)
 			//	   fprintf( stdout, "\n\n");
 			//	   fflush(stdout);
 
-#ifndef __LONG_OUTPUT
-			fprintf( stdout, "[%c%c]  PhiGEMM ( %d CPU / %d GPUs ) phiGEMM: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\n", transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ), nGPU, hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor );
+			fprintf( stdout, "[%c%c]  PhiGEMM ( %d CPU / %d GPUs ) phiGEMM: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\t errors: %c\n", transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ), nGPU, hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor, (error > 0 ? 'Y' : (error == 0 ? 'N' : 'X')) );
 			fflush( stdout );
-#else
-			fprintf( stdout, "[%c%c] MKL (%2d) RPeak = %10.4f\t\tCUBLAS RPeak = %10.4f (kernel RPeak = %g)\t\tphiGEMM (GPU: %d, split: %.3f) RPeak = %10.4f [errors %c]\n\n",
-					transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ),
-					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (cpu_time*1000),
-					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (gpu_time*1000),
-					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (kernel_time*1000),
-					nGPU, currentSplitFactor,
-					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000),
-					(error > 0 ? 'Y' : (error == 0 ? 'N' : 'X')) );
-			fflush( stdout );
-#endif
+//			fprintf( stdout, "[%c%c] MKL (%2d) RPeak = %10.4f\t\tCUBLAS RPeak = %10.4f (kernel RPeak = %g)\t\tphiGEMM (GPU: %d, split: %.3f) RPeak = %10.4f [errors %c]\n\n",
+//					transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ),
+//					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (cpu_time*1000),
+//					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (gpu_time*1000),
+//					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (kernel_time*1000),
+//					nGPU, currentSplitFactor,
+//					( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000),
+//					(error > 0 ? 'Y' : (error == 0 ? 'N' : 'X')) );
+//			fflush( stdout );
 
 		} while((currentSplitFactor += stepSplitFactor) <= upperSplitFactor);
 		/* ----------------------------------------------------------- */
@@ -618,13 +651,15 @@ int main(int argc, char **argv)
 #endif
 
 	free( C_mkl );
-	if ( !(mem_gpu > memsize[ 0 ]) ) free( C_cuda );
 
-#ifdef __PHIGEMM_MEM_ASYNC
+#ifdef __PHITEST_MEM_PINNED
 	cudaFreeHost( GPU_buffer_memory_ptr );
+	if ( !(mem_gpu > memsize[ 0 ]) ) cudaFreeHost( C_cuda );
 #else
 	free( GPU_buffer_memory_ptr );
+	if ( !(mem_gpu > memsize[ 0 ]) ) free( C_cuda );
 #endif
+
 
 	return 0;
 }
