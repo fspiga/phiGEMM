@@ -625,7 +625,6 @@ enable_cpu_multithread
 enable_parallel
 enable_debug
 enable_profiling
-enable_pinned_support
 enable_multi_gpu
 with_cuda_dir
 with_gpu_arch
@@ -1261,8 +1260,6 @@ Optional Features:
                           (default: no)
   --enable-debug          compile Fortran with debug flags (default: no)
   --enable-profiling      enable the profiling of phiGEMM calls (default: no)
-  --enable-pinned-support support async transfer because memory is supposed to
-                          be allocated as non-pageable (default: yes)
   --enable-multi-gpu      enable multi GPU support (default: no)
 
 Optional Packages:
@@ -1845,18 +1842,6 @@ if test "${enable_profiling+set}" = set; then :
    fi
 else
   use_profile=0
-fi
-
-
-# Check whether --enable-pinned_support was given.
-if test "${enable_pinned_support+set}" = set; then :
-  enableval=$enable_pinned_support; if   test "$enableval" = "yes" ; then
-      use_pinned=1
-   else
-      use_pinned=0
-   fi
-else
-  use_pinned=1
 fi
 
 
@@ -3093,9 +3078,6 @@ fi
 		if test "$ac_cv_search_cudaGetDeviceCount" != "no" &&
 			test "$ac_cv_search_cublasInit" != "no"
 		then
-
-			try_dflags="$try_dflags -D__PHIGEMM_MEM_PINNED"
-
 			have_cuda=1
 			break
 		fi
@@ -3121,10 +3103,6 @@ fi
 
 # Starting from empty flags....
 phigemm_opts=
-
-if test "$use_pinned" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_MEM_ASYNC"
-fi
 
 if test "$use_debug" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_DEBUG"

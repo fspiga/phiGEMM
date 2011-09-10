@@ -39,16 +39,6 @@ AC_ARG_ENABLE(debug,
       use_profile=0
    fi],
    [use_profile=0])
-   
-AC_ARG_ENABLE(pinned_support,
-   [AS_HELP_STRING([--enable-pinned-support],
-       [support async transfer because memory is supposed to be allocated as non-pageable (default: yes)])],
-   [if   test "$enableval" = "yes" ; then
-      use_pinned=1
-   else
-      use_pinned=0
-   fi],
-   [use_pinned=1])
 
 AC_ARG_ENABLE(multi_gpu, 
    [AS_HELP_STRING([--enable-multi-gpu],
@@ -292,10 +282,7 @@ then
               
 		if test "$ac_cv_search_cudaGetDeviceCount" != "no" && 
 			test "$ac_cv_search_cublasInit" != "no"
-		then				 
-			
-			try_dflags="$try_dflags -D__PHIGEMM_MEM_PINNED"
-			
+		then			
 			have_cuda=1
 			break
 		fi
@@ -316,10 +303,6 @@ fi
 
 # Starting from empty flags....
 phigemm_opts=
-
-if test "$use_pinned" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_MEM_ASYNC"
-fi
 
 if test "$use_debug" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_DEBUG"
