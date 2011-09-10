@@ -565,7 +565,7 @@ int main(int argc, char **argv)
 #pragma omp parallel for reduction (+ : error)
 			for( i = 0; i < m * n ; i++ ) {
 
-				tmp_error = (double) abs( (float)C_cuda[ i ].x - (double)C_phigemm[ i ].x );
+				tmp_error = (double) abs( (float)C_mkl[ i ].x - (double)C_phigemm[ i ].x );
 				if (tmp_error > MAX_ERROR ) {
 					//				fprintf( stdout, "\nC_mkl[ %d ].x=%15.13e  C_phigemm[ %d ].x=%15.13e", i, C_mkl[ i ].x, i, C_phigemm[ i ].x);fflush(stdout);
 					//				exit(EXIT_FAILURE);
@@ -590,7 +590,7 @@ int main(int argc, char **argv)
 
 #pragma omp parallel for reduction (+ : error)
 			for( i = 0; i < m * n ; i++ ) {
-				tmp_error = (XTYPE) abs( (XTYPE)(C_cuda[ i ] - C_phigemm[ i ]) );
+				tmp_error = (XTYPE) abs( (XTYPE)(C_mkl[ i ] - C_phigemm[ i ]) );
 				if (tmp_error > MAX_ERROR ) {
 					//				fprintf( stdout, "\nC_mkl[ %d ]=%g  C_phigemm[ %d ]=%g", i, C_mkl[ i ], i, C_phigemm[ i ]);fflush(stdout);
 					//				exit(EXIT_FAILURE);
