@@ -6,10 +6,6 @@
  * in the root directory of the present distribution,
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
- * author(s):	Philip Yang   (phi@cs.umd.edu)
- * 				Filippo Spiga (filippo.spiga@ichec.ie)
- * 				Ivan Girotto  (ivan.girotto@ichec.ie)
- *
  */
 
 #ifndef __PHIGEMM_AUXILIARY_H__
@@ -20,23 +16,33 @@
 #include "cublas_api.h"
 #include "cublas_v2.h"
 
-#define imin(a,b) (((a)<(b))?(a):(b))
-#define imax(a,b) (((a)<(b))?(b):(a))
+#define GEMM_ADD(m, n, k) ((m) * (n) * (k))
+#define GEMM_MUL(m, n, k) ((m) * (n) * (k))
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#if (defined __PHIGEMM_DEBUG || defined __PHIGEMM_PROFILE)
+cudaStream_t  phiStreams[ NSTREAMS * MAX_GPUS ];
+cublasHandle_t phiHandles[ NSTREAMS * MAX_GPUS ];
+
+int phiGemmNumDevices;
+float phiGemmSplitFactor[4];
+
+phiGemmMemDevPtr dev_scratch;
+phiGemmMemSizes scratch_size;
+phiGemmDeviceIds deviceIds;
+
 typedef struct timestruct
 {
 	unsigned int sec;
 	unsigned int usec;
 } TimeStruct;
+
 TimeStruct get_current_time(void);
+
 double GetTimerValue(TimeStruct time_1, TimeStruct time_2);
-#endif
 
 void selfPhigemmInit();
 
@@ -46,23 +52,7 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in);
 
 void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2);
 
-
-cudaStream_t  phiStreams[ NSTREAM_PER_DEVICE * MAX_GPUS ];
-cublasHandle_t phiHandles[ NSTREAM_PER_DEVICE * MAX_GPUS ];
-int phiGemmNumDevices;
-// not used yet // int phiGemmOMPNumThread;
-
-float phiGemmSplitFactor[4];
-phiGemmMemDevPtr dev_scratch;
-phiGemmMemSizes scratch_size;
-phiGemmDeviceIds deviceIds;
-
-#if (defined __PHIGEMM_DEBUG || defined __PHIGEMM_PROFILE)
 double phigemm_cclock(void);
-#endif
-
-//extern cudaStream_t phiStreams[MAX_GPUS*NSTREAM_PER_DEVICE];
-//extern cublasHandle_t phiHandles[MAX_GPUS*NSTREAM_PER_DEVICE];
 
 #ifdef __cplusplus
 }

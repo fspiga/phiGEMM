@@ -6,10 +6,6 @@
  * in the root directory of the present distribution,
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
- * author(s):	Philip Yang   (phi@cs.umd.edu)
- * 				Filippo Spiga (filippo.spiga@ichec.ie)
- * 				Ivan Girotto  (ivan.girotto@ichec.ie)
- *
  */
 
 #ifndef __PHIGEMM_COMMON_H__
@@ -28,28 +24,24 @@
 
 #include "cublas_api.h"
 
-#if (defined __PHIGEMM_DEBUG || defined __PHIGEMM_PROFILE)
 #include <time.h>
 #include <sys/types.h>
 #include <sys/times.h>
 #include <sys/time.h>
-#endif
 
-#if defined (__PHIGEMM_MULTI_STREAMS) && defined(__PHIGEMM_MEM_ASYNC)
-#define MAX_GPUS 8
-#define NSTREAM_PER_DEVICE 2
+#if defined (__PHIGEMM_MULTI_STREAMS)
+#define NSTREAMS 8
+#define NSTREAMS 2
 #else
 #define MAX_GPUS 8
-#define NSTREAM_PER_DEVICE 1
+#define NSTREAMS 1
 #endif
 
-typedef void* phiGemmMemDevPtr[MAX_GPUS*NSTREAM_PER_DEVICE];
-typedef size_t phiGemmMemSizes[MAX_GPUS*NSTREAM_PER_DEVICE];
-typedef int phiGemmDeviceIds[MAX_GPUS*NSTREAM_PER_DEVICE];
+typedef void* phiGemmMemDevPtr[MAX_GPUS*NSTREAMS];
+typedef size_t phiGemmMemSizes[MAX_GPUS*NSTREAMS];
+typedef int phiGemmDeviceIds[MAX_GPUS*NSTREAMS];
 
 #define imin(a,b) (((a)<(b))?(a):(b))
 #define imax(a,b) (((a)<(b))?(b):(a))
-
-#define OnEGiG 1.0737e9
 
 #endif // __PHIGEMM_COMMON_H__

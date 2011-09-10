@@ -8,9 +8,6 @@
 # Filippo Spiga (filippo.spiga@ichec.ie)
 
 include ../make.inc
-
-PHIGEMM_MAIN_SRC = phigemm.c
-#PHIGEMM_MAIN_SRC = phigemm_new.c
  
 all: prereq static shared
 
@@ -20,17 +17,17 @@ prereq:
 util.o: $(PHIGEMM_TOP)/phigemm_auxiliary.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
 	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_auxiliary.c $(GEMM_OPT) -o .objs/util.o $(EXT_INC) 
 
-sgemm.o: $(PHIGEMM_TOP)/$(PHIGEMM_MAIN_SRC) $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
-	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/$(PHIGEMM_MAIN_SRC) -DCUDA_TYPE_FLOAT $(GEMM_OPT) -o .objs/sgemm.o $(EXT_INC) 
+sgemm.o: $(PHIGEMM_TOP)/phigemm_sgemm.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
+	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_sgemm.c $(GEMM_OPT) -o .objs/sgemm.o $(EXT_INC) 
 
-dgemm.o: $(PHIGEMM_TOP)/$(PHIGEMM_MAIN_SRC) $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
-	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/$(PHIGEMM_MAIN_SRC) -DCUDA_TYPE_DOUBLE $(GEMM_OPT) -o .objs/dgemm.o $(EXT_INC) 
+dgemm.o: $(PHIGEMM_TOP)/phigemm_dgemm.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
+	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_dgemm.c $(GEMM_OPT) -o .objs/dgemm.o $(EXT_INC) 
 
-cgemm.o: $(PHIGEMM_TOP)/$(PHIGEMM_MAIN_SRC) $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
-	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/$(PHIGEMM_MAIN_SRC) -DCUDA_TYPE_COMPLEX $(GEMM_OPT) -o .objs/cgemm.o $(EXT_INC)
+cgemm.o: $(PHIGEMM_TOP)/phigemm_cgemm.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
+	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_cgemm.c $(GEMM_OPT) -o .objs/cgemm.o $(EXT_INC)
 	
-zgemm.o: $(PHIGEMM_TOP)/$(PHIGEMM_MAIN_SRC) $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
-	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/$(PHIGEMM_MAIN_SRC) -DCUDA_TYPE_DOUBLE_COMPLEX $(GEMM_OPT) -o .objs/zgemm.o $(EXT_INC)
+zgemm.o: $(PHIGEMM_TOP)/phigemm_zgemm.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
+	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_zgemm.c $(GEMM_OPT) -o .objs/zgemm.o $(EXT_INC)
 
 static: dgemm.o zgemm.o sgemm.o cgemm.o util.o
 	mkdir -p ../bin ../lib ../include

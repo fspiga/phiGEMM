@@ -6,10 +6,6 @@
  * in the root directory of the present distribution,
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
- * author(s):	Philip Yang   (phi@cs.umd.edu)
- * 				Filippo Spiga (filippo.spiga@ichec.ie)
- * 				Ivan Girotto  (ivan.girotto@ichec.ie)
- *
  */
 
 #include <stdlib.h>
@@ -149,7 +145,6 @@ int phiGemmIsInit()
 	return is_phigemm_init;
 }
 
-#if (defined __PHIGEMM_DEBUG || defined __PHIGEMM_PROFILE)
 double phigemm_cclock(void)
 {
 	struct timeval tv;
@@ -189,7 +184,6 @@ double GetTimerValue(TimeStruct time_1, TimeStruct time_2)
 
 	return (1000.*(double)(sec) + (double)(usec) * 0.001);
 }
-#endif
 
 int stringCmp( const void *a, const void *b)
 {
@@ -350,7 +344,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 #endif
 
 	/* Init GPU data structures for managing multiGPU */
-	for( i = 0; i < phiGemmNumDevices * NSTREAM_PER_DEVICE; i++ )
+	for( i = 0; i < phiGemmNumDevices * NSTREAMS; i++ )
 	{
 		dev_scratch[ i ] = NULL;
 		scratch_size[ i ] = 0;
@@ -358,13 +352,13 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 		phiStreams[ i ] = NULL;
 	}
 
-	for (i = 0; i < phiGemmNumDevices * NSTREAM_PER_DEVICE; i++) {
+	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
 
 		/* Assign devices to processes
 		 * note: one process may have assigned more than one device */
 		deviceIds[i] = deviceToBond[i % phiGemmNumDevices];
 
-		scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAM_PER_DEVICE;
+		scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAMS;
 
 		dev_scratch[ i ] = ( *dev_ptr )[ i % phiGemmNumDevices ] + ( ( i / phiGemmNumDevices ) * scratch_size[ i ] );
 
@@ -377,7 +371,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	cudaError_t err;
 
-	for (i = 0; i < phiGemmNumDevices * NSTREAM_PER_DEVICE; i++) {
+	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
 
 		/* Attempt to establish a runtime API context */
 		if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {

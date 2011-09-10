@@ -6,10 +6,6 @@
  * in the root directory of the present distribution,
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
- * author(s):	Philip Yang   (phi@cs.umd.edu)
- * 				Filippo Spiga (filippo.spiga@ichec.ie)
- * 				Ivan Girotto  (ivan.girotto@ichec.ie)
- *
  */
 
 #ifndef __PHIGEMM_H__
@@ -22,7 +18,7 @@ extern "C"
 {
 #endif
 
-/* C interface */
+/* C interface - does it work? */
 
 void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond);
 
