@@ -16,7 +16,7 @@ OBJ = $(SRC:.f90=.o)
 EXE = $(OBJ:.o=)
 
 # supported TEST_DATATYPE_FLAGS flags = __CUDA_TYPE_FLOAT, __CUDA_TYPE_DOUBLE, __CUDA_TYPE_COMPLEX, __CUDA_TYPE_DOUBLE_COMPLEX (one is mandatory)
-TEST_DATATYPE_FLAGS = -D__CUDA_TYPE_DOUBLE
+TEST_DATATYPE_FLAGS = -D__CUDA_TYPE_DOUBLE_COMPLEX
 
 # supported TEST_OUTPUT_FLAGS flags = __CHECK_ERROR __PERFORM_PHIGEMM_INIT
 # NOTE1: -D__PERFORM_PHIGEMM_INIT and -D__PHIGEMM_EXPLICIT_SPLITFACTOR are mutually exclusive
@@ -41,7 +41,7 @@ test_c:
 	$(CC) $(CFLAGS) $(TESTFLAGS) -o $(PHIGEMM)/bin/single_test.x $(CSCRPATH)/single_test.c $(EXT_INC) -I$(PHIGEMM)/include $(LD_LIB)
 
 run_c:
-	env LD_LIBRARY_PATH=../lib:${LD_LIBRARY_PATH} numactl -m 1 -c 1 ../bin/comparative_test.x
+	./testsuite.sh
 
 clean:
 	rm -rf .objs

@@ -89,7 +89,7 @@
 #endif
 
 
-#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.95
+#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.8
 
 #define MAX_GPU_SERIAL_TEST 8
 
@@ -382,7 +382,7 @@ int main(int argc, char **argv)
 //	is_transa[0] = 1;
 //	is_transb[0] = 0;
 
-	for( count = 0; count < 1; count +=1 ){
+	for( count = 0; count < 4; count +=1 ){
 
 		int lda = m;
 		int ldb = k;
