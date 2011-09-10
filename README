@@ -51,7 +51,7 @@ Graphics Processing Units (New York, NY, USA), ACM, 2009, pp. 46--51.
 
 2. >>> How to compile the library
 
-Recornized options of the configure
+Recognized options of the configure
 
 --with-cuda-dir=<path>  : specify the path where CUDA is installed (mandatory)
 --with-gpu-arch=<arch>  : specify the GPU target architecture (default: 20)
@@ -63,15 +63,16 @@ Recornized options of the configure
                           (default: no)
 --enable-profiling      : turn on the phiGEMM call-per-call profile. File in
                           CSV format. (default: no)
---enable-pinned-support : full async host-device data transfer IF memory 
-                          allocated as non-pageable (default: yes)
 --enable-multi-gpu      : enable multi-GPU support (default: no) 
 
+IMPORTANT NOTE: the multi-GPU **REQUIRES** memory allocations at the host side 
+                as non-pageable (pinned memory) otherwise all the H2D and D2H 
+                transfers are serialized (bad performance!)
 
 This is an example:
 
 $ ./configure --with-cuda-dir=/ichec/packages/cuda/4.0/cuda 
-    --enable-pinned-support --enable-profiling
+    --enable-profiling
 
 IMPORTANT NOTE: remember to have CUDA nvcc and CUDA libs properly set in the 
                 environment
@@ -93,10 +94,10 @@ the CPU.
  
 Here an example:
  
-export PHI_SGEMM_SPLIT=0.75
-export PHI_DGEMM_SPLIT=0.8
+export PHI_SGEMM_SPLIT=0.85
+export PHI_DGEMM_SPLIT=0.85
 export PHI_CGEMM_SPLIT=0.9
-export PHI_ZGEMM_SPLIT=0.95
+export PHI_ZGEMM_SPLIT=0.9
  
 The overall performances of the library, compared to the pure CUBLAS calls, are
 strongly dependent by this split factor.
@@ -114,7 +115,7 @@ perform a check of the results, pleas use for single test "single_test.c".
 
 In order to auto-tune the split factor using the best CPU and the best (pure) 
 CPU performance, it is necessary to recompile the library with the configure 
-ption "--with-split-by-hand"
+option "--with-split-by-hand"
 
 These hard-coded parameters inside the file "single_test.c" allow you
 to test and compare a multi-threaded BLAS, a pure CUBLAS + data transfer and a 
@@ -221,11 +222,12 @@ IMPORTANT NOTE: be sure to cover both lover case (dgemm) and upper case (DGEMM).
  
 6. >>> Releases
 
+v1.3   - September 10, 2011   (version optimized for both pinned and non-pinned)
 v1.2   - August 29, 2011
 v1.1   - July 12, 2011 
-v1.0   - July 4, 2011      ( First official version )
-v0.9   - July 2, 2011      ( Important fixes for multi-GPU )
-v0.8   - June 29, 2011     ( Compatible with version for CUDA >=4.0 only! )
+v1.0   - July 4, 2011         ( First official version )
+v0.9   - July 2, 2011         ( Important fixes for multi-GPU )
+v0.8   - June 29, 2011        ( Compatible with version for CUDA >=4.0 only! )
 v0.7   - May 29, 2011
 v0.6   - May 9, 2011
 v0.5.1 - May 5, 2011

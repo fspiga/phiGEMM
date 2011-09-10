@@ -7,7 +7,7 @@
 #
 # Filippo Spiga (filippo.spiga@ichec.ie)
 
-all: prereq phigemm 
+all: prereq phigemm
 
 prereq:
 	mkdir -p ./bin ./lib ./include
