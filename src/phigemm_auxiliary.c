@@ -64,19 +64,19 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
 	if (is_splitA) {
 		tmp = (m_in) * split;
-		if (m_in < 128)
+//		if (m_in < 128)
 			m_split = tmp;
-		else
-			m_split = floor(tmp/64.0)*64;
+//		else
+//			m_split = floor(tmp/64.0)*64;
 
 		return ( m_split*k_in/phiGemmNumDevices + k_in*n_in + m_split*n_in/phiGemmNumDevices );
 
 	} else {
 		tmp = (n_in) * split;
-		if (n_in < 128)
+//		if (n_in < 128)
 			n_split = tmp;
-		else
-			n_split = floor(tmp/64.0)*64;
+//		else
+//			n_split = floor(tmp/64.0)*64;
 
 		return( m_in*k_in + k_in*n_split/phiGemmNumDevices + m_in*n_split/phiGemmNumDevices );
 	}

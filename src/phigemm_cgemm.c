@@ -121,8 +121,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	is_splitA = (*n > *m) ? 0:1;
 
-	/* Assign the split factor for phidgemm (1: DGEMM) */
-	split = phiGemmSplitFactor[1];
+	/* Assign the split factor for phidgemm (2: CGEMM) */
+	split = phiGemmSplitFactor[2];
 
 	/* smart padding for Fermi & CUDA 3.x - no needed anymore */
 	//	m_gpu = ceil(*m/64.0)*64;
@@ -377,12 +377,12 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 
 		if ( is_transa ) {
 			status = cublasSetMatrixAsync (k_h2d[iDev], m_h2d[iDev],
-					sizeof(A[0]), A+shiftA, *lda, devPtrA[iDev],
+					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
 					k_gpu[iDev], phiStreams[iDev]);
 			shiftA += m_h2d[iDev] * (*lda);
 		} else {
 			status = cublasSetMatrixAsync (m_h2d[iDev], k_h2d[iDev],
-					sizeof(A[0]), A+shiftA, *lda, devPtrA[iDev],
+					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
 					m_gpu[iDev], phiStreams[iDev]);
 			shiftA += m_h2d[iDev];
 		}
@@ -392,12 +392,12 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		devPtrB[iDev] = devPtrA[iDev] + m_gpu[iDev] * k_gpu[iDev];
 		if ( is_transb ) {
 			status = cublasSetMatrixAsync (n_h2d[iDev], k_h2d[iDev],
-					sizeof(B[0]), B+shiftB, *ldb, devPtrB[iDev],
+					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
 					n_gpu[iDev], phiStreams[iDev]);
 			shiftB += n_h2d[iDev];
 		} else {
 			status = cublasSetMatrixAsync (k_h2d[iDev], n_h2d[iDev],
-					sizeof(B[0]), B+shiftB, *ldb, devPtrB[iDev],
+					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
 					k_gpu[iDev], phiStreams[iDev]);
 			shiftB += n_h2d[iDev] * (*ldb);
 		}
@@ -405,9 +405,9 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		cudaEventRecord(events[iDev][2], phiStreams[iDev] );
 
 		devPtrC[iDev] = devPtrB[iDev] + k_gpu[iDev] * n_gpu[iDev];
-		if ( beta->x != (float)0.0 || beta->y != (float)0.0 ){
+		if ( beta->x != 0.0 || beta->y != 0.0 ){
 			status = cublasSetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
-					sizeof(C[0]), C+shiftC, *ldc, devPtrC[iDev],
+					sizeof(cuComplex), C+shiftC, *ldc, devPtrC[iDev],
 					m_gpu[iDev], phiStreams[iDev]);
 		}
 		cudaEventRecord(events[iDev][3], phiStreams[iDev] );
@@ -426,8 +426,12 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		cudaEventRecord(events[iDev][4], phiStreams[iDev] );
 
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
-				sizeof(C[0]), devPtrC[iDev], m_gpu[iDev], C+shiftC,
+				sizeof(cuComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
 				*ldc, phiStreams[iDev]);
+
+		if (status != CUBLAS_STATUS_SUCCESS) {
+			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
+		}
 
 		cudaEventRecord(events[iDev][5], phiStreams[iDev] );
 
@@ -437,10 +441,6 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		} else {
 			shiftA = 0;
 			shiftC += n_h2d[iDev] * (*ldc);
-		}
-
-		if (status != CUBLAS_STATUS_SUCCESS) {
-			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 	}
 
@@ -480,7 +480,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		time_mem_h2d += (time_temp / 1000);
 		cudaEventElapsedTime( &time_temp, events[iDev][1], events[iDev][2] );
 		time_mem_h2d += (time_temp / 1000);
-		if ( beta->x != (float)0.0 || beta->y != (float)0.0 ){
+		if ( beta->x != 0.0 || beta->y != 0.0 ){
 			cudaEventElapsedTime( &time_temp, events[iDev][2], events[iDev][3] );
 			time_mem_h2d += (time_temp / 1000);
 		}
@@ -535,7 +535,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 					time_mem_h2d,
 					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuComplex)),
 					time_mkl,
-					1.e-6 * PHIGEMM_FLOPS( (double)m_cpu, (double)(*n), (double)(*k) )/(time_mkl*1000)),
+					1.e-6 * PHIGEMM_FLOPS( (double)m_cpu, (double)(*n), (double)(*k) )/(time_mkl*1000),
 					time_gemm_mklcuda,
 					1.e-6 * PHIGEMM_FLOPS( (double)m_gpu[iDev], (double)(*n), (double)(*k) )/(time_gemm_mklcuda*1000),
 					time_mem_d2h,
@@ -733,12 +733,12 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 
 		if ( is_transa ) {
 			status = cublasSetMatrixAsync (k_h2d[iDev], m_h2d[iDev],
-					sizeof(A[0]), A+shiftA, *lda, devPtrA[iDev],
+					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
 					k_gpu[iDev], phiStreams[iDev]);
 			shiftA += m_h2d[iDev] * (*lda);
 		} else {
 			status = cublasSetMatrixAsync (m_h2d[iDev], k_h2d[iDev],
-					sizeof(A[0]), A+shiftA, *lda, devPtrA[iDev],
+					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
 					m_gpu[iDev], phiStreams[iDev]);
 			shiftA += m_h2d[iDev];
 		}
@@ -748,12 +748,12 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 		devPtrB[iDev] = devPtrA[iDev] + m_gpu[iDev] * k_gpu[iDev];
 		if ( is_transb ) {
 			status = cublasSetMatrixAsync (n_h2d[iDev], k_h2d[iDev],
-					sizeof(B[0]), B+shiftB, *ldb, devPtrB[iDev],
+					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
 					n_gpu[iDev], phiStreams[iDev]);
 			shiftB += n_h2d[iDev];
 		} else {
 			status = cublasSetMatrixAsync (k_h2d[iDev], n_h2d[iDev],
-					sizeof(B[0]), B+shiftB, *ldb, devPtrB[iDev],
+					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
 					k_gpu[iDev], phiStreams[iDev]);
 			shiftB += n_h2d[iDev] * (*ldb);
 		}
@@ -762,9 +762,9 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 
 		/* set the matrix C to device */
 		devPtrC[iDev] = devPtrB[iDev] + k_gpu[iDev] * n_gpu[iDev];
-		if ( beta->x != (float)0.0 || beta->y != (float)0.0 ){
+		if ( beta->x != 0.0 || beta->y != 0.0 ){
 			status = cublasSetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
-					sizeof(C[0]), C+shiftC, *ldc, devPtrC[iDev],
+					sizeof(cuComplex), C+shiftC, *ldc, devPtrC[iDev],
 					m_gpu[iDev], phiStreams[iDev]);
 		}
 
@@ -782,6 +782,10 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 				gpu_lda, devPtrB[iDev], gpu_ldb, beta, devPtrC[iDev],
 				m_gpu[iDev]);
 
+		if (status != CUBLAS_STATUS_SUCCESS) {
+		  fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
+		}
+
 		cudaEventRecord(events[iDev][4], phiStreams[iDev] );
 
 		if (is_splitA) {
@@ -790,10 +794,6 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 		} else {
 		  shiftA = 0;
 		  shiftC += n_h2d[iDev] * (*ldc);
-		}
-
-		if (status != CUBLAS_STATUS_SUCCESS) {
-		  fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 	}
 
@@ -811,8 +811,12 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 		cudaEventRecord(events[iDev][5], phiStreams[iDev] );
 
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
-				sizeof(C[0]), devPtrC[iDev], m_gpu[iDev], C+shiftC,
+				sizeof(cuComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
 				*ldc, phiStreams[iDev]);
+
+		if (status != CUBLAS_STATUS_SUCCESS) {
+			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
+		}
 
 		cudaEventRecord(events[iDev][6], phiStreams[iDev] );
 
@@ -822,10 +826,6 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 		} else {
 			shiftA = 0;
 			shiftC += n_h2d[iDev] * (*ldc);
-		}
-
-		if (status != CUBLAS_STATUS_SUCCESS) {
-			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 
 		cudaErr = cudaStreamSynchronize( phiStreams[ iDev ] );
@@ -852,7 +852,7 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 		time_mem_h2d += (time_temp / 1000);
 		cudaEventElapsedTime( &time_temp, events[iDev][1], events[iDev][2] );
 		time_mem_h2d += (time_temp / 1000);
-		if ( beta->x != (float)0.0 || beta->y != (float)0.0 ){
+		if ( beta->x != 0.0 || beta->y != 0.0 ){
 			cudaEventElapsedTime( &time_temp, events[iDev][2], events[iDev][3] );
 			time_mem_h2d += (time_temp / 1000);
 		}
@@ -907,7 +907,7 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 					time_mem_h2d,
 					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuComplex)),
 					time_mkl,
-					1.e-6 * PHIGEMM_FLOPS( (double)m_cpu, (double)(*n), (double)(*k) )/(time_mkl*1000)),
+					1.e-6 * PHIGEMM_FLOPS( (double)m_cpu, (double)(*n), (double)(*k) )/(time_mkl*1000),
 					time_dgemm_cuda,
 					1.e-6 * PHIGEMM_FLOPS( (double)m_gpu[iDev], (double)(*n), (double)(*k) )/(time_dgemm_cuda*1000),
 					time_mem_d2h,
