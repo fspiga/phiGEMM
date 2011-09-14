@@ -407,7 +407,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		devPtrC[iDev] = devPtrB[iDev] + k_gpu[iDev] * n_gpu[iDev];
 		if ( (* beta) != (float)0.0 ) {
 			status = cublasSetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
-					sizeof(float]), C+shiftC, *ldc, devPtrC[iDev],
+					sizeof(float), C+shiftC, *ldc, devPtrC[iDev],
 					m_gpu[iDev], phiStreams[iDev]);
 		}
 		cudaEventRecord(events[iDev][3], phiStreams[iDev] );
