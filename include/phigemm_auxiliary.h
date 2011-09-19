@@ -34,16 +34,6 @@ phiGemmMemDevPtr dev_scratch;
 phiGemmMemSizes scratch_size;
 phiGemmDeviceIds deviceIds;
 
-typedef struct timestruct
-{
-	unsigned int sec;
-	unsigned int usec;
-} TimeStruct;
-
-TimeStruct get_current_time(void);
-
-double GetTimerValue(TimeStruct time_1, TimeStruct time_2);
-
 void selfPhigemmInit();
 
 void estmSplitFactor(const char* optype, char transa, char transb);

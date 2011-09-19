@@ -160,31 +160,6 @@ double phigemm_cclock(void)
 }
 
 
-TimeStruct get_current_time(void)
-{
-	static struct timeval  time_val;
-	static struct timezone time_zone;
-
-	TimeStruct time;
-
-	gettimeofday(&time_val, &time_zone);
-
-	time.sec  = time_val.tv_sec;
-	time.usec = time_val.tv_usec;
-	return (time);
-}
-
-
-double GetTimerValue(TimeStruct time_1, TimeStruct time_2)
-{
-	int sec, usec;
-
-	sec  = time_2.sec  - time_1.sec;
-	usec = time_2.usec - time_1.usec;
-
-	return (1000.*(double)(sec) + (double)(usec) * 0.001);
-}
-
 int stringCmp( const void *a, const void *b)
 {
 	return strcmp((const char*)a,(const char*)b);
