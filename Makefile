@@ -29,7 +29,7 @@ clean:
 	if test -d testing ; then \
 	( cd testing ; if test "$(MAKE)" = "" ; then make $(MFLAGS) clean ; \
 	else $(MAKE) $(MFLAGS) clean ; fi ) ; fi
-	rm -rf ./bin ./include ./lib
+	rm -rf ./bin ./lib
 
 veryclean: clean
 	rm make.inc

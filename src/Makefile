@@ -14,30 +14,28 @@ all: prereq static shared
 prereq:
 	mkdir -p .objs
 
-util.o: $(PHIGEMM_TOP)/phigemm_auxiliary.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
-	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_auxiliary.c $(GEMM_OPT) -o .objs/util.o $(EXT_INC) 
+util.o: $(PHIGEMM_TOP)/phigemm_auxiliary.c 
+	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_auxiliary.c $(GEMM_OPT) -I../include/  -o .objs/util.o $(EXT_INC) 
 
-sgemm.o: $(PHIGEMM_TOP)/phigemm_sgemm.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
-	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_sgemm.c $(GEMM_OPT) -o .objs/sgemm.o $(EXT_INC) 
+sgemm.o: $(PHIGEMM_TOP)/phigemm_sgemm.c
+	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_sgemm.c $(GEMM_OPT) -I../include/ -o .objs/sgemm.o $(EXT_INC) 
 
-dgemm.o: $(PHIGEMM_TOP)/phigemm_dgemm.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
+dgemm.o: $(PHIGEMM_TOP)/phigemm_dgemm.c
 	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_dgemm.c $(GEMM_OPT) -o .objs/dgemm.o $(EXT_INC) 
 
-cgemm.o: $(PHIGEMM_TOP)/phigemm_cgemm.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
-	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_cgemm.c $(GEMM_OPT) -o .objs/cgemm.o $(EXT_INC)
+cgemm.o: $(PHIGEMM_TOP)/phigemm_cgemm.c
+	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_cgemm.c $(GEMM_OPT) -I../include/ -o .objs/cgemm.o $(EXT_INC)
 	
-zgemm.o: $(PHIGEMM_TOP)/phigemm_zgemm.c $(PHIGEMM_TOP)/phigemm_auxiliary.h $(PHIGEMM_TOP)/phigemm_common.h
-	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_zgemm.c $(GEMM_OPT) -o .objs/zgemm.o $(EXT_INC)
+zgemm.o: $(PHIGEMM_TOP)/phigemm_zgemm.c
+	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_zgemm.c $(GEMM_OPT) -I../include/ -o .objs/zgemm.o $(EXT_INC)
 
 static: dgemm.o zgemm.o sgemm.o cgemm.o util.o
-	mkdir -p ../bin ../lib ../include
-	cp *.h ../include/.
+	mkdir -p ../bin ../lib
 	$(AR) $(ARFLAGS) libphigemm.a .objs/sgemm.o .objs/dgemm.o .objs/zgemm.o .objs/util.o
 	mv libphigemm.a ../lib/.
 	
 shared: dgemm.o zgemm.o sgemm.o cgemm.o util.o
 	mkdir -p ../bin ../lib ../include
-	cp *.h ../include/.
 	$(LD) $(LD_FLAGS) -o libphigemm.so.1.0.1 .objs/sgemm.o .objs/dgemm.o .objs/cgemm.o .objs/zgemm.o .objs/util.o $(CC_LIB)
 	ln -sf libphigemm.so.1.0.1 libphigemm.so.1.0
 	ln -sf libphigemm.so.1.0 libphigemm.so.1
