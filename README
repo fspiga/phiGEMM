@@ -141,9 +141,9 @@ for matrix multiplication C( m, n ) = A( m, k ) x B( k, n )
 
 The usage of the phiGEMM library in your code is quite straightforward. The 
 library itself has two "way" to work:
-CASE 1: for every call, phiGEMM allocates the proper amount of memory required 
+- CASE 1: for every call, phiGEMM allocates the proper amount of memory required 
 to run the calculation. This is default.
-CASE 2: in order to speed-up the memory allocation on the GPU memory, it is 
+- CASE 2: in order to speed-up the memory allocation on the GPU memory, it is 
 possible to preallocate a fixed amount of memory on the GPU card and pass a 
 pointer to phiGEMM. This memory can be larger than the one really needed. This 
 is very useful because if you use phiGEMM in a real code, the dimensions of the
@@ -201,7 +201,7 @@ will become:
    phiDgemm(&ta, &tb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &m);
 
 
-If you want to use phiGEMM for all the DGEMM in your file or in your program 
+If you want to use phiGEMM for all the DGEMM in your file or in your C program 
 you can easily add at the beginning of the files these lines:
 
   #define SGEMM phisgemm
@@ -210,18 +210,45 @@ you can easily add at the beginning of the files these lines:
   #define ZGEMM phizgemm
 
 and at compile-time all the substitutions will be automatic.
- 
+
+Otherwise there is a FORTRAN 90 module called 'phigemm' that can be used 
+in this way
+
+  USE phigemm, ONLY : DGEMM => phidgemm, SGEMM => phisgemm, 
+                      CGEMM => phicgemm, ZGEMM => phizgemm
+
+IMPORTANT NOTE: the use the "profiling" advanced feature it is still necessary 
+                to add few define at the beginning of each file where phiGEMM 
+                is used in this way
+                
+#define _STRING_LINE_(s) #s
+#define _STRING_LINE2_(s) _STRING_LINE_(s)
+#define __LINESTR__ _STRING_LINE2_(__LINE__)
+#define DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
+#define SGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) SGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
+#define CGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) CGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
+#define ZGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) ZGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
+
+                These lines extend the prototype of each BLAS call in order to
+                capture the exact file name and the exact line where every GEMM 
+                is called at run-time.
+                
+IMPORTANT NOTE: be sure to cover both lover case (dgemm) and upper case (DGEMM).
+                I strongly suggest to uniform the convention (or all lower or
+                all upper case) before define the phiGEMM symbols.
+                 
 phiGEMM will provide a way to link directly the library without any change of 
 the source code. However at the beginning it is better to keep a control about 
 what, where and how a standard *GEMM operation is replaced with a phiGEMM ones.
 
-IMPORTANT NOTE: be sure to cover both lover case (dgemm) and upper case (DGEMM).
-                I strongly suggest to uniform the convention (or all lower or
-                all upper case) before define the phiGEMM symbols.
+IMPORTANT NOTE: this feature is not yet in the repository because can 
+                potentially breaks the application. We are working to make it 
+                100% reliable and safe.
                 
  
 6. >>> Releases
 
+v1.4   - September 26, 2011   ( FORTRAN90 module module)
 v1.3   - September 10, 2011   (version optimized for both pinned and non-pinned)
 v1.2   - August 29, 2011
 v1.1   - July 12, 2011 
