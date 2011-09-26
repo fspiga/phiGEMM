@@ -146,15 +146,31 @@ have_cuda=0
 try_ar="ar"
 try_arflags="ruv"
 
-# candidate C and f77 compilers good for all cases
-try_cc="icc gcc"
+# check serial Fortran 90 compiler. This must be done before performing
+# the check for the parallel compiler (section below) because option
+# --disable-parallel will do very strange things otherwise. The reason
+# seems to be that autoconf does not repeat all tests for the second
+# occurrence of AC_PROG_FC. So the first occurrence is the one that
+# must always be performed, the second is optional. PG & CC sep.2006
 
-# check serial C compiler - for MKL check
+
+try_f90="ifort ftn gfortran"
+try_cc="icc ecc cc icc"
+
+# use F90 if set
+if test "$f90" = "" ; then f90="$try_f90" ; fi
+AC_PROG_FC($f90)
+f90=$FC
+
+echo setting F90... $f90
+
+# check serial C compiler
 if test "$env_cc" = "" ; then cc="$try_cc" ; else cc="$env_cc"; fi
 AC_PROG_CC($cc)
 cc=$CC
 
 echo setting CC... $cc
+
 
 # linker and archiver
 # note that from this point on, further additions to
@@ -341,6 +357,7 @@ fi
 
 # export settings to generated files
 AC_SUBST(cc)
+AC_SUBST(f90)
 AC_SUBST(ld)
 AC_SUBST(ld_libs)
 AC_SUBST(blas_libs)

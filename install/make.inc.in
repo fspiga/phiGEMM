@@ -14,6 +14,7 @@ AR          = @ar@
 ARFLAGS     = @arflags@
 
 CC          = @nvcc@
+FC          = @f90@
 LD          = @nvcc@
 CFLAGS      = -O3 --compiler-options '-fPIC'
 LD_FLAGS    = --shared --ptxas-options=-v 
