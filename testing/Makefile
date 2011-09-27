@@ -16,7 +16,7 @@ OBJ = $(SRC:.f90=.o)
 EXE = $(OBJ:.o=)
 
 # supported TEST_DATATYPE_FLAGS flags = __CUDA_TYPE_FLOAT, __CUDA_TYPE_DOUBLE, __CUDA_TYPE_COMPLEX, __CUDA_TYPE_DOUBLE_COMPLEX (one is mandatory)
-TEST_DATATYPE_FLAGS = -D__CUDA_TYPE_DOUBLE_COMPLEX
+TEST_DATATYPE_FLAGS = -D__CUDA_TYPE_DOUBLE
 
 # supported TEST_OUTPUT_FLAGS flags = __CHECK_ERROR __PERFORM_PHIGEMM_INIT
 # NOTE1: -D__PERFORM_PHIGEMM_INIT and -D__PHIGEMM_EXPLICIT_SPLITFACTOR are mutually exclusive
@@ -32,17 +32,18 @@ all: prereq test
 prereq:
 	mkdir -p .objs
 
-test: test_c 
-
-run: run_c
-
-test_c:
-	rm -f $(PHIGEMM)/bin/*.x
-	$(CC) $(CFLAGS) $(TESTFLAGS) -o $(PHIGEMM)/bin/single_test.x $(CSCRPATH)/single_test.c $(EXT_INC) -I$(PHIGEMM)/include $(LD_LIB)
-
-run_c:
+test:
+	rm -rf $(PHIGEMM)/bin/*.x
+	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(PHIGEMM)/bin/single_test.x $(CSCRPATH)/single_test.c $(EXT_INC) $(LD_LIB)
+#CUBLAS THUNKING interface
+	$(CC) $(GEMM_OPT) -c $(CSCRPATH)/cptimer.c -o .objs/cptimer.o
+	$(CC) $(GEMM_OPT) -c $(CUDA_PATH)/src/fortran_thunking.c -I$(CUDA_PATH)/src $(EXT_INC) -o .objs/fortran_thunking.o
+	$(CC) $(GEMM_OPT) -c $(CSCRPATH)/cuda_env.c -I$(CSCRPATH)/cuda_env.h $(EXT_INC) -o .objs/cuda_env.o
+	$(FC) -fpp $(GEMM_OPT) $(TEST_FLAGS) $(EXT_INC) .objs/cuda_env.o $(CSCRPATH)/compute_split_matrix.f90 .objs/fortran_thunking.o .objs/cptimer.o $(LD_LIB) -o $(PHIGEMM)/bin/compute_split_matrix
+	
+run:
 	./testsuite.sh
 
 clean:
-	rm -rf .objs
+	rm -rf .objs *.o
 	rm -f $(PHIGEMM)/bin/*

@@ -36,7 +36,7 @@ static: dgemm.o zgemm.o sgemm.o cgemm.o util.o
 	
 shared: dgemm.o zgemm.o sgemm.o cgemm.o util.o
 	mkdir -p ../bin ../lib
-	$(LD) $(LD_FLAGS) -o libphigemm.so.1.0.1 .objs/sgemm.o .objs/dgemm.o .objs/cgemm.o .objs/zgemm.o .objs/util.o $(CC_LIB)
+	$(LD) $(LD_FLAGS) -o libphigemm.so.1.0.1 .objs/sgemm.o .objs/dgemm.o .objs/cgemm.o .objs/zgemm.o .objs/util.o $(CUDA_LIB)
 	ln -sf libphigemm.so.1.0.1 libphigemm.so.1.0
 	ln -sf libphigemm.so.1.0 libphigemm.so.1
 	ln -sf libphigemm.so.1 libphigemm.so

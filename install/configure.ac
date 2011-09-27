@@ -370,6 +370,7 @@ AC_SUBST(cuda_include)
 AC_SUBST(cuda_libs)
 AC_SUBST(phigemm_opts)
 AC_SUBST(topdir)
+AC_SUBST(cuda_path)
 
 AC_CONFIG_FILES(make.inc)
 

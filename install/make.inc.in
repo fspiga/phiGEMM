@@ -13,17 +13,21 @@ PHIGEMM_TOP = .
 AR          = @ar@
 ARFLAGS     = @arflags@
 
-CC          = @nvcc@
+CC          = @cc@
 FC          = @f90@
-LD          = @nvcc@
-CFLAGS      = -O3 --compiler-options '-fPIC'
-LD_FLAGS    = --shared --ptxas-options=-v 
+LD          = @cc@
+CFLAGS      = -O3 -openmp -fPIC
+LD_FLAGS    = --shared -O3 -openmp -fPIC
+
+NVCC        = @nvcc@
+NVCC_FLAGS  = -ccbin icc -O3 --compiler-options '-fPIC -openmp'
+NVCC_DFLAGS  = --shared
 
 EXT_INC     = @cuda_include@
 CUDA_LIB    = @cuda_libs@
-
 LD_LIB      = @blas_libs@ @ld_libs@
 
-GEMM_OPT    = @phigemm_opts@
-
+CUDA_PATH   = @cuda_path@
 CUDA_MAJOR  = @cudamajor@
+
+GEMM_OPT    = @phigemm_opts@

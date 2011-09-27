@@ -555,6 +555,7 @@ PACKAGE_URL=''
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+cuda_path
 topdir
 phigemm_opts
 cuda_libs
@@ -3389,6 +3390,7 @@ else
 fi
 
 # export settings to generated files
+
 
 
 
