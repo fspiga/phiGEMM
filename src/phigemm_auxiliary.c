@@ -335,7 +335,11 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 		scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAMS;
 
-		dev_scratch[ i ] = ( *dev_ptr )[ i % phiGemmNumDevices ] + ( ( i / phiGemmNumDevices ) * scratch_size[ i ] );
+		/* SAFE pointer operation! Remember that void pointers cannot be
+		 * directly dereferenced because 'void' is NOT a real type! */
+		size_t offset = ( i / phiGemmNumDevices ) * scratch_size[ i ];
+		char * tmp_ptr = (char*) ( ( *dev_ptr )[ i % phiGemmNumDevices ] );
+		dev_scratch[ i ] = (void*) (tmp_ptr + offset) ;
 
 
 #ifdef __PHIGEMM_DEBUG
@@ -667,7 +671,7 @@ void selfPhigemmInit(){
 #endif
 
 	if ( cudaSetDevice(deviceIds[0]) != cudaSuccess) {
-		printf("*** ERROR *** cudaSetDevice(0) failed!",0 );
+		printf("*** ERROR *** cudaSetDevice(0) failed!");
 		exit(EXIT_FAILURE);
 	}
 
@@ -763,6 +767,7 @@ void phigemmshutdown_(){ phiGemmShutdown(); }
 
 int phigemmisinit_(){return phiGemmIsInit();}
 
+void phigemmsetsplitfactor_(float *x) { phigemmSetSplitFactor(x); }
 
 #ifdef __cplusplus
 }
