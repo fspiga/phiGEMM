@@ -30,7 +30,7 @@
 #include <sys/time.h>
 
 #if defined (__PHIGEMM_MULTI_STREAMS)
-#define NSTREAMS 8
+#define MAX_GPUS 8
 #define NSTREAMS 2
 #else
 #define MAX_GPUS 8
