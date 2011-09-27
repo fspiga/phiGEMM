@@ -106,7 +106,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #else
 
 	/* if the input matrix if pretty small, we will perform the computation on CPU */
-	if ( (*n) < 256 && (*m) < 256 && (*k) < 256 )
+	if ( (*n) < 256 || (*m) < 256 || (*k) < 256 )
 	{
 		gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 		return;
@@ -287,10 +287,10 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 
 	if ( (*transa != 'n') && (*transa != 'N') )	is_transa = 1;
 	if ( (*transb != 'n') && (*transb != 'N') ) is_transb = 1;
-	cu_transa = ((*transa == 'c')||(*transa == 'C')) ? CUBLAS_OP_C : -1;
+	cu_transa = ((*transa == 'c')||(*transa == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transa = ((*transa == 't')||(*transa == 'T')) ? CUBLAS_OP_T : cu_transa;
 	cu_transa = ((*transa == 'n')||(*transa == 'N')) ? CUBLAS_OP_N : cu_transa;
-	cu_transb = ((*transb == 'c')||(*transb == 'C')) ? CUBLAS_OP_C : -1;
+	cu_transb = ((*transb == 'c')||(*transb == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transb = ((*transb == 't')||(*transb == 'T')) ? CUBLAS_OP_T : cu_transb;
 	cu_transb = ((*transb == 'n')||(*transb == 'N')) ? CUBLAS_OP_N : cu_transb;
 
@@ -455,7 +455,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 
 		cudaSetDevice(deviceIds[iDev % phiGemmNumDevices]);
 
-		cudaErr = cudaStreamSynchronize( phiStreams[ iDev ] );
+		cudaErr = (cudaError_t) cudaStreamSynchronize( phiStreams[ iDev ] );
 
 		if (cudaErr != cudaSuccess) {
 			printf ( "!!!! 4 - cudaDeviceSynchronize error (C) %d\n", cudaErr); fflush(stdout);
@@ -644,10 +644,10 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 
 	if ( (*transa != 'n') && (*transa != 'N') )	is_transa = 1;
 	if ( (*transb != 'n') && (*transb != 'N') ) is_transb = 1;
-	cu_transa = ((*transa == 'c')||(*transa == 'C')) ? CUBLAS_OP_C : -1;
+	cu_transa = ((*transa == 'c')||(*transa == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transa = ((*transa == 't')||(*transa == 'T')) ? CUBLAS_OP_T : cu_transa;
 	cu_transa = ((*transa == 'n')||(*transa == 'N')) ? CUBLAS_OP_N : cu_transa;
-	cu_transb = ((*transb == 'c')||(*transb == 'C')) ? CUBLAS_OP_C : -1;
+	cu_transb = ((*transb == 'c')||(*transb == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transb = ((*transb == 't')||(*transb == 'T')) ? CUBLAS_OP_T : cu_transb;
 	cu_transb = ((*transb == 'n')||(*transb == 'N')) ? CUBLAS_OP_N : cu_transb;
 	/* split A only */
@@ -745,6 +745,10 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 
 		cudaEventRecord(events[iDev][1], phiStreams[iDev] );
 
+		if (status != CUBLAS_STATUS_SUCCESS) {
+		  fprintf (stderr, "!!!! GPU %d: device access error (H2D A) %d\n", iDev, status); fflush(stderr);
+		}
+
 		devPtrB[iDev] = devPtrA[iDev] + m_gpu[iDev] * k_gpu[iDev];
 		if ( is_transb ) {
 			status = cublasSetMatrixAsync (n_h2d[iDev], k_h2d[iDev],
@@ -760,6 +764,10 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 
 		cudaEventRecord(events[iDev][2], phiStreams[iDev] );
 
+		if (status != CUBLAS_STATUS_SUCCESS) {
+		  fprintf (stderr, "!!!! GPU %d: device access error (H2D B) %d\n", iDev, status); fflush(stderr);
+		}
+
 		/* set the matrix C to device */
 		devPtrC[iDev] = devPtrB[iDev] + k_gpu[iDev] * n_gpu[iDev];
 
@@ -771,6 +779,9 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 
 		cudaEventRecord(events[iDev][3], phiStreams[iDev] );
 
+		if (status != CUBLAS_STATUS_SUCCESS) {
+		  fprintf (stderr, "!!!! GPU %d: device access error (H2D C) %d\n", iDev, status); fflush(stderr);
+		}
 
 		gpu_lda = m_gpu[iDev];
 		gpu_ldb = k_gpu[iDev];
@@ -791,10 +802,6 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 		} else {
 		  shiftA = 0;
 		  shiftC += n_h2d[iDev] * (*ldc);
-		}
-
-		if (status != CUBLAS_STATUS_SUCCESS) {
-		  fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 	}
 
@@ -829,7 +836,7 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 			shiftC += n_h2d[iDev] * (*ldc);
 		}
 
-		cudaErr = cudaStreamSynchronize( phiStreams[ iDev ] );
+		cudaErr = (cudaError_t) cudaStreamSynchronize( phiStreams[ iDev ] );
 		if (cudaErr != cudaSuccess) {
 			printf ( "!!!! 4 - cudaDeviceSynchronize error (C) %d\n", cudaErr); fflush(stdout);
 		}
