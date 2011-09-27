@@ -241,7 +241,7 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	fprintf( stdout, "\nsizeof(XTYPE) = %d", sizeof(XTYPE) );
+	fprintf( stdout, "\nsizeof(XTYPE) = %lu", (size_t) sizeof(XTYPE) );
 #if defined __CUDA_TYPE_FLOAT
 	fprintf( stdout, "\nPERFORMING SGEMM operations\n");
 #elif defined __CUDA_TYPE_COMPLEX
@@ -639,7 +639,7 @@ int main(int argc, char **argv)
 
 		if( cudaFree( test_scratch[ i ] ) != cudaSuccess )
 		{
-			fprintf( stderr, "[device:%d] Error cudaFree (%d): %s\n", err, cudaGetErrorString((cudaError_t)err));
+			fprintf( stderr, "[device:%d] Error cudaFree.\n", i);
 			exit( EXIT_FAILURE );
 		}
 	}
