@@ -17,10 +17,15 @@ module phigemm
     EXTERNAL phidgemm
     EXTERNAL phicgemm
     EXTERNAL phizgemm
+    EXTERNAL phigemmsetsplitfactor
 #else
 
   !---- Fortran interfaces to phiGEMM subroutines ----
   interface
+
+    subroutine phigemmsetsplitfactor (x)
+       real               :: x(*)
+    end subroutine phigemmsetsplitfactor
 
 #if defined __PHIGEMM_PROFILE
      subroutine phiSgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line)
