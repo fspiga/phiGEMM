@@ -106,7 +106,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #else
 
 	/* if the input matrix if pretty small, we will perform the computation on CPU */
-	if ( (*n) < 256 || (*m) < 256 || (*k) < 256 )
+	if ( (*n) < 64 || (*m) < 64 || (*k) < 64 )
 	{
 		gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 		return;
