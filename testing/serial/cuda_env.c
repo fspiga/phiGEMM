@@ -6,9 +6,6 @@
  * in the root directory of the present distribution,
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
- * author(s): Filippo Spiga (filippo.spiga@ichec.ie)
- * 			  Ivan Girotto  (ivan.girotto@ichec.ie)
- *
  */
 
 #include <stdio.h>

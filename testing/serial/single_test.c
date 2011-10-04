@@ -6,9 +6,6 @@
  * in the root directory of the present distribution,
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
- * author(s): Filippo Spiga (filippo.spiga@ichec.ie)
- * 			  Ivan Girotto  (ivan.girotto@ichec.ie)
- *
  */
 
 #include <stdio.h>
@@ -362,9 +359,9 @@ int main(int argc, char **argv)
 #else
 	transb[2] = 't';
 #endif
-
 	is_transa[2] = 0;
 	is_transb[2] = 1;
+
 #if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 	transa[3] = 'c'; // 'c' for conjugate complex
 	transb[3] = 'c'; // 'c' for conjugate complex
