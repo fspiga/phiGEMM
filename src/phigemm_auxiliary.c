@@ -209,7 +209,7 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	}
 	phiGemmSplitFactor[0] = envar_split;
 
-	/* SGEMM */
+	/* DGEMM */
 	value = getenv("PHI_DGEMM_SPLIT");
 	if (value != NULL)
 	{
