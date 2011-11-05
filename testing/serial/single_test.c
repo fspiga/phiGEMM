@@ -141,6 +141,8 @@ int main(int argc, char **argv)
 	float lowerSplitFactor, upperSplitFactor, stepSplitFactor, currentSplitFactor;
 	char transa[4], transb[4];
 
+	unsigned int tmp_error, tmp_flags;
+
 	if( argc != 8 )
 	{
 		fprintf( stderr, "\nLaunch ERROR: Use ${Executable} <nGPU> <m> <n> <k> <lower split-factor> <upper split-factor> <step>\nfor matrix multiplication C( m, n ) = A( m, k ) x B( k, n )\n" );
@@ -236,7 +238,17 @@ int main(int argc, char **argv)
 		printf( "*** ERROR allocating MEMORY on CPU\n"  );
 		exit( EXIT_FAILURE );
 	}
+
+#if defined __PHITEST_FORCE_PINNED
+        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
+        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
+
+        tmp_error = (int) cuMemHostRegister(GPU_buffer_memory_ptr, byte_GPU_buffer, 3); //3 is ... ???
+        printf("[cuMemHostRegister] tmp_error=%d\n", tmp_error); fflush(stdout);
 #endif
+#endif
+        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
+        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
 
 	fprintf( stdout, "\nsizeof(XTYPE) = %lu", (size_t) sizeof(XTYPE) );
 #if defined __CUDA_TYPE_FLOAT
