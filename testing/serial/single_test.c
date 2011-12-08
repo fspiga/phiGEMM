@@ -240,15 +240,18 @@ int main(int argc, char **argv)
 	}
 
 #if defined __PHITEST_FORCE_PINNED
-        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
-        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
 
-        tmp_error = (int) cuMemHostRegister(GPU_buffer_memory_ptr, byte_GPU_buffer, 3); //3 is ... ???
+	    /* the first call makes no sense */
+//        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
+//        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
+
+        tmp_error = (int) cuMemHostRegister(GPU_buffer_memory_ptr, byte_GPU_buffer, CU_MEMHOSTALLOC_PORTABLE);
         printf("[cuMemHostRegister] tmp_error=%d\n", tmp_error); fflush(stdout);
-#endif
-#endif
+
         tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
         printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
+#endif
+#endif
 
 	fprintf( stdout, "\nsizeof(XTYPE) = %lu", (size_t) sizeof(XTYPE) );
 #if defined __CUDA_TYPE_FLOAT
@@ -391,7 +394,7 @@ int main(int argc, char **argv)
 //	is_transa[0] = 1;
 //	is_transb[0] = 0;
 
-	for( count = 0; count < 4; count +=1 ){
+	for( count = 0; count < 1; count +=1 ){
 
 		int lda = m;
 		int ldb = k;
@@ -665,7 +668,22 @@ int main(int argc, char **argv)
 	cudaFreeHost( GPU_buffer_memory_ptr );
 	if ( !(mem_gpu > memsize[ 0 ]) ) cudaFreeHost( C_cuda );
 #else
+
+#if defined __PHITEST_FORCE_PINNED
+
+        /* the first call makes no sense */
+//        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
+//        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
+
+        tmp_error = (int) cuMemHostUnregister(GPU_buffer_memory_ptr);
+        printf("[cuMemHostUnregister] tmp_error=%d\n", tmp_error); fflush(stdout);
+
+        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
+        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
+#endif
+
 	free( GPU_buffer_memory_ptr );
+
 	if ( !(mem_gpu > memsize[ 0 ]) ) free( C_cuda );
 #endif
 
