@@ -631,6 +631,7 @@ enable_parallel
 enable_debug
 enable_profiling
 enable_multi_gpu
+enable_pinned
 with_cuda_dir
 with_gpu_arch
 with_split_by_hand
@@ -1905,9 +1906,9 @@ else
 fi
 
 
-# Check whether --enable-multi_gpu was given.
-if test "${enable_multi_gpu+set}" = set; then :
-  enableval=$enable_multi_gpu; if  test "$enableval" = "yes" ; then
+# Check whether --enable-pinned was given.
+if test "${enable_pinned+set}" = set; then :
+  enableval=$enable_pinned; if  test "$enableval" = "yes" ; then
       use_pinned=1
    else
       use_pinned=0

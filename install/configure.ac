@@ -50,7 +50,7 @@ AC_ARG_ENABLE(multi_gpu,
    fi],
    [use_multigpu=0])
    
-AC_ARG_ENABLE(multi_gpu, 
+AC_ARG_ENABLE(pinned, 
    [AS_HELP_STRING([--enable-pinned],
        [enable multi GPU support (default: no)])],
    [if  test "$enableval" = "yes" ; then
