@@ -12,16 +12,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
 #include "cuda.h"
 #include "cuda_runtime.h"
+#include "cublas_v2.h"
+
 #include "phigemm.h"
 
 #include <sys/time.h>
-
-#include "cublas_v2.h"
-
-#include <cuda_runtime.h>
-
 #include <assert.h>
 
 
@@ -245,10 +243,10 @@ int main(int argc, char **argv)
 //        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
 //        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
 
-        tmp_error = (int) cuMemHostRegister(GPU_buffer_memory_ptr, byte_GPU_buffer, CU_MEMHOSTALLOC_PORTABLE);
+        tmp_error = (int) cudaHostRegister(GPU_buffer_memory_ptr, byte_GPU_buffer, CU_MEMHOSTALLOC_PORTABLE);
         printf("[cuMemHostRegister] tmp_error=%d\n", tmp_error); fflush(stdout);
 
-        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
+        tmp_error = (int) cudaHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
         printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
 #endif
 #endif
@@ -622,7 +620,7 @@ int main(int argc, char **argv)
 			//	   fprintf( stdout, "\n\n");
 			//	   fflush(stdout);
 
-			fprintf( stdout, "[%c%c]  PhiGEMM ( %d CPU / %d GPUs ) phiGEMM: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\t errors: %c\n", transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ), nGPU, hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor, (error > 0 ? 'Y' : (error == 0 ? 'N' : 'X')) );
+			fprintf( stdout, "[%c%c]  phiGEMM ( %d CPU / %d GPUs ) phiGEMM: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\t errors: %c\n", transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ), nGPU, hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor, (error > 0 ? 'Y' : (error == 0 ? 'N' : 'X')) );
 			fflush( stdout );
 //			fprintf( stdout, "[%c%c] MKL (%2d) RPeak = %10.4f\t\tCUBLAS RPeak = %10.4f (kernel RPeak = %g)\t\tphiGEMM (GPU: %d, split: %.3f) RPeak = %10.4f [errors %c]\n\n",
 //					transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ),
@@ -675,10 +673,10 @@ int main(int argc, char **argv)
 //        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
 //        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
 
-        tmp_error = (int) cuMemHostUnregister(GPU_buffer_memory_ptr);
+        tmp_error = (int) cudaHostUnregister(GPU_buffer_memory_ptr);
         printf("[cuMemHostUnregister] tmp_error=%d\n", tmp_error); fflush(stdout);
 
-        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
+        tmp_error = (int) cudaHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
         printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
 #endif
 
