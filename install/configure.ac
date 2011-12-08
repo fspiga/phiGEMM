@@ -50,6 +50,16 @@ AC_ARG_ENABLE(multi_gpu,
    fi],
    [use_multigpu=0])
    
+AC_ARG_ENABLE(multi_gpu, 
+   [AS_HELP_STRING([--enable-pinned],
+       [enable multi GPU support (default: no)])],
+   [if  test "$enableval" = "yes" ; then
+      use_pinned=1
+   else
+      use_pinned=0
+   fi],
+   [use_pinned=0])
+   
 AC_ARG_WITH(cuda_dir, 
    [AS_HELP_STRING([--with-cuda-dir=<path>],
     [specify CUDA installation directory (default is /usr/local/cuda/)])],
@@ -325,7 +335,11 @@ if test "$use_debug" == 1 ; then
 fi
 
 if test "$use_multigpu" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU"
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_FORCE_PINNED"
+else
+	if test "$use_pinned" == 1 ; then
+    	phigemm_opts="$phigemm_opts -D__PHIGEMM_FORCE_PINNED"
+	fi
 fi
 
 if test "$use_profile" == 1 ; then

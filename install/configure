@@ -1268,6 +1268,7 @@ Optional Features:
   --enable-debug          compile Fortran with debug flags (default: no)
   --enable-profiling      enable the profiling of phiGEMM calls (default: no)
   --enable-multi-gpu      enable multi GPU support (default: no)
+  --enable-pinned         enable multi GPU support (default: no)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1901,6 +1902,18 @@ if test "${enable_multi_gpu+set}" = set; then :
    fi
 else
   use_multigpu=0
+fi
+
+
+# Check whether --enable-multi_gpu was given.
+if test "${enable_multi_gpu+set}" = set; then :
+  enableval=$enable_multi_gpu; if  test "$enableval" = "yes" ; then
+      use_pinned=1
+   else
+      use_pinned=0
+   fi
+else
+  use_pinned=0
 fi
 
 
@@ -3359,7 +3372,11 @@ if test "$use_debug" == 1 ; then
 fi
 
 if test "$use_multigpu" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU"
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_FORCE_PINNED"
+else
+	if test "$use_pinned" == 1 ; then
+    	phigemm_opts="$phigemm_opts -D__PHIGEMM_FORCE_PINNED"
+	fi
 fi
 
 if test "$use_profile" == 1 ; then
