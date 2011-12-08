@@ -1,4 +1,4 @@
-Last update: Sept 26, 2011
+Last update: Dec 9, 2011
 
 0) Suspected bugs/problems:
   
@@ -14,10 +14,12 @@ Last update: Sept 26, 2011
     4.0.2 Ensure backward compatibility with CUDA 3.x
     4.0.3 Padding the leading dimensions
     4.0.4 Benchmarking which padding is the best (32 like MAGMA?)
+    4.0.5 Link to non-MKL multi-threaded BLAS libraries
         
   4.1  New developments to be added (sooner or later):
     4.1.1 Developer a "tuner" program to detect and define 
     4.1.2 extend the FORTRAN90 module to cover all the auxiliary routines
+    4.1.3 batched-DGEMM for rectangular matrices
     
   4.2 Small new developments, desirable or to be added:
     4.2.1 Script that easily process the output of the test-suites 
@@ -32,5 +34,5 @@ Last update: Sept 26, 2011
 4.4 Cleanup:
   4.4.1 Remove dead lines of code
  
-4.5 Trouble-makers. inconsistencies, etc:
-  
+4.5 Trouble-makers, inconsistencies, etc:
+  4.5.1 Verify GNU compiler + Intel MKL linking

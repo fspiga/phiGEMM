@@ -64,6 +64,8 @@ Recognized options of the configure
 --enable-profiling      : turn on the phiGEMM call-per-call profile. File in
                           CSV format. (default: no)
 --enable-multi-gpu      : enable multi-GPU support (default: no) 
+--enable-pinned         : the library marks as non-pageable the host memory
+                          (default: no) 
 
 IMPORTANT NOTE: the multi-GPU **REQUIRES** memory allocations at the host side 
                 as non-pageable (pinned memory) otherwise all the H2D and D2H 
@@ -248,6 +250,7 @@ IMPORTANT NOTE: this feature is not yet in the repository because can
  
 6. >>> Releases
 
+v1.5   - December 9, 2011     ( internal "pinning" )
 v1.4   - September 26, 2011   ( FORTRAN90 module module)
 v1.3   - September 10, 2011   (version optimized for both pinned and non-pinned)
 v1.2   - August 29, 2011
