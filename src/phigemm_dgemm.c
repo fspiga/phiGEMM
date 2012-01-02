@@ -101,7 +101,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 
 
-#if __PHIGEMM_HACK_CPUONLY
+#if defined __PHIGEMM_HACK_CPUONLY
 	gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 #else
 
