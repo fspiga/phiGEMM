@@ -63,7 +63,7 @@ void initcudaenv_()
 			exit(EXIT_FAILURE);
 		}
 
-		cuMemGetInfo(&free, &total);
+		cudaMemGetInfo(&free, &total);
 
 #if defined __PHIGEMM_DEBUG
 		printf("[GPU %d] before: %lu (total: %lu)\n", gpu_bonded[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
@@ -78,7 +78,7 @@ void initcudaenv_()
 		}
 
 #if defined __PHIGEMM_DEBUG
-		cuMemGetInfo(&free, &total);
+		cudaMemGetInfo(&free, &total);
 		printf("[GPU %d] after: %lu (total: %lu)\n", gpu_bonded[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
 #endif
 	}
