@@ -34,8 +34,6 @@ phiGemmMemDevPtr dev_scratch;
 phiGemmMemSizes scratch_size;
 phiGemmDeviceIds deviceIds;
 
-void selfPhigemmInit();
-
 void estmSplitFactor(const char* optype, char transa, char transb);
 
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in);

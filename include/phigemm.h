@@ -26,6 +26,8 @@ void phiGemmShutdown();
 
 int phiGemmIsInit();
 
+void selfPhigemmInit();
+
 void phigemmSetSplitFactor(float *x);
 
 #if defined __PHIGEMM_PROFILE
@@ -83,6 +85,8 @@ void phigemminit_(int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 void phigemmshutdown_();
 
 int phigemmisinit_();
+
+void selfphigemminit_();
 
 void phigemmsetsplitfactor_(float *x);
 
