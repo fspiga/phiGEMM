@@ -769,6 +769,8 @@ int phigemmisinit_(){return phiGemmIsInit();}
 
 void phigemmsetsplitfactor_(float *x) { phigemmSetSplitFactor(x); }
 
+void selfphigemminit_(){return selfPhigemmInit(); }
+
 #ifdef __cplusplus
 }
 #endif
