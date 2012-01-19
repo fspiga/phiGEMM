@@ -12,7 +12,7 @@
 #include "phigemm_auxiliary.h"
 
 #define PRECISION_D
-#if (defined PRECISION_D) || (defined PRECISION_S)
+#if defined(PRECISION_D) || defined(PRECISION_S)
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
 #else
 #define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
@@ -32,11 +32,11 @@ extern phiGemmDeviceIds deviceIds;
 extern float phiGemmSplitFactor[4];
 extern int phiGemmNumDevices;
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 extern FILE *phiProfileFile;
 #endif
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
@@ -51,7 +51,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		int is_splitA, float split);
 #endif
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
@@ -77,7 +77,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	/* determine which matrix is to be splitted */
 	int is_splitA = -1;
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 	double start, stop;
 #endif
 
@@ -92,7 +92,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	//		exit(EXIT_FAILURE);
 	//	}
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 	if ( ground_level) {
 		first_call = 1;
 		splitting_steps = 0;
@@ -101,7 +101,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 
 
-#if __PHIGEMM_HACK_CPUONLY
+#if defined(__PHIGEMM_HACK_CPUONLY)
 	gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 #else
 
@@ -120,7 +120,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	}
 
 	is_splitA = (*n > *m) ? 0:1;
-#if defined __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
         if ( is_splitA ) {
         	printf("*** phiGEMM *** Dimensions\t%d\t%d\t%d\t(m-n-k), SPLIT A (m-k)\n", *m, *n, *k);  fflush(stdout);
 	} else {
@@ -161,7 +161,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			splitting_steps++;
 			ground_level = 0;
 
-#if defined __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 			printf("*** phiGEMM *** Dimensions\t%d\t%d\t%d\t( %lu bytes) too big to fit the GPU memory (%lu bytes), split A(%d, %d)...\n",
 					*m, *n, *k, (unsigned long)mem_gpu, (unsigned long)memsize_gpu, *m, *n);  fflush(stdout);
 #endif
@@ -171,7 +171,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			a_offset = ( *transa == 'n' || *transa == 'N' )? p1 : ((*lda)*p1);
 			c_offset = p1;
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 			PHIGEMM_M(transa, transb, &p1, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
 			PHIGEMM_M(transa, transb, &p2, n, k, alpha, A + a_offset, lda, B, ldb, beta, C + c_offset, ldc, file, line);
 #else
@@ -180,7 +180,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 		} else {
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 			PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
 			PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
@@ -196,7 +196,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			ground_level = 0;
 			splitting_steps++;
 
-#if defined __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 			printf("*** phiGEMM *** Dimensions\t%d\t%d\t%d\t( %lu bytes) too big to fit the GPU memory (%lu bytes), split B( %d, %d )...\n",
 					*m, *n, *k, (unsigned long)mem_gpu, (unsigned long)memsize_gpu, *k, *n); fflush(stdout);
 #endif
@@ -206,7 +206,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			b_offset = ( *transb == 'n' || *transb == 'N' )? ((*ldb)*p1) : p1;
 			c_offset = (*ldc)*p1;
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 			PHIGEMM_M(transa, transb, m, &p1, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
 			PHIGEMM_M(transa, transb, m, &p2, k, alpha, A, lda, B + b_offset, ldb, beta, C + c_offset, ldc, file, line);
 #else
@@ -215,26 +215,13 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 		} else {
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 			PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
 			PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
 #endif
 		}
 	}
-
-#endif
-
-#if defined __PHIGEMM_PROFILE
-	if ( first_call) {
-		ground_level = 1;
-		first_call = 0;
-		stop = phigemm_cclock() - start;
-		/* Comma-Separated Value (csv) format:
-		 * file, line, nGPU, nThreads, transA, transB, m, n, k, spliting_steps, split_factor, time, GFlops */
-		fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, atoi( getenv( "OMP_NUM_THREADS" ) ), *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
-	}
-#endif
 
 	if ( local_init ) {
 		/* local init -> local shutdown (only at the end )*/
@@ -245,13 +232,25 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
 		exit(EXIT_FAILURE);
 	}
+#endif
+
+#if defined(__PHIGEMM_PROFILE)
+	if ( first_call) {
+		ground_level = 1;
+		first_call = 0;
+		stop = phigemm_cclock() - start;
+		/* Comma-Separated Value (csv) format:
+		 * file, line, nGPU, nThreads, transA, transB, m, n, k, spliting_steps, split_factor, time, GFlops */
+		fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, atoi( getenv( "OMP_NUM_THREADS" ) ), *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+	}
+#endif
 
 	return;
 }
 
-#if defined __PHIGEMM_MULTI_GPU
+#if defined(__PHIGEMM_MULTI_GPU)
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
@@ -471,7 +470,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 
 	stop_total = phigemm_cclock();
 
-#if defined __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	float time_temp, time_mem_h2d, time_gemm_mklcuda, time_mem_d2h;
 	double time_total = stop_total - start_total;
 	double time_mkl = stop_mkl - start_mkl;
@@ -510,7 +509,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		unbalance = (time_mem_h2d + time_gemm_mklcuda + time_mem_d2h) - time_mkl;
 
 		if ( is_splitA ) {
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 			printf ("[%s:%s - GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
 					file, line, iDev % phiGemmNumDevices,
 					*m,
@@ -552,7 +551,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 #endif
 		} else {
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 			printf ("[%s:%s - GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
 					file, line, iDev % phiGemmNumDevices,
 					*m,
@@ -608,7 +607,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 
 #else
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
@@ -851,7 +850,7 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 
 	stop_total = phigemm_cclock();
 
-#if defined __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	float time_temp, time_mem_h2d, time_dgemm_cuda, time_mem_d2h;
 	double time_total = stop_total - start_total;
 	double time_mkl = stop_mkl - start_mkl;
@@ -890,7 +889,7 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 		unbalance = (time_mem_h2d + time_dgemm_cuda + time_mem_d2h) - time_mkl;
 
 		if ( is_splitA ) {
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 			printf ("[%s:%s - GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
 					file, line, iDev % phiGemmNumDevices,
 					*m,
@@ -932,7 +931,7 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 #endif
 		} else {
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 			printf ("[%s:%s - GPU %d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
 					file, line, iDev % phiGemmNumDevices,
 					*m,
