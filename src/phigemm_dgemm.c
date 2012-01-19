@@ -69,7 +69,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	int tmp, p1, p2;
 	int a_offset, b_offset, c_offset;
 	size_t memsize_gpu, mem_gpu;
-	float split;
+	float split = -1;
 	static int ground_level = 1;
 	static int splitting_steps;
 	int first_call = 0;
