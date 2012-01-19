@@ -31,6 +31,7 @@ extern phiGemmMemDevPtr dev_scratch;
 extern phiGemmDeviceIds deviceIds;
 extern float phiGemmSplitFactor[4];
 extern int phiGemmNumDevices;
+extern int phiGemmCPUThreeads;
 
 #if defined(__PHIGEMM_PROFILE)
 extern FILE *phiProfileFile;
@@ -234,7 +235,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		stop = phigemm_cclock() - start;
 		/* Comma-Separated Value (csv) format:
 		 * file, line, nGPU, nThreads, transA, transB, m, n, k, spliting_steps, split_factor, time, GFlops */
-		fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, atoi( getenv( "OMP_NUM_THREADS" ) ), *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+		fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 	}
 #endif
 

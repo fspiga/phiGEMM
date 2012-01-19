@@ -262,6 +262,18 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	}
 	phiGemmSplitFactor[3] = envar_split;
 
+	/* This is to avoid not-defined OMP_NUM_THREADS in the environment.
+	 * Default threads num = 1 */
+	value = getenv("OMP_NUM_THREADS");
+	if (value != NULL)
+	{
+		envar_split = atoi(value);
+	} else {
+
+		/* Default split if no env variables are specified */
+		envar_split = 0.1;
+	}
+	phiGemmCPUThreads = envar_split;
 }
 
 
