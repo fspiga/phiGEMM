@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#ifdef __PHIGEMM_PARA
+#if defined(__PHIGEMM_PARA)
 #include <mpi.h>
 #endif
 
@@ -31,7 +31,7 @@
 #include "cublas_v2.h"
 
 
-#if defined __CUDA_GET_MEM_HACK
+#if defined(__CUDA_GET_MEM_HACK)
 #define __GPU_MEM_AMOUNT_HACK__ 2400000000
 #endif
 
@@ -42,14 +42,14 @@ extern "C"
 {
 #endif
 
-#ifdef __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 FILE *phiProfileFile;
 #endif
 
 static int is_phigemm_init = 0;
 static int is_alloc_external = 0;
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 const char base[] = "phigemm.profile";
 #endif
 
@@ -119,7 +119,7 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 			 */
 			mem_gpu = memOccupancy(is_splitA, split, m, *p1, k) * type_size;
 		}
-#ifdef __PHIGEMM_DEBUG_2
+#if defined(__PHIGEMM_DEBUG)
 		fprintf( stdout,"*** phiGEMM *** > p1: %d\tp2: %d\tsize:%lu\n", *p1, *p2, mem_gpu); fflush(stdout);
 #endif
 	}
@@ -167,7 +167,7 @@ int stringCmp( const void *a, const void *b)
 
 
 void phigemmSetSplitFactor(float *x) {
-#ifdef __PHIGEMM_EXPLICIT_SPLITFACTOR
+#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
 	float tmp,tmp2;
 	int i;
 
@@ -197,13 +197,13 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	if (value != NULL)
 	{
 		envar_split = atof(value);
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf ("*** phiGEMM *** SGEMM split factor from environment variable: %f \n", envar_split);
 #endif
 	} else {
 		/* Default split if no env variables are specified */
 		envar_split = 0.85;
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf ("*** phiGEMM *** SGEMM default split factor: %f \n", envar_split);
 #endif
 	}
@@ -214,13 +214,13 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	if (value != NULL)
 	{
 		envar_split = atof(value);
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf ("*** phiGEMM *** DGEMM split factor from environment variable: %f \n", envar_split);
 #endif
 	} else {
 		/* Default split if no env variables are specified */
 		envar_split = 0.875;
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf ("*** phiGEMM *** DGEMM default split factor: %f \n", envar_split);
 #endif
 	}
@@ -231,14 +231,14 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	if (value != NULL)
 	{
 		envar_split = atof(value);
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf ("*** phiGEMM *** CGEMM split factor from environment variable: %f \n", envar_split);
 #endif
 	} else {
 
 		/* Default split if no env variables are specified */
 		envar_split = 0.9;
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf ("*** phiGEMM *** CGEMM  default split factor: %f \n", envar_split);
 #endif
 	}
@@ -249,14 +249,14 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	if (value != NULL)
 	{
 		envar_split = atof(value);
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf ("*** phiGEMM *** ZGEMM split factor from environment variable: %f \n", envar_split);
 #endif
 	} else {
 
 		/* Default split if no env variables are specified */
 		envar_split = 0.925;
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf ("*** phiGEMM *** ZGEMM  default split factor: %f \n", envar_split);
 #endif
 	}
@@ -293,15 +293,15 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	is_alloc_external = 1;
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	printf("*** phiGEMM *** %d GPUs detected.\n", phiGemmNumDevices);
 	fflush(stdout);
 #endif
 
 	/* find the split factor */
-#ifdef __PHIGEMM_EXPLICIT_SPLITFACTOR
+#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
 	fflush(stdout);
 #endif
@@ -311,7 +311,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	/* Now there is only one generic split factor. Parameters are temporary ignored... */
 	estmSplitFactor("xxx", 'n', 'n');
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	printf("*** phiGEMM *** The (initial) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
 	fflush(stdout);
 #endif
@@ -342,7 +342,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 		dev_scratch[ i ] = (void*) (tmp_ptr + offset) ;
 
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf("*** phiGEMM *** %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long)scratch_size[i], deviceIds[i]);
 		fflush(stdout);
 #endif
@@ -377,14 +377,14 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	/* set the initialization flag */
 	is_phigemm_init = 1;
 
-#ifdef __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 
 	char *value = NULL;
 	char finalFileName [ FILENAME_MAX ];
 
 	value = getenv("PHIGEMM_PROFILE_PREFIX");
 
-#ifdef __PHIGEMM_PARA
+#if defined(__PHIGEMM_PARA)
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &i);
 	if (value != NULL)
@@ -407,7 +407,7 @@ void phiGemmShutdown()
 {
 	int i;
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	printf("*** phiGEMM: *** shutdown *** is_phigemm_init:%d, is_alloc_external:%d, devices: %d\n",is_phigemm_init, is_alloc_external, phiGemmNumDevices);
 	fflush(stdout);
 #endif
@@ -435,7 +435,7 @@ void phiGemmShutdown()
 
 	is_phigemm_init = 0;
 
-#ifdef __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 	fclose (phiProfileFile);
 #endif
 }
@@ -452,12 +452,12 @@ void selfPhigemmInit(){
 
 	struct cudaDeviceProp deviceProp;
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	printf("*** phiGEMM *** Self-Init ***\n");
 	fflush(stdout);
 #endif
 
-#ifdef __PHIGEMM_PARA
+#if defined(__PHIGEMM_PARA)
 
 	int lRank, lSize, sDeviceBoundTo, tmp;
 	char lNodeName[MPI_MAX_PROCESSOR_NAME];
@@ -523,7 +523,7 @@ void selfPhigemmInit(){
 		ngpus_per_process = 1;
 	} else {
 		/* multi-GPU in parallel calculations is allowed ONLY if CUDA >= 4.0 */
-#if defined __CUDA_3
+#if defined(__CUDA_3)
 		ngpus_used = ngpus_detected;
 		ngpus_per_process = 1;
 #else
@@ -561,12 +561,12 @@ void selfPhigemmInit(){
 		cuMemGetInfo(&free, &total);
 
 		// see cuda_env.h for a description of the hack
-#if defined __CUDA_GET_MEM_HACK
+#if defined(__CUDA_GET_MEM_HACK)
 		free = (size_t)  __GPU_MEM_AMOUNT_HACK__;
 #else
 		cuMemGetInfo(&free, &total);
 
-#if defined __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf("[GPU %d - rank: %d (internal rank:%d) ] before: %lu (total: %lu)\n", deviceIds[i], lRank, lRankThisNode, (unsigned long)free, (unsigned long)total); fflush(stdout);
 #endif
 #endif
@@ -580,7 +580,7 @@ void selfPhigemmInit(){
 			exit(EXIT_FAILURE);
 		}
 
-#if defined __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		cuMemGetInfo(&free, &total);
 		printf("[GPU %d - rank: %d (internal rank:%d)] after: %lu (total: %lu)\n", deviceIds[i], lRank, lRankThisNode, (unsigned long)free, (unsigned long)total); fflush(stdout);
 #endif
@@ -597,7 +597,7 @@ void selfPhigemmInit(){
 		exit(EXIT_FAILURE);
 	}
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	printf("*** phiGEMM *** %d GPUs detected.\n", lNumDevicesThisNode);
 	fflush(stdout);
 #endif
@@ -605,13 +605,13 @@ void selfPhigemmInit(){
 	ngpus_detected = lNumDevicesThisNode;
 
 	/* multi-GPU in serial calculations is allowed ONLY if CUDA >= 4.0 */
-#if defined __PHIGEMM_MULTI_GPU && !defined __CUDA_3
+#if defined(__PHIGEMM_MULTI_GPU) && !defined(__CUDA_3)
 	ngpus_used = ngpus_per_process = lNumDevicesThisNode;
 #else
 	ngpus_used = ngpus_per_process = 1;
 #endif
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	printf("*** phiGEMM *** %d GPUs used.\n", ngpus_per_process);
 	fflush(stdout);
 #endif
@@ -645,12 +645,12 @@ void selfPhigemmInit(){
 		cuMemGetInfo(&free, &total);
 
 		// see cuda_env.h for a description of the hack
-#if defined __CUDA_GET_MEM_HACK
+#if defined(__CUDA_GET_MEM_HACK)
 		free = (size_t)  __GPU_MEM_AMOUNT_HACK__;
 #else
 		cuMemGetInfo(&free, &total);
 
-#if defined __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		printf("[GPU %d] before: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
 #endif
 #endif
@@ -662,7 +662,7 @@ void selfPhigemmInit(){
 			exit(EXIT_FAILURE);
 		}
 
-#if defined __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 		cuMemGetInfo(&free, &total);
 		printf("[GPU %d] after: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
 #endif
@@ -680,9 +680,9 @@ void selfPhigemmInit(){
 	is_alloc_external = 0; //quite important that this is 0!
 
 	/* find the split factor */
-#ifdef __PHIGEMM_EXPLICIT_SPLITFACTOR
+#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
 	fflush(stdout);
 #endif
@@ -692,7 +692,7 @@ void selfPhigemmInit(){
 	/* Now there is only one generic split factor. Parameters are temporary ignored... */
 	estmSplitFactor("xxx", 'n', 'n');
 
-#ifdef __PHIGEMM_DEBUG
+#if defined(__PHIGEMM_DEBUG)
 	printf("*** phiGEMM *** The (initial) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
 	fflush(stdout);
 #endif
@@ -735,14 +735,14 @@ void selfPhigemmInit(){
 	/* set the initialization flag */
 	is_phigemm_init = 1;
 
-#ifdef __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 
 	char *value = NULL;
 	char finalFileName [ FILENAME_MAX ];
 
 	value = getenv("PHIGEMM_PROFILE_PREFIX");
 
-#ifdef __PHIGEMM_PARA
+#if defined(__PHIGEMM_PARA)
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &i);
 	if (value != NULL)
