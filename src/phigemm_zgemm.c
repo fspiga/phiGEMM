@@ -241,7 +241,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	return;
 }
 
-#if defined __PHIGEMM_MULTI_GPU
+#if defined(__PHIGEMM_MULTI_GPU)
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
@@ -920,9 +920,9 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 					file, line, iDev % phiGemmNumDevices,
 					*m,
 					*n,
-                                        n_gpu[iDev],
-                                        n_cpu,
-                                        split,
+                    n_gpu[iDev],
+                    n_cpu,
+                    split,
 					*k,
 					time_mem_h2d,
 					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuDoubleComplex)),
@@ -941,9 +941,9 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 					*m,
 					*n,
 					n_gpu[iDev],
-                                        n_cpu,
-                                        split,
-                                        *k,
+                    n_cpu,
+                    split,
+                    *k,
 					time_mem_h2d,
 					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuDoubleComplex)),
 					time_mkl,
