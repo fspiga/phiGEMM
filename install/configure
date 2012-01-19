@@ -635,6 +635,7 @@ enable_pinned
 with_cuda_dir
 with_gpu_arch
 with_split_by_hand
+with_cpu_only
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1279,6 +1280,8 @@ Optional Packages:
   --with-gpu-arch=<arch>  specify the GPU target architecture (default: 20)
   --with-split-by-hand    the split factor has to be specified in the code
                           instead of using env variables (default: no)
+  --with-cpu_only         everything is performed only by the CPU, useful for
+                          call-by-call profiling (default: no)
 
 Some influential environment variables:
   FC          Fortran compiler command
@@ -1946,6 +1949,19 @@ if test "${with_split_by_hand+set}" = set; then :
    fi
 else
   use_explicit_factor=0
+fi
+
+
+
+# Check whether --with-cpu_only was given.
+if test "${with_cpu_only+set}" = set; then :
+  withval=$with_cpu_only; if   test "$withval" = "yes" ; then
+      use_cpu_only=1
+   else
+      use_cpu_only=0
+   fi
+else
+  use_cpu_only=0
 fi
 
 
@@ -3390,6 +3406,10 @@ fi
 
 if test "$use_explicit_factor" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
+fi
+
+if test "$use_cpu_only" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_HACK_CPUONLY"
 fi
 
 cuda_include="-I$cuda_path/include -I$topdir/include"

@@ -81,6 +81,16 @@ AC_ARG_WITH(split_by_hand,
       use_explicit_factor=0
    fi],
    [use_explicit_factor=0])
+
+AC_ARG_WITH(cpu_only,
+   [AS_HELP_STRING([--with-cpu_only],
+       [everything is performed only by the CPU, useful for call-by-call profiling (default: no)])],
+    [if   test "$withval" = "yes" ; then
+      use_cpu_only=1
+   else
+      use_cpu_only=0
+   fi],
+   [use_cpu_only=0])
    
 # -----------------------------
 # store variables from the environment, if set (may be or not be set)
@@ -352,6 +362,10 @@ fi
 
 if test "$use_explicit_factor" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
+fi
+	
+if test "$use_cpu_only" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_HACK_CPUONLY"
 fi
 	       
 cuda_include="-I$cuda_path/include -I$topdir/include"
