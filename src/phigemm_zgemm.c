@@ -101,7 +101,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 
 
-#if defined __PHIGEMM_HACK_CPUONLY
+#if __PHIGEMM_HACK_CPUONLY
 	gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 #else
 
@@ -310,12 +310,20 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 			k_h2d[iDev] = k_gpu[iDev] = k_cpu = *k;
 			m_h2d[iDev] = m_gpu[iDev] = (iDev==0) ? step + residual : step;
 
-			a_offset_gpu[iDev] = ( is_transa ) ? m_gpu[iDev] * (*lda) : m_gpu[iDev];
+			if ( is_transa )
+				a_offset_gpu[iDev] = m_gpu[iDev] * (*lda);
+			else
+				a_offset_gpu[iDev] = m_gpu[iDev] ;
+
 			b_offset_gpu[iDev] = 0;
 			c_offset_gpu[iDev] = m_gpu[iDev] ;
 		}
 
-		a_offset = ( is_transa ) ? tmp * (*lda) : tmp;
+		if ( is_transa )
+			a_offset = tmp * (*lda);
+		else
+			a_offset = tmp;
+
 		b_offset = 0;
 		c_offset = tmp;
 
@@ -334,12 +342,20 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 			m_h2d[iDev] = m_gpu[iDev] = m_cpu = *m;
 			n_h2d[iDev] = n_gpu[iDev] = (iDev==0) ? step + residual : step;
 
-			b_offset_gpu[iDev] = ( is_transb ) ? n_gpu[iDev] : (*ldb) * n_gpu[iDev];
+			if ( is_transb )
+				b_offset_gpu[iDev] = n_gpu[iDev];
+			else
+				b_offset_gpu[iDev] = (*ldb) * n_gpu[iDev] ;
+
 			a_offset_gpu[iDev] = 0;
 			c_offset_gpu[iDev] = (*ldc) * n_gpu[iDev] ;
 		}
 
-		b_offset = ( is_transb ) ? tmp : (*ldb) * tmp;
+		if ( is_transb )
+			b_offset = tmp;
+		else
+			b_offset = (*ldb)* tmp;
+
 		a_offset = 0;
 		c_offset = (*ldc) * tmp ;
 	}
@@ -412,7 +428,6 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
 				sizeof(cuDoubleComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
 				*ldc, phiStreams[iDev]);
-
 		if (status != CUBLAS_STATUS_SUCCESS) {
 			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
@@ -650,12 +665,20 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 			k_h2d[iDev] = k_gpu[iDev] = k_cpu = *k;
 			m_h2d[iDev] = m_gpu[iDev] = (iDev==0) ? step + residual : step;
 
-			a_offset_gpu[iDev] = ( is_transa ) ? m_gpu[iDev] * (*lda) : m_gpu[iDev];
+			if ( is_transa )
+				a_offset_gpu[iDev] = m_gpu[iDev] * (*lda);
+			else
+				a_offset_gpu[iDev] = m_gpu[iDev] ;
+
 			b_offset_gpu[iDev] = 0;
 			c_offset_gpu[iDev] = m_gpu[iDev] ;
 		}
 
-		a_offset = ( is_transa ) ? tmp * (*lda) : tmp;
+		if ( is_transa )
+			a_offset = tmp * (*lda);
+		else
+			a_offset = tmp;
+
 		b_offset = 0;
 		c_offset = tmp;
 
@@ -674,12 +697,20 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 			m_h2d[iDev] = m_gpu[iDev] = m_cpu = *m;
 			n_h2d[iDev] = n_gpu[iDev] = (iDev==0) ? step + residual : step;
 
-			b_offset_gpu[iDev] = ( is_transb ) ? n_gpu[iDev] : (*ldb) * n_gpu[iDev];
+			if ( is_transb )
+				b_offset_gpu[iDev] = n_gpu[iDev];
+			else
+				b_offset_gpu[iDev] = (*ldb) * n_gpu[iDev] ;
+
 			a_offset_gpu[iDev] = 0;
 			c_offset_gpu[iDev] = (*ldc) * n_gpu[iDev] ;
 		}
 
-		b_offset = ( is_transb ) ? tmp : (*ldb) * tmp;
+		if ( is_transb )
+			b_offset = tmp;
+		else
+			b_offset = (*ldb)* tmp;
+
 		a_offset = 0;
 		c_offset = (*ldc) * tmp ;
 	}
@@ -850,8 +881,8 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 					m_gpu[iDev],
 					m_cpu,
 					split,
-					*k,
 					*n,
+					*k,
 					time_mem_h2d,
 					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuDoubleComplex)),
 					time_mkl,
@@ -870,8 +901,8 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 					m_gpu[iDev],
 					m_cpu,
 					split,
-					*k,
 					*n,
+					*k,
 					time_mem_h2d,
 					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuDoubleComplex)),
 					time_mkl,
@@ -886,14 +917,14 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 #endif
 		} else {
 #if defined __PHIGEMM_PROFILE
-			printf ("[%s:%s - GPU %d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
+			printf ("[%s:%s - GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
 					file, line, iDev % phiGemmNumDevices,
 					*m,
-					*k,
 					*n,
-					n_gpu[iDev],
-					n_cpu,
-					split,
+                                        n_gpu[iDev],
+                                        n_cpu,
+                                        split,
+					*k,
 					time_mem_h2d,
 					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuDoubleComplex)),
 					time_mkl,
@@ -906,14 +937,14 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 					time_total,
 					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k))/(time_total*1000));
 #else
-			printf ("[STATS GPU %d] %d %d %d (%d %d, %5.4f) ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
+			printf ("[STATS GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
 					iDev % phiGemmNumDevices,
 					*m,
-					*k,
 					*n,
 					n_gpu[iDev],
-					n_cpu,
-					split,
+                                        n_cpu,
+                                        split,
+                                        *k,
 					time_mem_h2d,
 					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuDoubleComplex)),
 					time_mkl,
