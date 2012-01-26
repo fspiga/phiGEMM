@@ -611,6 +611,10 @@ void selfPhigemmInit(){
 	}
 
 
+	is_alloc_external = 0; //quite important that this is 0!
+
+	/* set the initialization flag */
+	is_phigemm_init = 1;
 #else
 
 	cudaGetDeviceCount(&lNumDevicesThisNode);
