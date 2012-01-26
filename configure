@@ -15,7 +15,7 @@ MANUAL=" Usage
                       the autoconf configure
 
  After configuration, the make.sys file will created in the
- QE home (current) directory
+ phiGEMM home (current) directory
  
  ---------------------------------------------------------------
  Manual from autoconf configure : 
