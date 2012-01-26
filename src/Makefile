@@ -44,6 +44,7 @@ shared: dgemm.o zgemm.o sgemm.o cgemm.o util.o
 
 fortran:
 	ifort $(GEMM_OPT) -cpp -c phigemm.f90 -o .objs/phigemm.o -module ../include/
+	chmod 755 ../include/phigemm.f90
 	
 clean:
 	rm -rf .objs
