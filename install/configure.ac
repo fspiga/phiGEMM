@@ -1,4 +1,4 @@
-AC_INIT(phiGEMM, 1.0, , phigemm)
+AC_INIT(phiGEMM, 2.0, , phigemm)
 
 AC_ARG_ENABLE(cpu_multithread,
    [AS_HELP_STRING([--enable-cpu-multithread],
