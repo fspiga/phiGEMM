@@ -59,19 +59,23 @@ AC_ARG_ENABLE(pinned,
       use_pinned=0
    fi],
    [use_pinned=0])
-   
+
+AC_ARG_ENABLE(self_tune, 
+   [AS_HELP_STRING([--enable-self-tune],
+       [enable self-tune (default: no, experimental)])],
+   [if  test "$enableval" = "yes" ; then
+      use_selftune=1
+   else
+      use_selftune=0
+   fi],
+   [use_selftune=0])
+      
 AC_ARG_WITH(cuda_dir, 
    [AS_HELP_STRING([--with-cuda-dir=<path>],
     [specify CUDA installation directory (default is /usr/local/cuda/)])],
     [cuda_path="$withval"], 
     [cuda_path="/usr/local/cuda/"])
         
-AC_ARG_WITH(gpu_arch,
-   [AS_HELP_STRING([--with-gpu-arch=<arch>],
-	[specify the GPU target architecture (default: 20)])],
-	[cuda_arch="$withval"],
-	[cuda_arch="fermi"])
-
 AC_ARG_WITH(split_by_hand,
    [AS_HELP_STRING([--with-split-by-hand],
        [the split factor has to be specified in the code instead of using env variables (default: no)])],
@@ -345,10 +349,10 @@ if test "$use_debug" == 1 ; then
 fi
 
 if test "$use_multigpu" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_FORCE_PINNED"
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_PINNED"
 else
 	if test "$use_pinned" == 1 ; then
-    	phigemm_opts="$phigemm_opts -D__PHIGEMM_FORCE_PINNED"
+    	phigemm_opts="$phigemm_opts -D__PHIGEMM_PINNED"
 	fi
 fi
 
@@ -364,6 +368,10 @@ if test "$use_explicit_factor" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
 fi
 	
+if test "$use_selftune" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_SELFTUNE"
+fi	
+
 if test "$use_cpu_only" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_HACK_CPUONLY"
 fi

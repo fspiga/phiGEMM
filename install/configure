@@ -632,8 +632,8 @@ enable_debug
 enable_profiling
 enable_multi_gpu
 enable_pinned
+enable_self_tune
 with_cuda_dir
-with_gpu_arch
 with_split_by_hand
 with_cpu_only
 '
@@ -1271,13 +1271,13 @@ Optional Features:
   --enable-profiling      enable the profiling of phiGEMM calls (default: no)
   --enable-multi-gpu      enable multi GPU support (default: no)
   --enable-pinned         enable multi GPU support (default: no)
+  --enable-self-tune      enable self-tune (default: no, experimental)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-cuda-dir=<path>  specify CUDA installation directory (default is
                           /usr/local/cuda/)
-  --with-gpu-arch=<arch>  specify the GPU target architecture (default: 20)
   --with-split-by-hand    the split factor has to be specified in the code
                           instead of using env variables (default: no)
   --with-cpu_only         everything is performed only by the CPU, useful for
@@ -1921,21 +1921,24 @@ else
 fi
 
 
+# Check whether --enable-self_tune was given.
+if test "${enable_self_tune+set}" = set; then :
+  enableval=$enable_self_tune; if  test "$enableval" = "yes" ; then
+      use_selftune=1
+   else
+      use_selftune=0
+   fi
+else
+  use_selftune=0
+fi
+
+
 
 # Check whether --with-cuda_dir was given.
 if test "${with_cuda_dir+set}" = set; then :
   withval=$with_cuda_dir; cuda_path="$withval"
 else
   cuda_path="/usr/local/cuda/"
-fi
-
-
-
-# Check whether --with-gpu_arch was given.
-if test "${with_gpu_arch+set}" = set; then :
-  withval=$with_gpu_arch; cuda_arch="$withval"
-else
-  cuda_arch="fermi"
 fi
 
 
@@ -3389,10 +3392,10 @@ if test "$use_debug" == 1 ; then
 fi
 
 if test "$use_multigpu" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_FORCE_PINNED"
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_PINNED"
 else
 	if test "$use_pinned" == 1 ; then
-    	phigemm_opts="$phigemm_opts -D__PHIGEMM_FORCE_PINNED"
+    	phigemm_opts="$phigemm_opts -D__PHIGEMM_PINNED"
 	fi
 fi
 
@@ -3406,6 +3409,10 @@ fi
 
 if test "$use_explicit_factor" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
+fi
+
+if test "$use_selftune" == 1 ; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_SELFTUNE"
 fi
 
 if test "$use_cpu_only" == 1 ; then
