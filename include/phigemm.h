@@ -30,6 +30,8 @@ void selfPhigemmInit();
 
 void phigemmSetSplitFactor(float *x);
 
+float phigemmGetSplitFactor(int selection);
+
 #if defined __PHIGEMM_PROFILE
 void phiSgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const float *alpha,

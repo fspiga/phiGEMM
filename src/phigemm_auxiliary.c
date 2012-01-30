@@ -172,16 +172,22 @@ void phigemmSetSplitFactor(float *x) {
 	int i;
 
 	for ( i = 0 ; i < 4 ; i++ ) {
-		/* 0:SGEMM, 1:DGEMM, 2:ZGEMM */
+		/* 0:SGEMM, 1:DGEMM, 2: CGEMM, 3:ZGEMM */
 		tmp =  (100.0f * x[i])/( 1.0f - x[i]);
 		tmp2 = 100.0f;
 		phiGemmSplitFactor[i] = tmp / (tmp + tmp2);
 	}
-#else
-	/* read from environment */
-	estmSplitFactor("xxx", 'n', 'n');
 #endif
 	return;
+}
+
+
+float phigemmGetSplitFactor(int selection) {
+#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
+	return phiGemmSplitFactor[selection];
+#else
+	return phiGemmPrevSplitFactor[selection];
+#endif
 }
 
 
@@ -208,6 +214,8 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 #endif
 	}
 	phiGemmSplitFactor[0] = envar_split;
+	phiGemmPrevSplitFactor[0] = envar_split;
+	phiGemmLowerPositiveSplitFactor[0] = 0.995 ;
 
 	/* DGEMM */
 	value = getenv("PHI_DGEMM_SPLIT");
@@ -225,6 +233,8 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 #endif
 	}
 	phiGemmSplitFactor[1] = envar_split;
+	phiGemmPrevSplitFactor[1] = envar_split;
+	phiGemmLowerPositiveSplitFactor[1] = 0.995 ;
 
 	/* CGEMM */
 	value = getenv("PHI_CGEMM_SPLIT");
@@ -243,6 +253,8 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 #endif
 	}
 	phiGemmSplitFactor[2] = envar_split;
+	phiGemmPrevSplitFactor[2] = envar_split;
+	phiGemmLowerPositiveSplitFactor[2] = 0.995 ;
 
 	/* ZGEMM */
 	value = getenv("PHI_ZGEMM_SPLIT");
@@ -261,6 +273,8 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 #endif
 	}
 	phiGemmSplitFactor[3] = envar_split;
+	phiGemmPrevSplitFactor[3] = envar_split;
+	phiGemmLowerPositiveSplitFactor[3] = 0.995 ;
 
 	/* This is to avoid not-defined OMP_NUM_THREADS in the environment.
 	 * Default threads num = 1 */

@@ -29,6 +29,8 @@ cublasHandle_t phiHandles[ NSTREAMS * MAX_GPUS ];
 
 int phiGemmNumDevices;
 float phiGemmSplitFactor[4];
+float phiGemmPrevSplitFactor[4];
+float phiGemmLowerPositiveSplitFactor[4];
 int phiGemmCPUThreads;
 
 phiGemmMemDevPtr dev_scratch;
