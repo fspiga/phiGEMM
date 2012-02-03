@@ -292,12 +292,14 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 
 void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond )
 {
+
+        unsigned int i;
+
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
 #if !defined(__PHIGEMM_HACK_CPUONLY)
 
 	struct cudaDeviceProp deviceProp;
-	unsigned int i;
 	int deviceCount;
 
 	cudaGetDeviceCount(&deviceCount);
@@ -479,11 +481,13 @@ void selfPhigemmInit(){
 
 	/* *** This routine is experimental *** */
 
+        int i;
+
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
 #if !defined(__PHIGEMM_HACK_CPUONLY)
 
-	int lNumDevicesThisNode, i, deviceCount, ierr ;
+	int lNumDevicesThisNode, deviceCount, ierr ;
 	int ngpus_detected, ngpus_used, ngpus_per_process;
 
 	size_t free, total;
