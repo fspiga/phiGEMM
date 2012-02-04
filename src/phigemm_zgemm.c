@@ -36,6 +36,8 @@ extern phiGemmMemSizes scratch_size;
 extern phiGemmMemDevPtr dev_scratch;
 extern phiGemmDeviceIds deviceIds;
 extern float phiGemmSplitFactor[4];
+extern float phiGemmPrevSplitFactor[4];
+extern float phiGemmLowerPositiveSplitFactor[4];
 extern int phiGemmNumDevices;
 extern int phiGemmCPUThreads;
 
@@ -514,7 +516,7 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 		cudaEventRecord(events[iDev][5], phiStreams[iDev] );
 
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
-				sizeof(double), devPtrC[iDev], m_gpu[iDev], C+shiftC,
+				sizeof(cuDoubleComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
 				*ldc, phiStreams[iDev]);
 
 		if (status != CUBLAS_STATUS_SUCCESS) {
