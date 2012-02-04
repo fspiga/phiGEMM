@@ -137,10 +137,14 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 //	}
 //#endif
 
-    // Query if the memory is PINNER or not is VERY expensive !!!!
+    // Query if the memory is PINNED or not is VERY expensive !!!!
     // unsigned int tmp_error, tmp_flags;
-    // tmp_error = (int) cuMemHostGetFlags(&tmp_flags, A);
-    // printf("[phiGEMM cuMemHostGetFlags(A)] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
+//    tmp_error = (int) cuMemHostGetFlags(&tmp_flags, A);
+//    printf("[phiGEMM cuMemHostGetFlags(A)] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
+//    if (tmp_flags < 1) {
+//    	tmp_error = (int) cudaHostRegister(A, sizeof(double)*lda*k, CU_MEMHOSTALLOC_PORTABLE);
+//    	printf("[cuMemHostRegister] tmp_error=%d\n", tmp_error); fflush(stdout);
+//    }
 
 	/* Assign the split factor for phidgemm (1: DGEMM) */
 	split = phiGemmSplitFactor[1];
@@ -612,7 +616,7 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 
 #if defined(__PHIGEMM_SELFTUNE)
 		// Default tolerance: >0.0025
-		if ((unbalance > 0.0f) && (fabs(unbalance) > 0.001f ) ) {
+		if ((unbalance > 0.0f) && (fabs(unbalance) > 0.0005f ) ) {
 			/* Decremento lo split, piu' lavoro alla CPU */
 			if (fabs(unbalance) > 0.1)
 				new_split = split - 0.005;
@@ -637,7 +641,7 @@ void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
 		}
 
 		// Default tolerance: >0.005
-		if ((unbalance < 0.0f) && (fabs(unbalance) > 0.005f) ) {
+		if ((unbalance < 0.0f) && (fabs(unbalance) > 0.001f) ) {
 			/* Incremento (ma non troppo) lo split, piu' lavoro alla GPU */
 //			if (fabs(unbalance) > 0.05)
 //					new_split = split + 0.0025;
