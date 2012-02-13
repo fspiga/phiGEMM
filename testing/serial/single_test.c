@@ -84,7 +84,7 @@
 #endif
 
 
-#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.8
+#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.95
 
 #define MAX_GPU_SERIAL_TEST 8
 
@@ -240,8 +240,8 @@ int main(int argc, char **argv)
 #if defined __PHITEST_FORCE_PINNED
 
 	    /* the first call makes no sense */
-//        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
-//        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
+        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
+        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
 
         tmp_error = (int) cudaHostRegister(GPU_buffer_memory_ptr, byte_GPU_buffer, CU_MEMHOSTALLOC_PORTABLE);
         printf("[cuMemHostRegister] tmp_error=%d\n", tmp_error); fflush(stdout);
@@ -620,7 +620,17 @@ int main(int argc, char **argv)
 			//	   fprintf( stdout, "\n\n");
 			//	   fflush(stdout);
 
-			fprintf( stdout, "[%c%c]  phiGEMM ( %d CPU / %d GPUs ) phiGEMM: Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\t errors: %c\n", transa[ count ], transb[ count ], atoi( getenv( "OMP_NUM_THREADS" ) ), nGPU, hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor, (error > 0 ? 'Y' : (error == 0 ? 'N' : 'X')) );
+			int id;
+#if defined __CUDA_TYPE_FLOAT
+			id = 0;
+#elif defined __CUDA_TYPE_DOUBLE
+			id = 1;
+#elif defined __CUDA_TYPE_COMPLEX
+			id = 2;
+#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
+			id = 3;
+#endif
+			fprintf( stdout, "[%c%c]  phiGEMM ( %d CPU / %d GPUs ) phiGEMM (split: %5.4f): Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\t errors: %c\n", transa[ count ], transb[ count ], atoi( getenv( "OMP_NUM_THREADS" ) ), nGPU, phigemmGetSplitFactor(id), hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor, (error > 0 ? 'Y' : (error == 0 ? 'N' : 'X')) );
 			fflush( stdout );
 //			fprintf( stdout, "[%c%c] MKL (%2d) RPeak = %10.4f\t\tCUBLAS RPeak = %10.4f (kernel RPeak = %g)\t\tphiGEMM (GPU: %d, split: %.3f) RPeak = %10.4f [errors %c]\n\n",
 //					transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ),
