@@ -808,6 +808,16 @@ void selfPhigemmInit(){
 #endif
 }
 
+void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
+	scratch_size[ deviceIds[gpu_id] ] = (size_t) new_dev_memsize;
+
+#if defined(__PHIGEMM_DEBUG)
+    printf("*** phiGEMM *** %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long)scratch_size[gpu_id], deviceIds[gpu_id]);
+   fflush(stdout);
+#endif
+}
+
+
 void phigemminit_(int nGPU, phiGemmMemDevPtr* ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond ){ phiGemmInit( nGPU, ptr, dev_memsize, deviceToBond); }
 
 void phigemmshutdown_(){ phiGemmShutdown(); }
@@ -817,6 +827,8 @@ int phigemmisinit_(){return phiGemmIsInit();}
 void phigemmsetsplitfactor_(float *x) { phigemmSetSplitFactor(x); }
 
 void selfphigemminit_(){return selfPhigemmInit(); }
+
+void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize) { phiGemmSetAvaiableScratchSpace(gpu_id, new_dev_memsize); }
 
 #ifdef __cplusplus
 }

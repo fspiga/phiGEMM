@@ -221,6 +221,8 @@ int main(int argc, char **argv)
 #endif
 	cudaDeviceSynchronize();
 
+	// phiGemmSetAvaiableScratchSpace(0, (unsigned long) 25000000);
+
 	/* Allocating memory on the CPU ... */
 	byte_GPU_buffer = ( size_t ) ( ( m * k + k * n + m * n ) * sizeof(XTYPE ) );
 
