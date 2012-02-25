@@ -32,6 +32,8 @@ void phigemmSetSplitFactor(float *x);
 
 float phigemmGetSplitFactor(int selection);
 
+void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize);
+
 #if defined __PHIGEMM_PROFILE
 void phiSgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const float *alpha,
@@ -91,6 +93,8 @@ int phigemmisinit_();
 void selfphigemminit_();
 
 void phigemmsetsplitfactor_(float *x);
+
+void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize);
 
 #if defined __PHIGEMM_PROFILE
 void phisgemm_ (const char *transa, const char *transb, const int *m,

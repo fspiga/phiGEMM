@@ -9,7 +9,7 @@ module phigemm
 
   implicit none
 
-#if defined __PHIGEMM_WEAK_INTERFACES
+#if defined(__PHIGEMM_WEAK_INTERFACES)
     EXTERNAL phisgemm
     EXTERNAL phidgemm
     EXTERNAL phicgemm
@@ -24,7 +24,7 @@ module phigemm
        real               :: x(*)
     end subroutine phigemmsetsplitfactor
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
      subroutine phiSgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line)
        character          :: transa
        character          :: transb
@@ -61,7 +61,7 @@ module phigemm
 #endif
 
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
      subroutine phiCgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line)
        character       :: transa
        character       :: transb
@@ -98,7 +98,7 @@ module phigemm
 #endif
 
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
      subroutine phiDgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line)
        character       :: transa
        character       :: transb
@@ -135,7 +135,7 @@ module phigemm
 #endif
 
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
      subroutine phiZgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line)
        character       :: transa
        character       :: transb
