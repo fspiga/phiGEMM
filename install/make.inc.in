@@ -16,6 +16,7 @@ ARFLAGS     = @arflags@
 CC          = @cc@
 FC          = @f90@
 LD          = @cc@
+CPPFLAGS    = -cpp
 CFLAGS      = -O3 -openmp -fPIC
 LD_FLAGS    = --shared -O3 -openmp -fPIC
 
