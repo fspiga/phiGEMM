@@ -6,7 +6,6 @@
 # in the root directory of the present package,
 # or http://www.gnu.org/copyleft/gpl.txt .
 #
-# author(s):   Filippo Spiga (filippo.spiga@ichec.ie)
  
 PHIGEMM_TOP = .
 
@@ -16,7 +15,7 @@ ARFLAGS     = @arflags@
 CC          = @cc@
 FC          = @f90@
 LD          = @cc@
-CPPFLAGS    = -cpp
+CPPFLAGS    = @cppflags@
 CFLAGS      = -O3 -openmp -fPIC
 LD_FLAGS    = --shared -O3 -openmp -fPIC
 

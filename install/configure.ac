@@ -180,6 +180,7 @@ try_arflags="ruv"
 
 try_f90="ifort ftn gfortran"
 try_cc="icc ecc cc icc"
+cppflags="-cpp"
 
 # use F90 if set
 if test "$f90" = "" ; then f90="$try_f90" ; fi
@@ -393,6 +394,7 @@ fi
 
 # export settings to generated files
 AC_SUBST(cc)
+AC_SUBST(cppflags)
 AC_SUBST(f90)
 AC_SUBST(ld)
 AC_SUBST(ld_libs)
