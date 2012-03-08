@@ -25,18 +25,24 @@ dgemm.o: $(PHIGEMM_TOP)/phigemm_dgemm.c
 
 cgemm.o: $(PHIGEMM_TOP)/phigemm_cgemm.c
 	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_cgemm.c $(GEMM_OPT) -I../include/ -o .objs/cgemm.o $(EXT_INC)
-	
+
 zgemm.o: $(PHIGEMM_TOP)/phigemm_zgemm.c
 	$(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_zgemm.c $(GEMM_OPT) -I../include/ -o .objs/zgemm.o $(EXT_INC)
 
-static: dgemm.o zgemm.o sgemm.o cgemm.o util.o
+dgemm_specialK.o: $(PHIGEMM_TOP)/phigemm_dgemm_specialK.c
+	   	  $(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_dgemm_specialK.c $(GEMM_OPT) -I../include/ -o .objs/dgemm_specialK.o $(EXT_INC)
+
+zgemm_specialK.o: $(PHIGEMM_TOP)/phigemm_zgemm_specialK.c
+	   	  $(CC) $(CFLAGS) -c $(PHIGEMM_TOP)/phigemm_zgemm_specialK.c $(GEMM_OPT) -I../include/ -o .objs/zgemm_specialK.o $(EXT_INC)
+
+static: dgemm.o zgemm.o sgemm.o cgemm.o util.o dgemm_specialK.o zgemm_specialK.o
 	mkdir -p ../bin ../lib
-	$(AR) $(ARFLAGS) libphigemm.a .objs/sgemm.o .objs/dgemm.o .objs/zgemm.o .objs/util.o
+	$(AR) $(ARFLAGS) libphigemm.a .objs/sgemm.o .objs/dgemm.o .objs/zgemm.o .objs/util.o .objs/dgemm_specialK.o .objs/zgemm_specialK.o
 	mv libphigemm.a ../lib/.
-	
-shared: dgemm.o zgemm.o sgemm.o cgemm.o util.o
+
+shared: dgemm.o zgemm.o sgemm.o cgemm.o util.o dgemm_specialK.o dgemm_specialK.o
 	mkdir -p ../bin ../lib
-	$(LD) $(LD_FLAGS) -o libphigemm.so.1.0.1 .objs/sgemm.o .objs/dgemm.o .objs/cgemm.o .objs/zgemm.o .objs/util.o $(CUDA_LIB)
+	$(LD) $(LD_FLAGS) -o libphigemm.so.1.0.1 .objs/sgemm.o .objs/dgemm.o .objs/cgemm.o .objs/zgemm.o .objs/util.o .objs/dgemm_specialK.o .objs/dgemm_specialK.o $(CUDA_LIB)
 	ln -sf libphigemm.so.1.0.1 libphigemm.so.1.0
 	ln -sf libphigemm.so.1.0 libphigemm.so.1
 	ln -sf libphigemm.so.1 libphigemm.so
@@ -46,7 +52,7 @@ fortran:
 	$(FC) $(GEMM_OPT) $(CPPFLAGS) -c phigemm.f90 -o .objs/phigemm.o -module ../include/
 
 	chmod 755 ../include/phigemm.mod
-	
+
 clean:
 	rm -rf .objs
 	rm ../include/*.mod

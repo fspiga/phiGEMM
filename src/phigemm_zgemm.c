@@ -85,6 +85,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	/* determine which matrix is to be splitted */
 	int is_splitA = -1;
+	int is_specialK = -1;
 
 #if defined(__PHIGEMM_PROFILE)
 	double start, stop;
@@ -153,7 +154,17 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	 * This can be not true at all! */
 	memsize_gpu = scratch_size[0] * phiGemmNumDevices;
 
-	if ( is_splitA )
+	if( ( (* k) / (* m) >= SPLIT_SPECIAL_K ) || ( (* k) / (* n) >= SPLIT_SPECIAL_K ) ) is_specialK = 1;
+	else is_specialK = 0;
+	if ( is_specialK) {
+
+#ifdef __PHIGEMM_PROFILE
+	  phizgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
+#else
+	  phizgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+#endif
+
+	}else if ( is_splitA )
 	{
 
 		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(cuDoubleComplex);
