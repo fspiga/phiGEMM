@@ -15,17 +15,20 @@ ARFLAGS     = @arflags@
 CC          = @cc@
 FC          = @f90@
 LD          = @cc@
+
+CPP         = @cpp@
 CPPFLAGS    = @cppflags@
-CFLAGS      = -O3 -openmp -fPIC
-LD_FLAGS    = --shared -O3 -openmp -fPIC
+
+CFLAGS          = @ccflags@
+LD_FLAGS        = @ldflags@
+LD_SHARED_FLAGS = @ldsharedflag@
 
 NVCC        = @nvcc@
-NVCC_FLAGS  = -ccbin icc -O3 --compiler-options '-fPIC -openmp'
-NVCC_DFLAGS  = --shared
+NVCC_FLAGS  = @nvccflags@
 
 EXT_INC     = @cuda_include@
 CUDA_LIB    = @cuda_libs@
-LD_LIB      = @blas_libs@ @ld_libs@
+LD_LIB      = @ld_libs@
 
 CUDA_PATH   = @cuda_path@
 CUDA_MAJOR  = @cudamajor@

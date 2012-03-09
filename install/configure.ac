@@ -178,9 +178,12 @@ try_arflags="ruv"
 # must always be performed, the second is optional. PG & CC sep.2006
 
 
-try_f90="ifort ftn gfortran"
-try_cc="icc ecc cc icc"
-cppflags="-cpp"
+# INTEL - PGI - GNU - CRAY WRAPPER
+try_f90="ifort pgf90 gfortran ftn"
+try_cc="icc pgcc gcc cc"
+
+cpp="cpp"
+cppflags="-P -traditional"
 
 # use F90 if set
 if test "$f90" = "" ; then f90="$try_f90" ; fi
@@ -196,7 +199,6 @@ cc=$CC
 
 echo setting CC... $cc
 
-
 # linker and archiver
 # note that from this point on, further additions to
 # linker flags should be added to ldflags rather than try_ldflags
@@ -208,54 +210,82 @@ if test "$arflags" = ""  ; then arflags="$try_arflags" ; fi
 echo setting AR... $ar
 echo setting ARFLAGS... $arflags
 
+
+# NVCC compiler options
+if test "$cc" = "icc"; then
+ccflags="-O3 -openmp -fPIC"
+ldflags="-O3 -openmp -fPIC"
+ldsharedflag="--shared"
+fi
+
+if test "$cc" = "pgcc"; then
+ccflags="-O3 -mp -fPIC"
+ldflags="-O3 -mp -fPIC"
+ldsharedflag="-shared"
+fi
+
 ld_library_path=`echo $LD_LIBRARY_PATH | sed 's/:/ /g'`
 
 AC_LANG_PUSH(C)
 
-# check for MKL blas
-try_libdirs="/opt/intel/Compiler/*/*/mkl/lib/em64t
-                 /opt/intel/mkl/*/lib/em64t
-                 /opt/intel/mkl*/lib/em64t"
-    try_libdirs="$libdirs $try_libdirs $ld_library_path"
+have_mkl=0
 
-    for dir in none $try_libdirs
-    do
-            unset ac_cv_search_dgemm # clear cached value
-            if test "$dir" = "none"
-            then
-                    try_loption=" "
-            else
-                    echo $ECHO_N "in $dir: " $ECHO_C
-                    try_loption="-L$dir"
-            fi
-            MKL_LIBS=""
-            FFLAGS=""
-            LDFLAGS="$try_loption -openmp"
-            LIBS="$MKL_LIBS"
-            #
-            # should work for recent MKL versions only
-            #
-            if test "$use_multithread" -eq 0; then
-   AC_SEARCH_LIBS(dgemm, mkl_intel_lp64,
-                           have_mkl=1
-                           blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread"
-                           ldflags="$MKL_FLAGS $ldflags",
-                           echo "MKL not found",
-                           -lmkl_sequential -lmkl_core)
-            else
-   AC_SEARCH_LIBS(dgemm, mkl_intel_lp64,
-                           have_mkl=1
-                           blas_libs="$try_loption $LIBS -lmkl_intel_thread -lmkl_core -liomp5 -lpthread"
-                           ldflags="$MKL_FLAGS $ldflags",
-                           echo "MKL not found",
-                           -lmkl_intel_thread -lmkl_core)
-            fi
-            if test "$ac_cv_search_dgemm" != "no"
-            then break ; fi
-    done
+# check for MKL blas
+try_libdirs="$libdirs $ld_library_path"
+
+for dir in none $try_libdirs
+do
+    unset ac_cv_search_dgemm # clear cached value
+    
+    if test "$dir" = "none"
+    then
+        try_loption=" "
+    else
+        echo $ECHO_N "in $dir: " $ECHO_C
+        try_loption="-L$dir"
+    fi
+    
+    FFLAGS=""
+    LIBS=""
+    MKL_FLAGS=""
+                
+    if test "$cc" = "icc"; then
+        LDFLAGS="$try_loption -openmp"
+        if test "$use_multithread" -eq 0; then
+           AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_mkl=1
+               blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread"
+               ldflags="$MKL_FLAGS $ldflags", echo "MKL not found",
+               -lmkl_sequential -lmkl_core)
+        else
+           AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_mkl=1
+               blas_libs="$try_loption $LIBS -lmkl_intel_thread -lmkl_core -liomp5 -lpthread"
+               ldflags="$MKL_FLAGS $ldflags", echo "MKL not found",
+               -lmkl_intel_thread -lmkl_core)
+        fi
+    fi
+                
+    if test "$cc" = "pgcc"; then
+        LDFLAGS="$try_loption -mp"
+        if test "$use_multithread" -eq 0; then
+           AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_mkl=1
+               blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread -lm"
+               ldflags="$MKL_FLAGS $ldflags", echo "MKL not found",
+               -lmkl_sequential -lmkl_core -lpthread -lm)
+        else
+           AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_mkl=1
+               blas_libs="$try_loption $LIBS -lmkl_pgi_thread -lmkl_core -lpthread -lm -pgf90libs"
+               ldflags="$MKL_FLAGS $ldflags", echo "MKL not found",
+               -lmkl_pgi_thread -lmkl_core -lpthread -lm -pgf90libs)
+        fi    
+    fi
+                        
+    if test "$ac_cv_search_dgemm" != "no"
+    then break ; fi
+done
 
 if test "$have_mkl" -eq 0  ; then
-AC_MSG_ERROR([Please check if MKL libraries are correctly installed, DGEMM symbol missing.])
+    #AC_MSG_WARN([Please check if MKL libraries are correctly installed, GEMM symbols were not automatically detected.])
+    AC_MSG_ERROR([Please check if MKL libraries are correctly installed, GEMM symbols are missing.])
 fi
 
 # check for CUDA bin
@@ -342,6 +372,15 @@ if test "$cuda_arch" = "13" ; then
     nvccflags="-O3 --ptxas-options=-v -arch sm_13 -gencode arch=compute_13,code=compute_13"
 fi   
 
+# NVCC compiler options
+if test "$cc" = "icc"; then
+nvccflags="-ccbin icc -O3 --compiler-options '-fPIC -openmp'"
+fi
+
+if test "$cc" = "pgcc"; then
+nvccflags="-ccbin gcc -O3 --compiler-options '-fPIC -fopenmp'"
+fi
+
 # Starting from empty flags....
 phigemm_opts=
 
@@ -378,13 +417,14 @@ if test "$use_cpu_only" == 1 ; then
 fi
 	       
 cuda_include="-I$cuda_path/include -I$topdir/include"
-blas_libs="$topdir/lib/libphigemm.a $blas_libs"   
-
-try_iflags="$try_iflags $cuda_include"
-ld_libs="$ld_libs $cuda_libs"
+#blas_libs="$topdir/lib/libphigemm.a $blas_libs"   
 
 echo setting CUDA_LIBS... $cuda_libs
 	
+try_iflags="$try_iflags $cuda_include"
+#ld_libs="$ld_libs $cuda_libs"
+ld_libs="$topdir/lib/libphigemm.a $cuda_libs $blas_libs"
+
 if test "$have_cuda" -eq 1; then
    cuda_line="CUDA_LIBS=$cuda_libs"
 else
@@ -394,15 +434,19 @@ fi
 
 # export settings to generated files
 AC_SUBST(cc)
+AC_SUBST(ccflags)
+AC_SUBST(cpp)
 AC_SUBST(cppflags)
 AC_SUBST(f90)
 AC_SUBST(ld)
+AC_SUBST(ldflags)
+AC_SUBST(ldsharedflag)
 AC_SUBST(ld_libs)
-AC_SUBST(blas_libs)
 AC_SUBST(ar)
 AC_SUBST(arflags)
 AC_SUBST(nvcc)
 AC_SUBST(nvccflags)
+AC_SUBST(nvccdflags)
 AC_SUBST(cudamajor)
 AC_SUBST(cuda_include)
 AC_SUBST(cuda_libs)
