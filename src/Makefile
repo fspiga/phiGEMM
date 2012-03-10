@@ -49,8 +49,8 @@ shared: dgemm.o zgemm.o sgemm.o cgemm.o util.o dgemm_specialK.o zgemm_specialK.o
 	mv libphigemm.so* ../lib/.
 
 fortran:
-	$(CPP) $(CPPFLAGS) phigemm.f90 phigemm.F90
-	$(FC) $(GEMM_OPT) -c phigemm.F90 -o .objs/phigemm.o -module ../include/
+	$(CPP) $(CPPFLAGS) $(GEMM_OPT) phigemm.f90 phigemm.F90
+	$(FC) -c phigemm.F90 -o .objs/phigemm.o -module ../include/
 
 	chmod 755 ../include/phigemm.mod
 
