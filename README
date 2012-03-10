@@ -19,9 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 0. >>> phiGEMM: CPU-GPU hybrid matrix-matrix multiplication library
 
 Authors:
-  Philip Yang, phi@cs.umd.edu
   Filippo Spiga, filippo.spiga@ichec.ie
   Ivan Girotto, ivan.girotto@ichec.ie
+  Philip Yang, phi@cs.umd.edu
 
 
 Starting from a previous NVIDIA project*, ICHEC has developed a library
@@ -45,7 +45,8 @@ Graphics Processing Units (New York, NY, USA), ACM, 2009, pp. 46--51.
 
 - NVIDIA cards
 - CUDA SDK (version >=4.0)
-- GCC/GFORTRAN or Intel compilers  (version >=11.x)
+- GCC/GFORTRAN
+- Intel compilers (version >=11.x) or PGI compilers (version >=10.x)
 - MKL (version >=10.x)
 
 
@@ -252,15 +253,16 @@ IMPORTANT NOTE: this feature is not yet in the repository because can
  
 6. >>> Releases
 
-v1.6   - January 19, 2012     ( various little improvements and fixes )
-v1.5   - December 9, 2011     ( internal "pinning", experimental )
-v1.4   - September 26, 2011   ( FORTRAN90 module module)
-v1.3   - September 10, 2011   ( version optimized for both pinned and non-pinned )
+v1.7   - March 10, 2012     ( special DGEMM/ZGEMM for rectangular matrices )
+v1.6   - January 19, 2012   ( various little improvements and fixes )
+v1.5   - December 9, 2011   ( internal "pinning", experimental )
+v1.4   - September 26, 2011 ( FORTRAN90 module module)
+v1.3   - September 10, 2011 ( version optimized for both pinned and non-pinned )
 v1.2   - August 29, 2011
 v1.1   - July 12, 2011 
-v1.0   - July 4, 2011         ( First official version )
-v0.9   - July 2, 2011         ( Important fixes for multi-GPU )
-v0.8   - June 29, 2011        ( Compatible with version for CUDA >=4.0 only! )
+v1.0   - July 4, 2011       ( First official version )
+v0.9   - July 2, 2011       ( Important fixes for multi-GPU )
+v0.8   - June 29, 2011      ( Compatible with version for CUDA >=4.0 only! )
 v0.7   - May 29, 2011
 v0.6   - May 9, 2011
 v0.5.1 - May 5, 2011
