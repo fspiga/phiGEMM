@@ -221,9 +221,15 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		first_call = 0;
 #if defined(__PHIGEMM_PROFILE)
 		stop = phigemm_cclock() - start;
+#if defined(__PHIGEMM_HACK_CPUONLY)
+		/* Comma-Separated Value (csv) format:
+		 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, spliting_steps, time, GFlops */
+		fprintf (phiProfileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, %d, CPU-ONLY, %10.6f, %10.4f\n", file, line, 0, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, splitting_steps, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+#else
 		/* Comma-Separated Value (csv) format:
 		 * file, line, nGPU, nThreads, transA, transB, m, n, k, spliting_steps, split_factor, time, GFlops */
 		fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+#endif
 #endif
     }
 
