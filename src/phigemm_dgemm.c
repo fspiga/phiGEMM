@@ -170,7 +170,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	 * This can be not true at all! */
 	memsize_gpu = scratch_size[0] * phiGemmNumDevices;
 
-	if( ( (* k) / (* m) >= SPLIT_SPECIAL_K ) || ( (* k) / (* n) >= SPLIT_SPECIAL_K ) ) is_specialK = 1;
+#if defined(__PHIGEMM_SPECIALK)
+	if( ( (* k) / (* m) >= SPLITK_FACTOR ) || ( (* k) / (* n) >= SPLITK_FACTOR ) ) is_specialK = 1;
 	else is_specialK = 0;
 
 	if ( is_specialK) {
@@ -183,8 +184,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	}
 	else if ( is_splitA )
+#else
+	if ( is_splitA )
+#endif
 	{
-
 		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(double);
 
 		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )

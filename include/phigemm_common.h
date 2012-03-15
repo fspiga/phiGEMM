@@ -37,6 +37,11 @@
 #define NSTREAMS 1
 #endif
 
+#define PHIGEMM_SPLITK_DGEMM 2048
+#define PHIGEMM_SPLITK_ZGEMM 2048
+
+#define SPLITK_FACTOR 20
+
 typedef void* phiGemmMemDevPtr[MAX_GPUS*NSTREAMS];
 typedef size_t phiGemmMemSizes[MAX_GPUS*NSTREAMS];
 typedef int phiGemmDeviceIds[MAX_GPUS*NSTREAMS];

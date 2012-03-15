@@ -34,8 +34,6 @@ float phigemmGetSplitFactor(int selection);
 
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize);
 
-#define SPLIT_SPECIAL_K 20
-
 #if defined __PHIGEMM_PROFILE
   void phidgemm_specialK(const char *transa, const char *transb, const int *m,
 			 const int *n, const int *k, const double *alpha,

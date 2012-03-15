@@ -39,7 +39,6 @@ extern FILE *phiProfileFile;
 #endif
 
 #define MAX_N_STREAM 2
-#define SPLIT_SIZE 2048
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
@@ -87,7 +86,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	cuDoubleComplex DA = {1.0, 0.0};
 	cuDoubleComplex gpu_beta = {0.0, 0.0};
 
-	int last_split = 0, split_size = SPLIT_SIZE, splitted_size;
+	int last_split = 0, local_split = PHIGEMM_SPLITK_ZGEMM, splitted_size;
 	size_t mem_buffer = 0L, memsize_gpu = scratch_size[iDev];
 
 	double start_axpy, start_total, stop_axpy, stop_total;
@@ -97,14 +96,14 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	do{
 
-		loop_times = (* k) / split_size;
-		if( (* k) % split_size != 0){
-			last_split = split_size + ( (* k) % split_size );
+		loop_times = (* k) / local_split;
+		if( (* k) % local_split != 0){
+			last_split = local_split + ( (* k) % local_split );
 		}
 
-		mem_buffer = ( (*m ) * (last_split != 0 ? last_split : split_size) + (* n) * (last_split != 0 ? last_split : split_size) + (* n) * (* m) ) * 2 * sizeof(cuDoubleComplex) ;
+		mem_buffer = ( (*m ) * (last_split != 0 ? last_split : local_split) + (* n) * (last_split != 0 ? last_split : local_split) + (* n) * (* m) ) * 2 * sizeof(cuDoubleComplex) ;
 
-	}while( (mem_buffer > memsize_gpu) && (split_size/=2) );
+	}while( (mem_buffer > memsize_gpu) && (local_split/=2) );
 
 	if ( (*transa != 'n') && (*transa != 'N') )	is_transa = 1;
 	if ( (*transb != 'n') && (*transb != 'N') ) is_transb = 1;
@@ -116,10 +115,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	cu_transb = ((*transb == 'n')||(*transb == 'N')) ? CUBLAS_OP_N : cu_transb;
 
 	devPtrA[0] = (cuDoubleComplex *)(dev_scratch[iDev]);
-	devPtrA[1] = devPtrA[0] + (* m) * (last_split != 0 ? last_split : split_size);
-	devPtrB[0] = devPtrA[1] + (* m) * (last_split != 0 ? last_split : split_size);
-	devPtrB[1] = devPtrB[0] + (* n) * (last_split != 0 ? last_split : split_size);
-	devPtrC[0] = devPtrB[1] + (last_split != 0 ? last_split : split_size) * (* n);
+	devPtrA[1] = devPtrA[0] + (* m) * (last_split != 0 ? last_split : local_split);
+	devPtrB[0] = devPtrA[1] + (* m) * (last_split != 0 ? last_split : local_split);
+	devPtrB[1] = devPtrB[0] + (* n) * (last_split != 0 ? last_split : local_split);
+	devPtrC[0] = devPtrB[1] + (last_split != 0 ? last_split : local_split) * (* n);
 	devPtrC[1] = devPtrC[0] + (* m) * (* n);
 
 	for( i = 0; i < MAX_N_STREAM; i++){
@@ -130,7 +129,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		}
 	}
 
-	splitted_size = split_size;
+	splitted_size = local_split;
 
 	gpu_lda = (* m);
 	gpu_ldb = splitted_size;
@@ -223,11 +222,11 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	double time_total = stop_total - start_total;
 
 #if defined(__PHIGEMM_PROFILE)
-	printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d %d %d ~ Special K ~ split_size:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
-		file, line, iDev % phiGemmNumDevices, *m, *n, *k, split_size, loop_times, last_split, time_total, time_axpy); fflush(stdout);
+	printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d %d %d ~ Special K ~ local_split:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
+		file, line, iDev % phiGemmNumDevices, *m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
 #else
-	printf ("[PHIGEMM_DEBUG - GPU %d] %d %d %d ~ Special K ~ split_size:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
-		iDev % phiGemmNumDevices, *m, *n, *k, split_size, loop_times, last_split, time_total, time_axpy); fflush(stdout);
+	printf ("[PHIGEMM_DEBUG - GPU %d] %d %d %d ~ Special K ~ local_split:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
+		iDev % phiGemmNumDevices, *m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
 #endif
 #endif
 
