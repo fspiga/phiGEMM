@@ -91,17 +91,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	double start, stop;
 #endif
 
-	/* Enabling these checks? */
-	//	int err_param = 1;
-	//	if ( !transa && ++err_param || !transb && ++err_param || !m && ++err_param || !n && ++err_param ||
-	//			!k && ++err_param || !alpha && ++err_param || !A && ++err_param ||
-	//			!lda && ++err_param || !B && ++err_param || !ldb && ++err_param ||
-	//			!beta && ++err_param || !C && ++err_param || !ldc )
-	//	{
-	//		fprintf(stderr, "phiGEMM Error: input parameter %d is invalid\n", err_param); fflush(stdout);
-	//		exit(EXIT_FAILURE);
-	//	}
-
 #if defined(__PHIGEMM_PROFILE)
 	if ( ground_level) {
 		first_call = 1;
@@ -134,21 +123,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	/* Assign the split factor for phidgemm (3: ZGEMM) */
 	split = phiGemmSplitFactor[3];
 
-	/* smart padding for Fermi & CUDA 3.x - no needed anymore */
-	//	m_gpu = ceil(*m/64.0)*64;
-	//	n_gpu = ceil(*n/64.0)*64;
-	//	k_gpu = ceil(*k/64.0)*64;
-
-	/* smart padding for Tesla & CUDA 3.x  - no needed anymore */
-	//	m_gpu = ceil(*m/64.0)*64;
-	//	n_gpu = ceil(*n/16.0)*16;
-	//	k_gpu = ceil(*k/16.0)*16;
-
-	/* padding seems not required anymore with CUDA 4.x */
-//	m_gpu = *m;
-//	n_gpu = *n;
-//	k_gpu = *k;
-
 	/* recursive splitting */
 	/* There is an assumption here: all the cards has the same amount of memory.
 	 * This can be not true at all! */
@@ -177,11 +151,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		{
 			splitting_steps++;
 			ground_level = 0;
-
-//#if defined(__PHIGEMM_DEBUG)
-//			printf("*** phiGEMM *** Dimensions\t%d\t%d\t%d\t( %lu bytes) too big to fit the GPU memory (%lu bytes), split A(%d, %d)...\n",
-//					*m, *n, *k, (unsigned long)mem_gpu, (unsigned long)memsize_gpu, *m, *n);  fflush(stdout);
-//#endif
 
 			bestFit(is_splitA, split, *m, *n, *k, sizeof(cuDoubleComplex), &p1, &p2);
 
@@ -212,11 +181,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		{
 			ground_level = 0;
 			splitting_steps++;
-
-//#if defined(__PHIGEMM_DEBUG)
-//			printf("*** phiGEMM *** Dimensions\t%d\t%d\t%d\t( %lu bytes) too big to fit the GPU memory (%lu bytes), split B( %d, %d )...\n",
-//					*m, *n, *k, (unsigned long)mem_gpu, (unsigned long)memsize_gpu, *k, *n); fflush(stdout);
-//#endif
 
 			bestFit(is_splitA, split, *m, *n, *k, sizeof(cuDoubleComplex), &p1, &p2);
 
