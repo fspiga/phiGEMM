@@ -104,13 +104,12 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 #else
 
-#if defined(__PHIGEMM_SPECIALK)
-	if ( ( (* k) / (* m) >= SPLITK_FACTOR ) || ( (* k) / (* n) >= SPLITK_FACTOR ) ) is_specialK = 1;
-	else is_specialK = 0;
-#endif
-
 	/* if the input matrix if pretty small, we will perform the computation on CPU */
+#if defined(__PHIGEMM_SPECIALK)
 	if ( ((*n) < 256 || (*m) < 256) && !( ( (* k) / (* m) >= (SPLITK_FACTOR*4) ) || ( (* k) / (* n) >= (SPLITK_FACTOR*4) ) ) )
+#else
+	if  ( (*n) < 256 || (*m) < 256 )
+#endif
 	{
 		gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 
@@ -146,6 +145,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	memsize_gpu = scratch_size[0] * phiGemmNumDevices;
 
 #if defined(__PHIGEMM_SPECIALK)
+	if ( ( (* k) / (* m) >= SPLITK_FACTOR ) || ( (* k) / (* n) >= SPLITK_FACTOR ) ) is_specialK = 1;
+	else is_specialK = 0;
+
 	if ( is_specialK) {
 
 #ifdef __PHIGEMM_PROFILE
