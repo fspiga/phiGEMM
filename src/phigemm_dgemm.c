@@ -104,10 +104,27 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 #else
 
+#if defined(__PHIGEMM_SPECIALK)
+	if ( ( (* k) / (* m) >= SPLITK_FACTOR ) || ( (* k) / (* n) >= SPLITK_FACTOR ) ) is_specialK = 1;
+	else is_specialK = 0;
+#endif
+
 	/* if the input matrix if pretty small, we will perform the computation on CPU */
-	if ( (*n) < 64 || (*m) < 64 || (*k) < 64 )
+	if ( ((*n) < 256 || (*m) < 256) && !( ( (* k) / (* m) >= (SPLITK_FACTOR*4) ) || ( (* k) / (* n) >= (SPLITK_FACTOR*4) ) ) )
 	{
 		gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
+
+		if ( first_call) {
+			ground_level = 1;
+			first_call = 0;
+#if defined(__PHIGEMM_PROFILE)
+			stop = phigemm_cclock() - start;
+			/* Comma-Separated Value (csv) format:
+			 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, (missing), time, GFlops */
+			fprintf (phiProfileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, 0, CPU-ONLY, %10.6f, %10.4f\n", file, line, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+#endif
+		}
+
 		return;
 	}
 
@@ -129,9 +146,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	memsize_gpu = scratch_size[0] * phiGemmNumDevices;
 
 #if defined(__PHIGEMM_SPECIALK)
-	if( ( (* k) / (* m) >= SPLITK_FACTOR ) || ( (* k) / (* n) >= SPLITK_FACTOR ) ) is_specialK = 1;
-	else is_specialK = 0;
-
 	if ( is_specialK) {
 
 #ifdef __PHIGEMM_PROFILE
