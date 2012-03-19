@@ -173,12 +173,12 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		if( count != 0 ) {
 			cudaStreamSynchronize( streamPtr[(stream+1)%MAX_N_STREAM] );
 			for(i=0, offsetC=0; i<(*n); i++){
-				zaxpy( m, &DA, C_buf[(stream+1)%MAX_N_STREAM]+offsetC, &inc, C+offsetC, &inc);
+				zaxpy_( m, &DA, C_buf[(stream+1)%MAX_N_STREAM]+offsetC, &inc, C+offsetC, &inc);
 				offsetC += (* ldc);
 			}
 		} else{
 			for(i=0, offsetC=0; i<(*n); i++){
-				zscal( m, beta, C+offsetC, &inc );
+				zscal_( m, beta, C+offsetC, &inc );
 				offsetC += (* ldc);
 			}
 		}
@@ -198,7 +198,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	cudaStreamSynchronize( streamPtr[stream] );
 	for(i=0, offsetC=0; i<(*n); i++){
-		zaxpy( m, &DA, C_buf[stream]+offsetC, &inc, C+offsetC, &inc);
+		zaxpy_( m, &DA, C_buf[stream]+offsetC, &inc, C+offsetC, &inc);
 		offsetC += (* ldc);
 	}
 
@@ -230,6 +230,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 #endif
 
-	//  cudaMemset( dev_scratch[iDev], 0, mem_buffer );
+	cudaMemset( dev_scratch[iDev], 0, mem_buffer );
 }
 

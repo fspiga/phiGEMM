@@ -156,7 +156,7 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	printf("[PHIGEMM_DEBUG] ratio_km=%f, ratio_kn=%f, thresold=%f\n", ratio_km, ratio_kn, thresold); fflush(stdout);
 #endif
 
-	if (type == 'd') {
+	if (type == 'd' || type == 'z') {
 		if ( (ratio_km >= thresold) || (ratio_kn >= thresold) ) {
 			if ( ((n < UPPER_LIMIT_NM) || (m < UPPER_LIMIT_NM)) && (n > LOWER_LIMIT_NM) && (m > LOWER_LIMIT_NM) )
 				return 1;
