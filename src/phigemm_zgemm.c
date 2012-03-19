@@ -76,7 +76,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	double time_call;
 	int tmp, p1, p2;
 	int a_offset, b_offset, c_offset;
-	size_t memsize_gpu, mem_gpu;
+	size_t memsize_gpu, mem_gpu, select_case;
 	float split = -1;
 	static int ground_level = 1;
 	static int splitting_steps;
@@ -91,40 +91,17 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	double start, stop;
 #endif
 
-#if defined(__PHIGEMM_PROFILE)
 	if ( ground_level) {
 		first_call = 1;
 		splitting_steps = 0;
+#if defined(__PHIGEMM_PROFILE)
 		start = phigemm_cclock();
-	}
 #endif
-
+	}
 
 #if defined(__PHIGEMM_HACK_CPUONLY)
-	gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
+	select_case = 0;
 #else
-
-	/* if the input matrix if pretty small, we will perform the computation on CPU */
-#if defined(__PHIGEMM_SPECIALK)
-	if ( ((*n) < 256 || (*m) < 256) && !( ( (* k) / (* m) >= (SPLITK_FACTOR*4) ) || ( (* k) / (* n) >= (SPLITK_FACTOR*4) ) ) )
-#else
-	if  ( (*n) < 256 || (*m) < 256 )
-#endif
-	{
-		gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
-
-		if ( first_call) {
-			ground_level = 1;
-			first_call = 0;
-#if defined(__PHIGEMM_PROFILE)
-			stop = phigemm_cclock() - start;
-			/* Comma-Separated Value (csv) format:
-			 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, (missing), time, GFlops */
-			fprintf (phiProfileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, 0, CPU-ONLY, %10.6f, %10.4f\n", file, line, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
-#endif
-		}
-		return;
-	}
 
 	if ( ground_level && !phiGemmIsInit()  )
 	{
@@ -133,32 +110,39 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		selfPhigemmInit();
 	}
 
-	is_splitA = (*n > *m) ? 0:1;
-
-	/* Assign the split factor for phidgemm (3: ZGEMM) */
-	split = phiGemmSplitFactor[3];
-
-	/* recursive splitting */
-	/* There is an assumption here: all the cards has the same amount of memory.
-	 * This can be not true at all! */
-	memsize_gpu = scratch_size[0] * phiGemmNumDevices;
-
-#if defined(__PHIGEMM_SPECIALK)
-	if( ( (* k) / (* m) >= SPLITK_FACTOR ) || ( (* k) / (* n) >= SPLITK_FACTOR ) ) is_specialK = 1;
-	else is_specialK = 0;
-
-	if ( is_specialK) {
-
-#ifdef __PHIGEMM_PROFILE
-	  phizgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
-#else
-	  phizgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+	select_case = cpuGPUheuristic( (*m), (*n), (*k), 'z');
 #endif
 
-	}else if ( is_splitA )
+	switch (select_case)
+	{
+	case 0:
+		// cpuGPUheuristic(...) = 0 >> CPU-only
+		gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
+		break;
+
+	case 1:
+		// cpuGPUheuristic(...) = 0 >> SPECIAL-K
+		// cpuGPUheuristic(...) = 0 >> SPECIAL-K
+#if defined(__PHIGEMM_PROFILE)
+		phizgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
 #else
+		phizgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+#endif
+		break;
+
+	case 2:
+		// cpuGPUheuristic(...) = 0 >> CPU+GPU
+		is_splitA = (*n > *m) ? 0:1;
+
+		/* Assign the split factor for phidgemm (1: DGEMM) */
+		split = phiGemmSplitFactor[1];
+
+		/* recursive splitting */
+		/* There is an assumption here: all the cards has the same amount of memory.
+		 * This can be not true at all! */
+		memsize_gpu = scratch_size[3] * phiGemmNumDevices;
+
 	if ( is_splitA )
-#endif
 	{
 		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(cuDoubleComplex);
 
@@ -228,37 +212,41 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
 		exit(EXIT_FAILURE);
 	}
-#endif
+	break;
 
+}
 
 	if ( first_call) {
 		ground_level = 1;
 		first_call = 0;
+
 #if defined(__PHIGEMM_PROFILE)
 		stop = phigemm_cclock() - start;
-#if defined(__PHIGEMM_HACK_CPUONLY)
-		/* Comma-Separated Value (csv) format:
-		 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, spliting_steps, time, GFlops */
-		fprintf (phiProfileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, %d, CPU-ONLY, %10.6f, %10.4f\n", file, line, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, splitting_steps, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
-#elif defined(__PHIGEMM_SPECIALK)
-		if ( is_specialK) {
+		switch (select_case)
+		{
+		case 0:
+			/* Comma-Separated Value (csv) format:
+			 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, spliting_steps, time, GFlops */
+			fprintf (phiProfileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, %d, CPU-ONLY, %10.6f, %10.4f\n", file, line, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, splitting_steps, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+			break;
+
+		case 1:
 			/* Comma-Separated Value (csv) format:
 			 * file, line, nGPU, nThreads, transA, transB, m, n, k, -missing-, SPECIAL-K, time, GFlops */
 			fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, 0, SPECIAL-K, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
-		} else {
+			break;
+
+		case 2:
 			/* Comma-Separated Value (csv) format:
 			 * file, line, nGPU, nThreads, transA, transB, m, n, k, spliting_steps, split_factor, time, GFlops */
 			fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+			break;
 		}
-#else
-		/* Comma-Separated Value (csv) format:
-		 * file, line, nGPU, nThreads, transA, transB, m, n, k, spliting_steps, split_factor, time, GFlops */
-		fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 #endif
-#endif
-    }
+	}
 
 	return;
+
 }
 
 #if defined(__PHIGEMM_PROFILE)
