@@ -404,8 +404,12 @@ int main(int argc, char **argv)
 
 		/* ----------------------- run MxM using MKL ---------------------- */
 		C_mkl = ( XTYPE* ) malloc( m * n * sizeof( XTYPE ) );
-		memset( C_mkl, 0, m * n * sizeof( XTYPE ) );
 
+		// Fake call to avoid caching effects....
+		memset( C_mkl, -1, m * n * sizeof( XTYPE ) );
+		MKL_CALL(&transa[ count ], &transb[ count ], &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C_mkl, &m);
+
+		memset( C_mkl, 0, m * n * sizeof( XTYPE ) );
 		for ( j = 0; j < m; j++ ) {
 			for ( i = 0; i < n; i++ ) {
 				int index = i * m + j;
