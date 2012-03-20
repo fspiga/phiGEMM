@@ -143,8 +143,8 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	double ratio_kn = (double) k/n;
 	double thresold = SPLITK_FACTOR*2; // default 20
 
-	double LOWER_LIMIT_NM = 255;
-	double UPPER_LIMIT_NM = 512;
+	double LOWER_LIMIT_NM = 127;
+	double UPPER_LIMIT_NM = 511;
 
 	/* 0: CPU-only
 	 * 1: special-K
@@ -158,14 +158,14 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 
 	if (type == 'd' || type == 'z') {
 		if ( (ratio_km >= thresold) || (ratio_kn >= thresold) ) {
-			if ( ((n < UPPER_LIMIT_NM) || (m < UPPER_LIMIT_NM)) && (n > LOWER_LIMIT_NM) && (m > LOWER_LIMIT_NM) )
+			if ( (n > LOWER_LIMIT_NM) || (m > LOWER_LIMIT_NM) )
 				return 1;
 			else
 				return 0;
 		}
 	}
 
-	if (n < UPPER_LIMIT_NM ||  m < UPPER_LIMIT_NM ) return 0;
+	if ( (n < UPPER_LIMIT_NM) &&  (m < UPPER_LIMIT_NM) ) return 0;
 
 	return 2;
 }
