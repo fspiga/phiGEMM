@@ -143,8 +143,8 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	double ratio_kn = (double) k/n;
 	double thresold = SPLITK_FACTOR*2; // default 20
 
-	double LOWER_LIMIT_NM = 127;
-	double UPPER_LIMIT_NM = 511;
+	double LOWER_LIMIT_NM = 63;
+	double UPPER_LIMIT_NM = 255; //511;
 
 	/* 0: CPU-only
 	 * 1: special-K
@@ -152,20 +152,19 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	 */
 
 #if defined(__PHIGEMM_DEBUG_2)
-	printf("[PHIGEMM_DEBUG] m=%d, n=%d, k=%d\n", m, n, k); fflush(stdout);
 	printf("[PHIGEMM_DEBUG] ratio_km=%f, ratio_kn=%f, thresold=%f\n", ratio_km, ratio_kn, thresold); fflush(stdout);
 #endif
 
 	if (type == 'd' || type == 'z') {
 		if ( (ratio_km >= thresold) || (ratio_kn >= thresold) ) {
-			if ( (n > LOWER_LIMIT_NM) || (m > LOWER_LIMIT_NM) )
-				return 1;
-			else
-				return 0;
+			if ( (n > LOWER_LIMIT_NM) && (m > LOWER_LIMIT_NM) )
+					return 1;
+				else
+					return 0;
 		}
 	}
 
-	if ( (n < UPPER_LIMIT_NM) &&  (m < UPPER_LIMIT_NM) ) return 0;
+	if ( (n < UPPER_LIMIT_NM) ||  (m < UPPER_LIMIT_NM) ) return 0;
 
 	return 2;
 }
