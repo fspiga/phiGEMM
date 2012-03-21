@@ -99,6 +99,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 	}
 
+	ground_level = 0;
+
 #if defined(__PHIGEMM_HACK_CPUONLY)
 	select_case = 0;
 #else
@@ -121,7 +123,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		break;
 
 	case 1:
-		// cpuGPUheuristic(...) = 0 >> SPECIAL-K
 		// cpuGPUheuristic(...) = 0 >> SPECIAL-K
 #if defined(__PHIGEMM_PROFILE)
 		phizgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
