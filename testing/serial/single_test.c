@@ -36,12 +36,7 @@
 #define _STRING_LINE2_(s) _STRING_LINE_(s)
 #define __LINESTR__ _STRING_LINE2_(__LINE__)
 
-/* CHECK_ERROR has problems with FLOAT... why? */
-#if defined __CUDA_TYPE_FLOAT
 #define MAX_ERROR 0.0000001
-#else
-#define MAX_ERROR 0.001
-#endif
 
 /**
  * SGEMM definitions
@@ -312,13 +307,13 @@ int main(int argc, char **argv)
 		for ( i = 0; i < k; i++ ) {
 			int index = i * m + j;
 #if defined __CUDA_TYPE_COMPLEX
-			A[ index ].x = ( float ) rand() / (RAND_MAX / 10 + 1);
-			A[ index ].y = ( float ) rand() / (RAND_MAX / 10 + 1);
+			A[ index ].x = ( float ) rand() / (RAND_MAX / 23410 + 1);
+			A[ index ].y = ( float ) rand() / (RAND_MAX / 123045 + 1);
 #elif defined __CUDA_TYPE_DOUBLE_COMPLEX
-			A[ index ].x = ( double ) rand() / (RAND_MAX / 10 + 1);
-			A[ index ].y = ( double ) rand() / (RAND_MAX / 10 + 1);
+			A[ index ].x = ( double ) rand() / (RAND_MAX / 12340 + 1);
+			A[ index ].y = ( double ) rand() / (RAND_MAX / 134510 + 1);
 #else
-			A[ index ] =  ( XTYPE ) rand() / (RAND_MAX / 10 + 1);
+			A[ index ] =  ( XTYPE ) rand() / (RAND_MAX / 12240 + 1);
 #endif
 		}
 	}
@@ -327,13 +322,13 @@ int main(int argc, char **argv)
 		for ( i = 0; i < n; i++ ) {
 			int index = i * k + j;
 #if defined __CUDA_TYPE_COMPLEX
-			B[ index ].x = ( float ) rand() / (RAND_MAX / 10 + 1);
-			B[ index ].y = ( float ) rand() / (RAND_MAX / 10 + 1);
+			B[ index ].x = ( float ) rand() / (RAND_MAX / 41147 + 1);
+			B[ index ].y = ( float ) rand() / (RAND_MAX / 177670 + 1);
 #elif defined __CUDA_TYPE_DOUBLE_COMPLEX
-			B[ index ].x = ( double ) rand() / (RAND_MAX / 10 + 1);
-			B[ index ].y = ( double ) rand() / (RAND_MAX / 10 + 1);
+			B[ index ].x = ( double ) rand() / (RAND_MAX / 11120 + 1);
+			B[ index ].y = ( double ) rand() / (RAND_MAX / 21410 + 1);
 #else
-			B[ index ] =  ( XTYPE ) rand() / (RAND_MAX / 10 + 1);
+			B[ index ] =  ( XTYPE ) rand() / (RAND_MAX / 13450 + 1);
 #endif
 		}
 	}
@@ -342,13 +337,13 @@ int main(int argc, char **argv)
 		for ( i = 0; i < n; i++ ) {
 			int index = i * m + j;
 #if defined __CUDA_TYPE_COMPLEX
-			C[ index ].x = ( float ) (rand() / (RAND_MAX / 10 + 1));
-			C[ index ].y  = ( float ) (rand() / (RAND_MAX / 10 + 1));
+			C[ index ].x = ( float ) (rand() / (RAND_MAX / 1227890 + 1));
+			C[ index ].y  = ( float ) (rand() / (RAND_MAX / 1410 + 1));
 #elif defined __CUDA_TYPE_DOUBLE_COMPLEX
-			C[ index ].x = ( double ) (rand() / (RAND_MAX / 10 + 1));
-			C[ index ].y  = ( double ) (rand() / (RAND_MAX / 10 + 1));
+			C[ index ].x = ( double ) (rand() / (RAND_MAX / 672 + 1));
+			C[ index ].y  = ( double ) (rand() / (RAND_MAX / 3210 + 1));
 #else
-			C[ index ] =  ( XTYPE ) (rand() / (RAND_MAX / 10 + 1));
+			C[ index ] =  ( XTYPE ) (rand() / (RAND_MAX / 5555 + 1));
 #endif
 		}
 	}
@@ -394,7 +389,7 @@ int main(int argc, char **argv)
 //	is_transa[0] = 1;
 //	is_transb[0] = 0;
 
-	for( count = 0; count < 4; count +=1 ){
+	for( count = 0; count < 1; count +=1 ){
 
 		int lda = m;
 		int ldb = k;
