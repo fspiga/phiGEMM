@@ -55,6 +55,5 @@ fortran:
 	chmod 755 ../include/phigemm.mod
 
 clean:
-	rm *.F90
-	rm -rf .objs
+	rm -rf .objs *.F90
 	rm ../include/*.mod
