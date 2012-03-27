@@ -640,13 +640,13 @@ void selfPhigemmInit(){
 	MPI_Barrier(lThisNodeComm);
 
 	for (i = 0; i < ngpus_per_process; i++) {
-		cuMemGetInfo(&free, &total);
+		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
 
 		// see cuda_env.h for a description of the hack
 #if defined(__CUDA_GET_MEM_HACK)
 		free = (size_t)  __GPU_MEM_AMOUNT_HACK__;
 #else
-		cuMemGetInfo(&free, &total);
+		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
 
 #if defined(__PHIGEMM_DEBUG)
 		printf("[PHIGEMM_DEBUG - GPU %d - rank: %d (internal rank:%d) ] before: %lu (total: %lu)\n", deviceIds[i], lRank, lRankThisNode, (unsigned long)free, (unsigned long)total); fflush(stdout);
@@ -663,7 +663,7 @@ void selfPhigemmInit(){
 		}
 
 #if defined(__PHIGEMM_DEBUG)
-		cuMemGetInfo(&free, &total);
+		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
 		printf("[PHIGEMM_DEBUG - GPU %d - rank: %d (internal rank:%d)] after: %lu (total: %lu)\n", deviceIds[i], lRank, lRankThisNode, (unsigned long)free, (unsigned long)total); fflush(stdout);
 #endif
 	}
@@ -728,13 +728,13 @@ void selfPhigemmInit(){
 			exit(EXIT_FAILURE);
 		}
 
-		cuMemGetInfo(&free, &total);
+		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
 
 		// see cuda_env.h for a description of the hack
 #if defined(__CUDA_GET_MEM_HACK)
 		free = (size_t)  __GPU_MEM_AMOUNT_HACK__;
 #else
-		cuMemGetInfo(&free, &total);
+		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
 
 #if defined(__PHIGEMM_DEBUG)
 		printf("[PHIGEMM_DEBUG - GPU %d] before: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
@@ -749,7 +749,7 @@ void selfPhigemmInit(){
 		}
 
 #if defined(__PHIGEMM_DEBUG)
-		cuMemGetInfo(&free, &total);
+		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
 		printf("[PHIGEMM_DEBUG - GPU %d] after: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
 #endif
 	}

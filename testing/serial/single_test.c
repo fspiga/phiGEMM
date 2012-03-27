@@ -186,7 +186,7 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 
-		cuMemGetInfo(&freeMem, &totalMem);
+		cudaMemGetInfo((size_t*)&freeMem, (size_t*)&totalMem);
 
 #if defined __CUDA_DEBUG
 		printf("[GPU %d] before: %lu (total: %lu)\n", i, (unsigned long)freeMem, (unsigned long)totalMem); fflush(stdout);
@@ -201,7 +201,7 @@ int main(int argc, char **argv)
 		}
 
 #if defined __CUDA_DEBUG
-		cuMemGetInfo(&freeMem, &totalMem);
+		cudaMemGetInfo((size_t*)&freeMem, (size_t*)&totalMem);
 		printf("[GPU %d] after: %lu (total: %lu)\n", i, (unsigned long)freeMem, (unsigned long)totalMem); fflush(stdout);
 #endif
 

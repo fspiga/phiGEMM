@@ -324,7 +324,7 @@ then
     do
         unset ac_cv_search_cudaGetDeviceCount # clear cached value
         unset ac_cv_search_cublasInit
-        unset ac_cv_search_cuMemGetInfo_v2
+        unset ac_cv_search_cudaMemGetInfo
         if test "$dir" = "none"
         then
                 try_loption=
@@ -348,8 +348,8 @@ then
 	 	
 	 	LDFLAGS=""
 	 	LIBS=""
-        AC_SEARCH_LIBS(cuMemGetInfo_v2,cuda, 
-              cuda_libs="$cuda_libs $LIBS",,)
+#AC_SEARCH_LIBS(ac_cv_search_cudaMemGetInfo,cuda, 
+#      cuda_libs="$cuda_libs $LIBS",,)
               
 		if test "$ac_cv_search_cudaGetDeviceCount" != "no" && 
 			test "$ac_cv_search_cublasInit" != "no"
