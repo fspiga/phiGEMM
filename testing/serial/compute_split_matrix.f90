@@ -5,7 +5,7 @@
 #define phiDgemm(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) phiDgemm(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
 #endif
 
-#define mapping(x) 150*x
+#define mapping(x) 1500*x
 
 PROGRAM compute_split_matrix
 
@@ -41,9 +41,9 @@ PROGRAM compute_split_matrix
 
     ! let's compute the best split factor based on the performance
 
-    m = 10000
-    k = 10000
-    n = 10000
+    m = 1025
+    k = 1025
+    n = 1025
     transa = 'N'
     transb = 'N'
     ! int lda = m;
@@ -76,9 +76,9 @@ PROGRAM compute_split_matrix
 
     WRITE (*,*) "The best split factor is = ", best
 
-    DO im=1,10
-        DO ik=1,10
-            DO in=1,10
+    DO im=1,5
+        DO ik=1,5
+            DO in=1,5
 
 			    m = mapping(im)
 			    k = mapping(ik)
@@ -135,7 +135,7 @@ PROGRAM compute_split_matrix
 			        collects(counter,1) = REAL(INT(REAL(time_stop-time_start) * 1000.0 + 0.5)) / 1000.0
 			        collects(counter,2) = x
 
-!			        WRITE (*, '("time=",F8.6," split=",F8.6)') collects(counter,1) , collects(counter,2)
+			        WRITE (*, '("time=",F8.6," split=",F8.6)') collects(counter,1) , collects(counter,2)
 
 			        counter = counter + 1
 
@@ -150,17 +150,17 @@ PROGRAM compute_split_matrix
                 IF (MINVAL(collects(:,1)) < times(1) .and. MINVAL(collects(:,1)) < times(2)) THEN
                     tmp = MINLOC(collects(:,1))
                     split_matrix(im,in,ik) = REAL(collects(tmp(1),2))
-!                    WRITE (*, '(5X,"m=",I6," n=",I6," k=",I6," CUBLAS=",F6.4," BLAS=",F6.4," PHIGEMM=",F6.4,"(split=",F6.4,") >> phiGEMM")') m, n, k, times(1), times(2), MINVAL(collects(:,1)) , collects(MINLOC(collects(:,1)),2)
+                    WRITE (*, '(5X,"m=",I6," n=",I6," k=",I6," CUBLAS=",F6.4," BLAS=",F6.4," PHIGEMM=",F6.4,"(split=",F6.4,") >> phiGEMM")') m, n, k, times(1), times(2), MINVAL(collects(:,1)) , collects(MINLOC(collects(:,1)),2)
                 ENDIF
 
                 IF (times(1) <= MINVAL(collects(:,1)) .and. times(1) < times(2)) THEN
                     split_matrix(im,in,ik) = -1.0
-!                    WRITE (*, '(5X,"m=",I6," n=",I6," k=",I6," CUBLAS=",F6.4," BLAS=",F6.4," PHIGEMM=",F6.4,"(split=",F6.4,") >> CUBLAS")') m, n, k, times(1), times(2), MINVAL(collects(:,1)) , collects(MINLOC(collects(:,1)),2)
+                    WRITE (*, '(5X,"m=",I6," n=",I6," k=",I6," CUBLAS=",F6.4," BLAS=",F6.4," PHIGEMM=",F6.4,"(split=",F6.4,") >> CUBLAS")') m, n, k, times(1), times(2), MINVAL(collects(:,1)) , collects(MINLOC(collects(:,1)),2)
                 ENDIF
 
                 IF (times(2) <= MINVAL(collects(:,1)) .and. times(2) <= times(1)) THEN
                      split_matrix(im,in,ik) = 0.0
-!                    WRITE (*, '(5X,"m=",I6," n=",I6," k=",I6," CUBLAS=",F6.4," BLAS=",F6.4," PHIGEMM=",F6.4,"(split=",F6.4,") >> BLAS")') m, n, k, times(1), times(2), MINVAL(collects(:,1)) , collects(MINLOC(collects(:,1)),2)
+                    WRITE (*, '(5X,"m=",I6," n=",I6," k=",I6," CUBLAS=",F6.4," BLAS=",F6.4," PHIGEMM=",F6.4,"(split=",F6.4,") >> BLAS")') m, n, k, times(1), times(2), MINVAL(collects(:,1)) , collects(MINLOC(collects(:,1)),2)
                 ENDIF
 
                 DEALLOCATE( A, B, C)
@@ -169,12 +169,12 @@ PROGRAM compute_split_matrix
     ENDDO
 
     ! pathetic loop to print information...
-    DO outer_loop=1,10
-        WRITE(*,*) "m=", mapping(outer_loop)
-        DO index=1,10
-            WRITE(*,*) "n=", mapping(index)
-            WRITE(*,*) split_matrix(outer_loop,index,:)
-        ENDDO
-    ENDDO
+!    DO outer_loop=1,10
+!        WRITE(*,*) "m=", mapping(outer_loop)
+!        DO index=1,10
+!            WRITE(*,*) "n=", mapping(index)
+!            WRITE(*,*) split_matrix(outer_loop,index,:)
+!        ENDDO
+!    ENDDO
 
 END PROGRAM compute_split_matrix
