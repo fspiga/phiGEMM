@@ -232,10 +232,13 @@ AC_LANG_PUSH(C)
 
 # Looking for NVCC & GCC
 AC_PATH_PROG(NVCC, nvcc, )
+AC_ARG_VAR([NVCC], [nvcc compiler to use])
+have_valid_cuda_compiler=1
+AC_PATH_PROG(NVCC, nvcc, )
 if test -n "$nvcc"; then
-    AC_MSG_ERROR([Please check CUDA is correctly installed, nvcc compiler missing in PATH.])
+    have_valid_cuda_compiler=0
 fi
-    
+
 AC_PATH_PROG(GNUCC, gcc, )
 if test -n "$gnucc"; then
     AC_MSG_ERROR([Please check if GNU compilers are correctly installed, gcc compiler missing in PATH.])
@@ -351,14 +354,6 @@ if test "$have_gemm" -eq 0  ; then
     AC_MSG_ERROR([Please check if MKL or ACML libraries are correctly installed, *GEMM symbols are missing.])
 fi
 
-# check for CUDA bin
-AC_ARG_VAR([NVCC], [nvcc compiler to use])
-have_valid_cuda_compiler=1
-AC_PATH_PROG(NVCC, nvcc, )
-if test -n "$nvcc"; then
-    have_valid_cuda_compiler=0
-fi
-
 # check for CUDA headers
 have_valid_cuda_header=0
 if test -e "$cuda_path/include/cuda.h"; then
@@ -435,14 +430,14 @@ if test "$cuda_arch" = "13" ; then
     nvccflags="-O3 --ptxas-options=-v -arch sm_13 -gencode arch=compute_13,code=compute_13"
 fi   
 
-# NVCC compiler options
-if test "$cc" = "icc"; then
-nvccflags="-ccbin icc -O3 --compiler-options '-fPIC -openmp'"
-fi
+# NVCC compiler options (GNU by default)
+#if test "$cc" = "icc"; then
+#nvccflags="-ccbin icc -O3 --compiler-options '-fPIC -openmp'"
+#fi
 
-if test "$cc" = "pgcc"; then
+#if test "$cc" = "pgcc"; then
 nvccflags="-ccbin gcc -O3 --compiler-options '-fPIC -fopenmp'"
-fi
+#fi
 
 # Starting from empty flags....
 phigemm_opts=
