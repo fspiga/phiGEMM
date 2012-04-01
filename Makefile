@@ -27,8 +27,8 @@ clean:
 	( cd src ; if test "$(MAKE)" = "" ; then make $(MFLAGS) clean ; \
 	else $(MAKE) $(MFLAGS) clean ; fi ) ; fi
 	#if test -d testing ; then \
-	( cd testing ; if test "$(MAKE)" = "" ; then make $(MFLAGS) clean ; \
-	else $(MAKE) $(MFLAGS) clean ; fi ) ; fi
+	#( cd testing ; if test "$(MAKE)" = "" ; then make $(MFLAGS) clean ; \
+	#else $(MAKE) $(MFLAGS) clean ; fi ) ; fi
 	rm -rf ./bin ./lib
 
 veryclean: clean

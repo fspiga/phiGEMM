@@ -56,4 +56,4 @@ fortran:
 
 clean:
 	rm -rf .objs *.F90
-	rm ../include/*.mod
+	rm -f ../include/*.mod
