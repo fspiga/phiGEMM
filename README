@@ -18,9 +18,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 0. >>> phiGEMM: CPU-GPU hybrid matrix-matrix multiplication library
 
-Authors:
-  Filippo Spiga, filippo.spiga@ichec.ie
-  Ivan Girotto, ivan.girotto@ichec.ie
+Authors & Maintainers:
+  Filippo Spiga, spiga.filippo@gmail.com
+  Ivan Girotto, ivan.girotto@ictp.it
+  
+Past contributors:  
   Philip Yang, phi@cs.umd.edu
 
 
@@ -43,11 +45,11 @@ Graphics Processing Units (New York, NY, USA), ACM, 2009, pp. 46--51.
 
 1. >>> Requirements
 
-- NVIDIA cards
+- NVIDIA cards (Tesla or Fermi)
 - CUDA SDK (version >=4.0)
 - GCC/GFORTRAN
 - Intel compilers (version >=11.x) or PGI compilers (version >=10.x)
-- MKL (version >=10.x)
+- MKL (version >=10.x) or ACML (version >= 5.x)
 
 
 2. >>> How to compile the library
@@ -253,6 +255,7 @@ IMPORTANT NOTE: this feature is not yet in the repository because can
  
 6. >>> Releases
 
+v1.8   - April 1, 2012      ( ACML and PGI supported - internal tests work )
 v1.7   - March 10, 2012     ( special DGEMM/ZGEMM for rectangular matrices )
 v1.6   - January 19, 2012   ( various little improvements and fixes )
 v1.5   - December 9, 2011   ( internal "pinning", experimental )
@@ -276,5 +279,4 @@ v0.1   - January 27, 2011
 7. >>> Contacts
 
 For any additional information or suggestion please contact 
-- Ivan Girotto, ivan.girotto@ichec.ie)
-- Filippo Spiga, filippo.spiga@ichec.ie) 
+- Filippo Spiga, spiga.filippo@gmail.com 

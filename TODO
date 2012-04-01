@@ -1,4 +1,4 @@
-Last update: Mar 10, 2012
+Last update: March, 2012
 
 0) Suspected bugs/problems:
   
@@ -12,7 +12,7 @@ Last update: Mar 10, 2012
   4.0  Major highly desirable restructuring:
     4.0.2 Padding the leading dimensions
     4.0.3 Benchmarking which padding is the best (32 like MAGMA?)
-    4.0.4 Link to non-MKL multi-threaded BLAS libraries (using dlopen)
+    4.0.4 Link to non-MKL/non-ACML multi-threaded BLAS libraries (using dlopen?)
         
   4.1  New developments to be added (sooner or later):
     4.1.1 Developer a "tuner" program to detect and define 
@@ -21,8 +21,6 @@ Last update: Mar 10, 2012
     4.2.1 Script that easily process the output of the test-suites 
           and produce statistics (Python)
     4.2.2 Add a parallel test case (Cannon algorithm?)
-    4.2.3 Manage "ADD_" and no-"ADD_" cases
-    4.2.4 Support to MAGMABLAS instead of CUBLAS
     
 4.3 Performance enhancements:
     4.3.1 Auto-tune the split factor by benchmarking a predefined subset of 
@@ -35,4 +33,3 @@ Last update: Mar 10, 2012
   4.4.1 Remove dead lines of code
  
 4.5 Trouble-makers, inconsistencies, etc:
-  4.5.1 Verify PGI compiler + MPI on several platform
