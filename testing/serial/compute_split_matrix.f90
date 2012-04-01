@@ -5,7 +5,7 @@
 #define phiDgemm(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) phiDgemm(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
 #endif
 
-#define mapping(x) 1500*x
+#define mapping(x) 1000*x
 
 PROGRAM compute_split_matrix
 
@@ -76,9 +76,9 @@ PROGRAM compute_split_matrix
 
     WRITE (*,*) "The best split factor is = ", best
 
-    DO im=1,5
-        DO ik=1,5
-            DO in=1,5
+    DO im=1,3
+        DO ik=1,3
+            DO in=1,3
 
 			    m = mapping(im)
 			    k = mapping(ik)
