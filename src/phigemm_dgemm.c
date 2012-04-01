@@ -19,11 +19,10 @@
 #endif
 
 #define cublasGemm cublasDgemm
-#define gemm_mkl DGEMM_
+#define gemm_mkl dgemm_
 #define PHIGEMM_M phidgemm_
-#define PHIGEMM_GEMM_MF PHIGEMM_DGEMM_MF
-#define dgemm PHIGEMM_M
-#define dgemm_ PHIGEMM_M
+//#define dgemm PHIGEMM_M
+//#define dgemm_ PHIGEMM_M
 #define phiDgemm PHIGEMM_M
 
 #if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
@@ -46,14 +45,14 @@ extern FILE *phiProfileFile;
 #endif
 
 #if defined(__PHIGEMM_PROFILE)
-void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
+void PHIGEMM_DGEMM_MF(const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
 		const int *ldb, const double *beta, double *C, const int *ldc,
 		int is_splitA, float split,
 		const char *file, const char * line);
 #else
-void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
+void PHIGEMM_DGEMM_MF(const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
 		const int *ldb, const double *beta, double *C, const int *ldc,
@@ -164,9 +163,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			} else {
 
 #if defined(__PHIGEMM_PROFILE)
-				PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
+				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
-				PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
+				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
 #endif
 			}
 
@@ -194,9 +193,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			} else {
 
 #if defined(__PHIGEMM_PROFILE)
-				PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
+				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
-				PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
+				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
 #endif
 			}
 		}
@@ -247,14 +246,14 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 }
 
 #if defined(__PHIGEMM_PROFILE)
-void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
+void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
 		const int *ldb, const double *beta, double *C, const int *ldc,
 		int is_splitA, float split,
 		const char *file, const char * line)
 #else
-void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
+void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const double *alpha,
 		const double *A, const int *lda, const double *B,
 		const int *ldb, const double *beta, double *C, const int *ldc,

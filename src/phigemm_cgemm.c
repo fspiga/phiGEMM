@@ -19,11 +19,11 @@
 #endif
 
 #define cublasGemm cublasCgemm
-#define gemm_mkl CGEMM_
+#define gemm_mkl cgemm_
 #define PHIGEMM_M phicgemm_
-#define PHIGEMM_GEMM_MF PHIGEMM_CGEMM_MF
-#define cgemm PHIGEMM_M
-#define cgemm_ PHIGEMM_M
+#define PHIGEMM_CGEMM_MF PHIGEMM_CGEMM_MF
+//#define cgemm PHIGEMM_M
+//#define cgemm_ PHIGEMM_M
 #define phicgemm PHIGEMM_M
 
 extern phiGemmMemSizes scratch_size;
@@ -38,14 +38,14 @@ extern FILE *phiProfileFile;
 #endif
 
 #if defined(__PHIGEMM_PROFILE)
-void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
+void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuComplex *alpha,
 		const cuComplex *A, const int *lda, const cuComplex *B,
 		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
 		int is_splitA, float split,
 		const char *file, const char * line);
 #else
-void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
+void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuComplex *alpha,
 		const cuComplex *A, const int *lda, const cuComplex *B,
 		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
@@ -149,9 +149,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		} else {
 
 #if defined(__PHIGEMM_PROFILE)
-			PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
+			PHIGEMM_CGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
-			PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
+			PHIGEMM_CGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
 #endif
 		}
 
@@ -184,9 +184,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		} else {
 
 #if defined(__PHIGEMM_PROFILE)
-			PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
+			PHIGEMM_CGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
-			PHIGEMM_GEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
+			PHIGEMM_CGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
 #endif
 		}
 	}
@@ -219,14 +219,14 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #if defined(__PHIGEMM_MULTI_GPU)
 
 #if defined(__PHIGEMM_PROFILE)
-void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
+void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuComplex *alpha,
 		const cuComplex *A, const int *lda, const cuComplex *B,
 		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
 		int is_splitA, float split,
 		const char *file, const char * line)
 #else
-void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
+void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuComplex *alpha,
 		const cuComplex *A, const int *lda, const cuComplex *B,
 		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
@@ -576,14 +576,14 @@ void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
 #else
 
 #if defined(__PHIGEMM_PROFILE)
-void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
+void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuComplex *alpha,
 		const cuComplex *A, const int *lda, const cuComplex *B,
 		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
 		int is_splitA, float split,
 		const char *file, const char * line)
 #else
-void PHIGEMM_GEMM_MF (const char *transa, const char *transb, const int *m,
+void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const cuComplex *alpha,
 		const cuComplex *A, const int *lda, const cuComplex *B,
 		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
