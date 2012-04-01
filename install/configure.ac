@@ -134,7 +134,7 @@ AC_CANONICAL_BUILD
 # (only on NEC SX8 actually)
 if test "$host" != "" ; then ranlib=echo; fi
 
-cross_compiling=yes
+#cross_compiling=yes
 if test "$host" = "" ; then host=$build; fi
 
 # identify architecture
@@ -216,23 +216,38 @@ if test "$cc" = "icc"; then
 ccflags="-O3 -openmp -fPIC"
 ldflags="-O3 -openmp -fPIC"
 ldsharedflag="--shared"
+fcpreprocessflags="-fpp"
 fi
 
 if test "$cc" = "pgcc"; then
 ccflags="-O3 -mp -fPIC"
 ldflags="-O3 -mp -fPIC"
 ldsharedflag="-shared"
+fcpreprocessflags="-Mpreprocess"
 fi
 
 ld_library_path=`echo $LD_LIBRARY_PATH | sed 's/:/ /g'`
 
 AC_LANG_PUSH(C)
 
-have_mkl=0
+# Looking for NVCC & GCC
+AC_PATH_PROG(NVCC, nvcc, )
+if test -n "$nvcc"; then
+    AC_MSG_ERROR([Please check CUDA is correctly installed, nvcc compiler missing in PATH.])
+fi
+    
+AC_PATH_PROG(GNUCC, gcc, )
+if test -n "$gnucc"; then
+    AC_MSG_ERROR([Please check if GNU compilers are correctly installed, gcc compiler missing in PATH.])
+fi
+AC_PATH_PROG(GNUFC, gfortran, )
+if test -n "$gnufc"; then
+    AC_MSG_ERROR([Please check if GNU compilers are correctly installed, gfortran compiler missing in PATH.])
+fi
 
-# check for MKL blas
+# Looking for GEMM libraries...  
+have_gemm=0
 try_libdirs="$libdirs $ld_library_path"
-
 for dir in none $try_libdirs
 do
     unset ac_cv_search_dgemm # clear cached value
@@ -247,45 +262,93 @@ do
     
     FFLAGS=""
     LIBS=""
-    MKL_FLAGS=""
+    GEMM_LIB=""
                 
-    if test "$cc" = "icc"; then
-        LDFLAGS="$try_loption -openmp"
+    if test "$cc" = "icc"; then        
+        # Testing for MKL...
         if test "$use_multithread" -eq 0; then
-           AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_mkl=1
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread"
-               ldflags="$MKL_FLAGS $ldflags", echo "MKL not found",
+               ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_sequential -lmkl_core)
         else
-           AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_mkl=1
+            cat m   LDFLAGS="$try_loption -openmp"
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_intel_thread -lmkl_core -liomp5 -lpthread"
-               ldflags="$MKL_FLAGS $ldflags", echo "MKL not found",
+               ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_intel_thread -lmkl_core)
+        fi
+        if test "$have_gemm" -eq 1
+        then break ; fi
+        
+        # Testing for ACML...
+        if test "$use_multithread" -eq 0; then
+            for dir in $try_libdirs
+            do
+                GEMM_LIB="$dir/libacml.a"
+                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB $dir/libifcoremt_pic.a -lrt",)
+                
+                if test "$have_gemm" -eq 1
+                then break ; fi
+            done
+        else
+            for dir in $try_libdirs
+            do
+                GEMM_LIB="$dir/libacml_mp.a"
+                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB $dir/libifcoremt_pic.a -lrt -liomp5 -lpthread",)
+                
+                if test "$have_gemm" -eq 1
+                then break ; fi
+            done
         fi
     fi
                 
-    if test "$cc" = "pgcc"; then
-        LDFLAGS="$try_loption -mp"
+    if test "$cc" = "pgcc"; then        
+        # Testing for MKL...
         if test "$use_multithread" -eq 0; then
-           AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_mkl=1
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread -lm"
-               ldflags="$MKL_FLAGS $ldflags", echo "MKL not found",
+               ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_sequential -lmkl_core -lpthread -lm)
         else
-           AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_mkl=1
+            LDFLAGS="$try_loption -mp"
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_pgi_thread -lmkl_core -lpthread -lm -pgf90libs"
-               ldflags="$MKL_FLAGS $ldflags", echo "MKL not found",
+               ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_pgi_thread -lmkl_core -lpthread -lm -pgf90libs)
-        fi    
+        fi
+        if test "$have_gemm" -eq 1
+        then break ; fi
+
+        # Testing for ACML...
+        if test "$use_multithread" -eq 0; then
+            for dir in $try_libdirs
+            do
+                GEMM_LIB="$dir/libacml.a"
+                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB -lrt",)
+                
+                if test "$have_gemm" -eq 1
+                then break ; fi
+            done
+        else
+            for dir in $try_libdirs
+            do
+                GEMM_LIB="$dir/libacml_mp.a"
+                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB -lrt",)
+                
+                if test "$have_gemm" -eq 1
+                then break ; fi
+            done
+        fi
     fi
                         
-    if test "$ac_cv_search_dgemm" != "no"
+    if test "$have_gemm" -eq 1
     then break ; fi
 done
 
-if test "$have_mkl" -eq 0  ; then
-    #AC_MSG_WARN([Please check if MKL libraries are correctly installed, GEMM symbols were not automatically detected.])
-    AC_MSG_ERROR([Please check if MKL libraries are correctly installed, GEMM symbols are missing.])
+if test "$have_gemm" -eq 0  ; then
+    #AC_MSG_WARN([Please check if MKL or ACML libraries are correctly installed, *GEMM symbols were not automatically detected.])
+    AC_MSG_ERROR([Please check if MKL or ACML libraries are correctly installed, *GEMM symbols are missing.])
 fi
 
 # check for CUDA bin
@@ -441,6 +504,7 @@ AC_SUBST(f90)
 AC_SUBST(ld)
 AC_SUBST(ldflags)
 AC_SUBST(ldsharedflag)
+AC_SUBST(fcpreprocessflags)
 AC_SUBST(ld_libs)
 AC_SUBST(ar)
 AC_SUBST(arflags)

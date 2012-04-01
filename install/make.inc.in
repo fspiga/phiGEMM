@@ -22,6 +22,7 @@ CPPFLAGS    = @cppflags@
 CFLAGS          = @ccflags@
 LD_FLAGS        = @ldflags@
 LD_SHARED_FLAGS = @ldsharedflag@
+FC_PREPROC_FLAG = @fcpreprocessflags@
 
 NVCC        = @nvcc@
 NVCC_FLAGS  = @nvccflags@

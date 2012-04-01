@@ -612,6 +612,7 @@ nvcc
 arflags
 ar
 ld_libs
+fcpreprocessflags
 ldsharedflag
 ldflags
 ld
@@ -620,6 +621,8 @@ cppflags
 cpp
 ccflags
 cc
+GNUFC
+GNUCC
 NVCC
 ac_ct_CC
 CPPFLAGS
@@ -2035,7 +2038,7 @@ case $build_os in *\ *) build_os=`echo "$build_os" | sed 's/ /-/g'`;; esac
 # (only on NEC SX8 actually)
 if test "$host" != "" ; then ranlib=echo; fi
 
-cross_compiling=yes
+#cross_compiling=yes
 if test "$host" = "" ; then host=$build; fi
 
 # identify architecture
@@ -3098,12 +3101,14 @@ if test "$cc" = "icc"; then
 ccflags="-O3 -openmp -fPIC"
 ldflags="-O3 -openmp -fPIC"
 ldsharedflag="--shared"
+fcpreprocessflags="-fpp"
 fi
 
 if test "$cc" = "pgcc"; then
 ccflags="-O3 -mp -fPIC"
 ldflags="-O3 -mp -fPIC"
 ldsharedflag="-shared"
+fcpreprocessflags="-Mpreprocess"
 fi
 
 ld_library_path=`echo $LD_LIBRARY_PATH | sed 's/:/ /g'`
@@ -3115,11 +3120,147 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-have_mkl=0
+# Looking for NVCC & GCC
+# Extract the first word of "nvcc", so it can be a program name with args.
+set dummy nvcc; ac_word=$2
+{ $as_echo "$as_me:$LINENO: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_NVCC+set}" = set; then
+  $as_echo_n "(cached) " >&6
+else
+  case $NVCC in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_NVCC="$NVCC" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_NVCC="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
 
-# check for MKL blas
+  ;;
+esac
+fi
+NVCC=$ac_cv_path_NVCC
+if test -n "$NVCC"; then
+  { $as_echo "$as_me:$LINENO: result: $NVCC" >&5
+$as_echo "$NVCC" >&6; }
+else
+  { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+if test -n "$nvcc"; then
+    { { $as_echo "$as_me:$LINENO: error: Please check CUDA is correctly installed, nvcc compiler missing in PATH." >&5
+$as_echo "$as_me: error: Please check CUDA is correctly installed, nvcc compiler missing in PATH." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+# Extract the first word of "gcc", so it can be a program name with args.
+set dummy gcc; ac_word=$2
+{ $as_echo "$as_me:$LINENO: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_GNUCC+set}" = set; then
+  $as_echo_n "(cached) " >&6
+else
+  case $GNUCC in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_GNUCC="$GNUCC" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_GNUCC="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+GNUCC=$ac_cv_path_GNUCC
+if test -n "$GNUCC"; then
+  { $as_echo "$as_me:$LINENO: result: $GNUCC" >&5
+$as_echo "$GNUCC" >&6; }
+else
+  { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+if test -n "$gnucc"; then
+    { { $as_echo "$as_me:$LINENO: error: Please check if GNU compilers are correctly installed, gcc compiler missing in PATH." >&5
+$as_echo "$as_me: error: Please check if GNU compilers are correctly installed, gcc compiler missing in PATH." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+# Extract the first word of "gfortran", so it can be a program name with args.
+set dummy gfortran; ac_word=$2
+{ $as_echo "$as_me:$LINENO: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_GNUFC+set}" = set; then
+  $as_echo_n "(cached) " >&6
+else
+  case $GNUFC in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_GNUFC="$GNUFC" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_GNUFC="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+GNUFC=$ac_cv_path_GNUFC
+if test -n "$GNUFC"; then
+  { $as_echo "$as_me:$LINENO: result: $GNUFC" >&5
+$as_echo "$GNUFC" >&6; }
+else
+  { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+if test -n "$gnufc"; then
+    { { $as_echo "$as_me:$LINENO: error: Please check if GNU compilers are correctly installed, gfortran compiler missing in PATH." >&5
+$as_echo "$as_me: error: Please check if GNU compilers are correctly installed, gfortran compiler missing in PATH." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+# Looking for GEMM libraries...
+have_gemm=0
 try_libdirs="$libdirs $ld_library_path"
-
 for dir in none $try_libdirs
 do
     unset ac_cv_search_dgemm # clear cached value
@@ -3134,10 +3275,10 @@ do
 
     FFLAGS=""
     LIBS=""
-    MKL_FLAGS=""
+    GEMM_LIB=""
 
     if test "$cc" = "icc"; then
-        LDFLAGS="$try_loption -openmp"
+        # Testing for MKL...
         if test "$use_multithread" -eq 0; then
 
 { $as_echo "$as_me:$LINENO: checking for library containing dgemm" >&5
@@ -3224,15 +3365,16 @@ $as_echo "$ac_cv_search_dgemm" >&6; }
 ac_res=$ac_cv_search_dgemm
 if test "$ac_res" != no; then
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  have_mkl=1
+  have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread"
-               ldflags="$MKL_FLAGS $ldflags"
+               ldflags="$GEMM_LIB $ldflags"
 else
   echo "MKL not found"
 fi
 
         else
-           { $as_echo "$as_me:$LINENO: checking for library containing dgemm" >&5
+            cat m   LDFLAGS="$try_loption -openmp"
+            { $as_echo "$as_me:$LINENO: checking for library containing dgemm" >&5
 $as_echo_n "checking for library containing dgemm... " >&6; }
 if test "${ac_cv_search_dgemm+set}" = set; then
   $as_echo_n "(cached) " >&6
@@ -3316,20 +3458,93 @@ $as_echo "$ac_cv_search_dgemm" >&6; }
 ac_res=$ac_cv_search_dgemm
 if test "$ac_res" != no; then
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  have_mkl=1
+  have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_intel_thread -lmkl_core -liomp5 -lpthread"
-               ldflags="$MKL_FLAGS $ldflags"
+               ldflags="$GEMM_LIB $ldflags"
 else
   echo "MKL not found"
 fi
 
         fi
+        if test "$have_gemm" -eq 1
+        then break ; fi
+
+        # Testing for ACML...
+        if test "$use_multithread" -eq 0; then
+            for dir in $try_libdirs
+            do
+                GEMM_LIB="$dir/libacml.a"
+                as_ac_File=`$as_echo "ac_cv_file_$GEMM_LIB" | $as_tr_sh`
+{ $as_echo "$as_me:$LINENO: checking for $GEMM_LIB" >&5
+$as_echo_n "checking for $GEMM_LIB... " >&6; }
+if { as_var=$as_ac_File; eval "test \"\${$as_var+set}\" = set"; }; then
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  { { $as_echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+$as_echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$GEMM_LIB"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+ac_res=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+	       { $as_echo "$as_me:$LINENO: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+as_val=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+   if test "x$as_val" = x""yes; then
+  have_gemm=1 blas_libs="$GEMM_LIB $dir/libifcoremt_pic.a -lrt"
+fi
+
+
+                if test "$have_gemm" -eq 1
+                then break ; fi
+            done
+        else
+            for dir in $try_libdirs
+            do
+                GEMM_LIB="$dir/libacml_mp.a"
+                as_ac_File=`$as_echo "ac_cv_file_$GEMM_LIB" | $as_tr_sh`
+{ $as_echo "$as_me:$LINENO: checking for $GEMM_LIB" >&5
+$as_echo_n "checking for $GEMM_LIB... " >&6; }
+if { as_var=$as_ac_File; eval "test \"\${$as_var+set}\" = set"; }; then
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  { { $as_echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+$as_echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$GEMM_LIB"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+ac_res=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+	       { $as_echo "$as_me:$LINENO: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+as_val=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+   if test "x$as_val" = x""yes; then
+  have_gemm=1 blas_libs="$GEMM_LIB $dir/libifcoremt_pic.a -lrt -liomp5 -lpthread"
+fi
+
+
+                if test "$have_gemm" -eq 1
+                then break ; fi
+            done
+        fi
     fi
 
     if test "$cc" = "pgcc"; then
-        LDFLAGS="$try_loption -mp"
+        # Testing for MKL...
         if test "$use_multithread" -eq 0; then
-           { $as_echo "$as_me:$LINENO: checking for library containing dgemm" >&5
+            { $as_echo "$as_me:$LINENO: checking for library containing dgemm" >&5
 $as_echo_n "checking for library containing dgemm... " >&6; }
 if test "${ac_cv_search_dgemm+set}" = set; then
   $as_echo_n "(cached) " >&6
@@ -3413,15 +3628,16 @@ $as_echo "$ac_cv_search_dgemm" >&6; }
 ac_res=$ac_cv_search_dgemm
 if test "$ac_res" != no; then
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  have_mkl=1
+  have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread -lm"
-               ldflags="$MKL_FLAGS $ldflags"
+               ldflags="$GEMM_LIB $ldflags"
 else
   echo "MKL not found"
 fi
 
         else
-           { $as_echo "$as_me:$LINENO: checking for library containing dgemm" >&5
+            LDFLAGS="$try_loption -mp"
+            { $as_echo "$as_me:$LINENO: checking for library containing dgemm" >&5
 $as_echo_n "checking for library containing dgemm... " >&6; }
 if test "${ac_cv_search_dgemm+set}" = set; then
   $as_echo_n "(cached) " >&6
@@ -3505,24 +3721,97 @@ $as_echo "$ac_cv_search_dgemm" >&6; }
 ac_res=$ac_cv_search_dgemm
 if test "$ac_res" != no; then
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  have_mkl=1
+  have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_pgi_thread -lmkl_core -lpthread -lm -pgf90libs"
-               ldflags="$MKL_FLAGS $ldflags"
+               ldflags="$GEMM_LIB $ldflags"
 else
   echo "MKL not found"
 fi
 
         fi
+        if test "$have_gemm" -eq 1
+        then break ; fi
+
+        # Testing for ACML...
+        if test "$use_multithread" -eq 0; then
+            for dir in $try_libdirs
+            do
+                GEMM_LIB="$dir/libacml.a"
+                as_ac_File=`$as_echo "ac_cv_file_$GEMM_LIB" | $as_tr_sh`
+{ $as_echo "$as_me:$LINENO: checking for $GEMM_LIB" >&5
+$as_echo_n "checking for $GEMM_LIB... " >&6; }
+if { as_var=$as_ac_File; eval "test \"\${$as_var+set}\" = set"; }; then
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  { { $as_echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+$as_echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$GEMM_LIB"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+ac_res=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+	       { $as_echo "$as_me:$LINENO: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+as_val=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+   if test "x$as_val" = x""yes; then
+  have_gemm=1 blas_libs="$GEMM_LIB -lrt"
+fi
+
+
+                if test "$have_gemm" -eq 1
+                then break ; fi
+            done
+        else
+            for dir in $try_libdirs
+            do
+                GEMM_LIB="$dir/libacml_mp.a"
+                as_ac_File=`$as_echo "ac_cv_file_$GEMM_LIB" | $as_tr_sh`
+{ $as_echo "$as_me:$LINENO: checking for $GEMM_LIB" >&5
+$as_echo_n "checking for $GEMM_LIB... " >&6; }
+if { as_var=$as_ac_File; eval "test \"\${$as_var+set}\" = set"; }; then
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  { { $as_echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+$as_echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$GEMM_LIB"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+ac_res=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+	       { $as_echo "$as_me:$LINENO: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+as_val=`eval 'as_val=${'$as_ac_File'}
+		 $as_echo "$as_val"'`
+   if test "x$as_val" = x""yes; then
+  have_gemm=1 blas_libs="$GEMM_LIB -lrt"
+fi
+
+
+                if test "$have_gemm" -eq 1
+                then break ; fi
+            done
+        fi
     fi
 
-    if test "$ac_cv_search_dgemm" != "no"
+    if test "$have_gemm" -eq 1
     then break ; fi
 done
 
-if test "$have_mkl" -eq 0  ; then
-    #AC_MSG_WARN([Please check if MKL libraries are correctly installed, GEMM symbols were not automatically detected.])
-    { { $as_echo "$as_me:$LINENO: error: Please check if MKL libraries are correctly installed, GEMM symbols are missing." >&5
-$as_echo "$as_me: error: Please check if MKL libraries are correctly installed, GEMM symbols are missing." >&2;}
+if test "$have_gemm" -eq 0  ; then
+    #AC_MSG_WARN([Please check if MKL or ACML libraries are correctly installed, *GEMM symbols were not automatically detected.])
+    { { $as_echo "$as_me:$LINENO: error: Please check if MKL or ACML libraries are correctly installed, *GEMM symbols are missing." >&5
+$as_echo "$as_me: error: Please check if MKL or ACML libraries are correctly installed, *GEMM symbols are missing." >&2;}
    { (exit 1); exit 1; }; }
 fi
 
@@ -3887,6 +4176,7 @@ else
 fi
 
 # export settings to generated files
+
 
 
 
@@ -5020,3 +5310,4 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:$LINENO: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
+

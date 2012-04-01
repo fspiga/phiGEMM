@@ -34,11 +34,10 @@ prereq:
 test:
 	rm -rf $(PHIGEMM)/bin/*.x
 	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(PHIGEMM)/bin/single_test.x $(CSCRPATH)/single_test.c $(EXT_INC) $(LD_LIB)
-#CUBLAS THUNKING interface
-	$(CC) $(GEMM_OPT) -c $(CSCRPATH)/cptimer.c -o .objs/cptimer.o
-	$(CC) $(GEMM_OPT) -c $(CUDA_PATH)/src/fortran_thunking.c -I$(CUDA_PATH)/src $(EXT_INC) -o .objs/fortran_thunking.o
-	$(CC) $(GEMM_OPT) -c $(CSCRPATH)/cuda_env.c -I$(CSCRPATH)/cuda_env.h $(EXT_INC) -o .objs/cuda_env.o
-	$(FC) -fpp $(GEMM_OPT) $(TEST_FLAGS) $(EXT_INC) .objs/cuda_env.o $(CSCRPATH)/compute_split_matrix.f90 .objs/fortran_thunking.o .objs/cptimer.o $(LD_LIB) -o $(PHIGEMM)/bin/compute_split_matrix
+	gcc $(GEMM_OPT) -c $(CSCRPATH)/cptimer.c -o .objs/cptimer.o
+	gcc $(GEMM_OPT) -c $(CUDA_PATH)/src/fortran_thunking.c -I$(CUDA_PATH)/src $(EXT_INC) -o .objs/fortran_thunking.o
+	gcc $(GEMM_OPT) -c $(CSCRPATH)/cuda_env.c -I$(CSCRPATH) $(EXT_INC) -o .objs/cuda_env.o
+	$(FC) $(FC_PREPROC_FLAG) $(GEMM_OPT) $(TEST_FLAGS) $(EXT_INC) .objs/cuda_env.o $(CSCRPATH)/compute_split_matrix.f90 .objs/fortran_thunking.o .objs/cptimer.o $(LD_LIB) -o $(PHIGEMM)/bin/compute_split_matrix
 	
 run:
 	./testsuite.sh
