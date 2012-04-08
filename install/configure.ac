@@ -1,4 +1,4 @@
-AC_INIT(phiGEMM, 2.0, , phigemm)
+AC_INIT(phiGEMM, 1.8, , phigemm)
 
 AC_ARG_ENABLE(cpu_multithread,
    [AS_HELP_STRING([--enable-cpu-multithread],
@@ -275,7 +275,7 @@ do
                ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_sequential -lmkl_core)
         else
-            cat m   LDFLAGS="$try_loption -openmp"
+            LDFLAGS="$try_loption -openmp"
             AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_intel_thread -lmkl_core -liomp5 -lpthread"
                ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
