@@ -152,6 +152,9 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	 * 2: standard (split A or B)
 	 */
 
+	// Un-comment ONLY for debug/testing purposes...
+	// return 2;
+
 #if defined(__PHIGEMM_DEBUG_2)
 	printf("[PHIGEMM_DEBUG] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);
 #endif
@@ -327,6 +330,10 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 		/* Default threads num = 1 */
 		phiGemmCPUThreads = 1;
 	}
+#if defined(__PHIGEMM_DEBUG)
+	printf ("[PHIGEMM_DEBUG] phiGemmCPUThreads: %d \n", phiGemmCPUThreads);
+#endif
+
 }
 
 
@@ -369,14 +376,6 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 #endif
 
 	/* find the split factor */
-#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
-
-#if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] The (explicit) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
-	fflush(stdout);
-#endif
-
-#else
 
 	/* Now there is only one generic split factor. Parameters are temporary ignored... */
 	estmSplitFactor("xxx", 'n', 'n');
@@ -384,8 +383,6 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 #if defined(__PHIGEMM_DEBUG)
 	printf("[PHIGEMM_DEBUG] The (initial) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
 	fflush(stdout);
-#endif
-
 #endif
 
 	/* Init GPU data structures for managing multiGPU */
