@@ -91,6 +91,7 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 	int tmp_m = m;
 	int tmp_n = n;
 
+	// This is ok, much better if we consider  padded matrices...
 	const int step = 64;
 
 #if 0
@@ -119,8 +120,8 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 			 */
 			mem_gpu = memOccupancy(is_splitA, split, m, *p1, k) * type_size;
 		}
-#if defined(__PHIGEMM_DEBUG)
-		fprintf( stdout,"*** phiGEMM *** > p1: %d\tp2: %d\tsize:%lu\n", *p1, *p2, mem_gpu); fflush(stdout);
+#if defined(__PHIGEMM_DEBUG_4)
+		fprintf( stdout,"[PHIGEMM_DEBUG][4] SPLITTING > p1: %d\tp2: %d\tsize (byte):%lu\n", *p1, *p2, mem_gpu); fflush(stdout);
 #endif
 	}
 #else
