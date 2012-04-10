@@ -137,7 +137,7 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 }
 
 /* This routine returns the selected strategy for CPU-GPU splitting */
-int cpuGPUheuristic(int m, int n, int k, char type) {
+int cpuGPUheuristic(int m, int n, int k, char type, int enable_k) {
 
 	double ratio_km = (double) k/m;
 	double ratio_kn = (double) k/n;
@@ -155,14 +155,14 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	// Un-comment ONLY for debug/testing purposes...
 	// return 2;
 
-#if defined(__PHIGEMM_DEBUG_2)
-	printf("[PHIGEMM_DEBUG][2] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);
+#if !defined(__PHIGEMM_DISABLE_SPECIALK)
+	if ((type == 'd' || type == 'z') && enable_k) {
+
+#if defined(__PHIGEMM_DEBUG_4)
+	printf("[PHIGEMM_DEBUG][4] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);
 #endif
 
-
-#if !defined(__PHIGEMM_DISABLE_SPECIALK)
-	if (type == 'd' || type == 'z') {
-		// Matrices are small but not so small...
+	// Matrices are small but not so small...
 		if ( (n >= LOWER_LIMIT_NM) && (m >= LOWER_LIMIT_NM) ){
 			// over the UPPER limit, they have to be rectangular...
 			if ( ((n >= UPPER_LIMIT_K) && (m >= UPPER_LIMIT_K)) && ((ratio_km >= SPLITK_FACTOR) || (ratio_kn >= SPLITK_FACTOR)) )
@@ -764,21 +764,6 @@ void selfPhigemmInit(){
 	}
 
 	phiGemmNumDevices = ngpus_per_process;
-
-	/* This is to avoid not-defined OMP_NUM_THREADS in the environment.
-	 * Default threads num = 1 */
-	value = getenv("OMP_NUM_THREADS");
-	if (value != NULL)
-	{
-		phiGemmCPUThreads = atoi(value);
-	} else {
-
-		/* Default threads num = 1 */
-		phiGemmCPUThreads = 1;
-	}
-#if defined(__PHIGEMM_DEBUG)
-	printf ("[PHIGEMM_DEBUG] phiGemmCPUThreads: %d \n", phiGemmCPUThreads);
-#endif
 
 	is_alloc_external = 0; //quite important that this is 0!
 
