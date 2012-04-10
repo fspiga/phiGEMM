@@ -79,7 +79,7 @@
 #endif
 
 
-#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.95
+#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.1
 
 #define MAX_GPU_SERIAL_TEST 8
 
@@ -209,7 +209,11 @@ int main(int argc, char **argv)
 	}
 #endif
 
-
+#if defined(__PHIGEMM_DEBUG_3)
+	// only for single-GPU tests...
+	printf( "*** SPACE REQUIRED ON THE GPU : %f MByte \n", (( m*k + k*n + m*n ) * sizeof(XTYPE))/(1024.0*1024.0) ); fflush(stdout);
+	printf( "*** SPACE AVAILABLE ON THE GPU : %f MByte \n", memsize[ 0 ]/(1024.0*1024.0) ); fflush(stdout);
+#endif
 
 #if defined __PERFORM_PHIGEMM_INIT
 	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond);
