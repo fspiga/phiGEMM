@@ -37,7 +37,7 @@ zgemm_specialK.o: $(PHIGEMM_TOP)/phigemm_zgemm_specialK.c
 
 static: dgemm.o zgemm.o sgemm.o cgemm.o util.o dgemm_specialK.o zgemm_specialK.o
 	mkdir -p ../bin ../lib
-	$(AR) $(ARFLAGS) libphigemm.a .objs/sgemm.o .objs/dgemm.o .objs/zgemm.o .objs/util.o .objs/dgemm_specialK.o .objs/zgemm_specialK.o
+	$(AR) $(ARFLAGS) libphigemm.a .objs/cgemm.o .objs/sgemm.o .objs/dgemm.o .objs/zgemm.o .objs/util.o .objs/dgemm_specialK.o .objs/zgemm_specialK.o
 	mv libphigemm.a ../lib/.
 
 shared: dgemm.o zgemm.o sgemm.o cgemm.o util.o dgemm_specialK.o zgemm_specialK.o
