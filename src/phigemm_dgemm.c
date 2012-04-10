@@ -78,7 +78,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	size_t memsize_gpu, mem_gpu;
 	float split = -1;
 	static int ground_level = 1;
-	static int splitting_steps =0;
 	static int splitting_level =0;
 	int first_call = 0;
 	int local_init = 0;
@@ -93,7 +92,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	if ( ground_level) {
 		first_call = 1;
-		splitting_steps = 0;
 		splitting_level = 0;
 #if defined(__PHIGEMM_PROFILE)
 		start = phigemm_cclock();
@@ -174,8 +172,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 			if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
 			{
-				splitting_steps++;
-				splitting_level++;
 				ground_level = 0;
 
 				bestFit(is_splitA, split, *m, *n, *k, sizeof(double), &p1, &p2);
@@ -183,9 +179,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				a_offset = ( *transa == 'n' || *transa == 'N' )? p1 : ((*lda)*p1);
 				c_offset = p1;
 
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] IN splitting_level=%d\n", splitting_level); fflush(stdout);
-#endif
+				splitting_level++;
 
 #if defined(__PHIGEMM_PROFILE)
 				PHIGEMM_M(transa, transb, &p1, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
@@ -194,12 +188,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				PHIGEMM_M(transa, transb, &p1, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 				PHIGEMM_M(transa, transb, &p2, n, k, alpha, A + a_offset, lda, B, ldb, beta, C + c_offset, ldc);
 #endif
-
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] OUT splitting_level=%d\n", splitting_level); fflush(stdout);
-#endif
-
 				splitting_level--;
+
 			} else {
 
 #if defined(__PHIGEMM_DEBUG_3)
@@ -215,7 +205,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #if defined(__PHIGEMM_DEBUG_3)
 				printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
 #endif
-
 			}
 
 		} else {
@@ -225,17 +214,12 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
 			{
 				ground_level = 0;
-				splitting_steps++;
 				splitting_level++;
 
 				bestFit(is_splitA, split, *m, *n, *k, sizeof(double), &p1, &p2);
 
 				b_offset = ( *transb == 'n' || *transb == 'N' )? ((*ldb)*p1) : p1;
 				c_offset = (*ldc)*p1;
-
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] IN splitting_level=%d\n", splitting_level); fflush(stdout);
-#endif
 
 #if defined(__PHIGEMM_PROFILE)
 				PHIGEMM_M(transa, transb, m, &p1, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
@@ -245,9 +229,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				PHIGEMM_M(transa, transb, m, &p2, k, alpha, A, lda, B + b_offset, ldb, beta, C + c_offset, ldc);
 #endif
 
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] OUT splitting_level=%d\n", splitting_level); fflush(stdout);
-#endif
 				splitting_level--;
 			} else {
 

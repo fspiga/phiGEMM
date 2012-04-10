@@ -21,10 +21,9 @@
 #define cublasGemm cublasCgemm
 #define gemm_mkl cgemm_
 #define PHIGEMM_M phicgemm_
-#define PHIGEMM_CGEMM_MF PHIGEMM_CGEMM_MF
 //#define cgemm PHIGEMM_M
 //#define cgemm_ PHIGEMM_M
-#define phicgemm PHIGEMM_M
+#define phiCgemm PHIGEMM_M
 
 extern phiGemmMemSizes scratch_size;
 extern phiGemmMemDevPtr dev_scratch;
