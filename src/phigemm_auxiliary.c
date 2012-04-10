@@ -156,7 +156,7 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	// return 2;
 
 #if defined(__PHIGEMM_DEBUG_2)
-	printf("[PHIGEMM_DEBUG] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);
+	printf("[PHIGEMM_DEBUG][2] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);
 #endif
 
 
@@ -239,6 +239,7 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	float envar_split;
 	char *value = NULL;
 
+#if !defined(__PHIGEMM_HACK_CPUONLY)
 	/* split factor may vary between S/D/Z GEMMs */
 
 	/* SGEMM */
@@ -319,6 +320,8 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 	phiGemmPrevSplitFactor[3] = envar_split;
 	phiGemmLowerPositiveSplitFactor[3] = 0.995 ;
 
+#endif
+
 	/* This is to avoid not-defined OMP_NUM_THREADS in the environment.
 	 * Default threads num = 1 */
 	value = getenv("OMP_NUM_THREADS");
@@ -349,6 +352,11 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	struct cudaDeviceProp deviceProp;
 	int deviceCount;
 
+	if ( is_phigemm_init == 1 )
+		return;
+
+	is_alloc_external = 1;
+
 	cudaGetDeviceCount(&deviceCount);
 
 	if (deviceCount == 0) {
@@ -365,11 +373,6 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	phiGemmNumDevices = nGPU;
 
-	if ( is_phigemm_init == 1 )
-		return;
-
-	is_alloc_external = 1;
-
 #if defined(__PHIGEMM_DEBUG)
 	printf("[PHIGEMM_DEBUG] %d GPUs detected.\n", phiGemmNumDevices);
 	fflush(stdout);
@@ -377,8 +380,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	/* find the split factor */
 
-	/* Now there is only one generic split factor. Parameters are temporary ignored... */
-	estmSplitFactor("xxx", 'n', 'n');
+
 
 #if defined(__PHIGEMM_DEBUG)
 	printf("[PHIGEMM_DEBUG] The (initial) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
@@ -444,6 +446,9 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	/* set the initialization flag */
 	is_phigemm_init = 1;
 #endif
+
+	/* Now there is only one generic split factor. Parameters are temporary ignored... */
+	estmSplitFactor("xxx", 'n', 'n');
 
 #if defined(__PHIGEMM_PROFILE)
 
@@ -759,6 +764,21 @@ void selfPhigemmInit(){
 	}
 
 	phiGemmNumDevices = ngpus_per_process;
+
+	/* This is to avoid not-defined OMP_NUM_THREADS in the environment.
+	 * Default threads num = 1 */
+	value = getenv("OMP_NUM_THREADS");
+	if (value != NULL)
+	{
+		phiGemmCPUThreads = atoi(value);
+	} else {
+
+		/* Default threads num = 1 */
+		phiGemmCPUThreads = 1;
+	}
+#if defined(__PHIGEMM_DEBUG)
+	printf ("[PHIGEMM_DEBUG] phiGemmCPUThreads: %d \n", phiGemmCPUThreads);
+#endif
 
 	is_alloc_external = 0; //quite important that this is 0!
 
