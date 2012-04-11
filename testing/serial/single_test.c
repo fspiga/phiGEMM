@@ -22,6 +22,7 @@
 #include <sys/time.h>
 #include <assert.h>
 
+#include <time.h>
 
 // Flops formula
 #define GEMM_ADD(m, n, k) ((m) * (n) * (k))
@@ -38,10 +39,10 @@
 
 #if defined(__CUDA_TYPE_DOUBLE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE)
 // FOR DOUBLE  and DOUBLE COMPLEX
-#define MAX_ERROR 0.00000000001d
+#define MAX_ERROR 0.0000000001
 #else
 // FOR FLOAT and COMPLEX
-#define MAX_ERROR 0.01f
+#define MAX_ERROR 0.001
 #endif
 
 /**
@@ -67,7 +68,7 @@
  */
 #elif defined __CUDA_TYPE_COMPLEX
 #define XTYPE cuComplex
-#define MKL_CALL cgemm_
+#define MKL_CALL cgemm
 #define PHIGEMM_CALL phicgemm_
 #define CUBLAS_GEMM cublasCgemm
 
@@ -85,7 +86,7 @@
 #endif
 
 
-#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.9
+#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.1
 
 #define MAX_GPU_SERIAL_TEST 8
 
@@ -126,6 +127,7 @@ int main(int argc, char **argv)
 	double cpu_time, gpu_time, hybrid_time, kernel_time, d2h_time, h2d_time;
 	double t1, t2, t3;
 	XTYPE buf_size;
+	size_t shift = 0;
 
 	size_t freeMem, totalMem, mem_gpu;
 
@@ -229,7 +231,9 @@ int main(int argc, char **argv)
 	// phiGemmSetAvaiableScratchSpace(0, (unsigned long) 25000000);
 
 	/* Allocating memory on the CPU ... */
-	byte_GPU_buffer = ( size_t ) ( ( m * k + k * n + m * n ) * sizeof(XTYPE ) );
+	byte_GPU_buffer = ( size_t ) ( ( ( ((m * k)%2==0) ? (m * k) : (m * k)+1 ) +
+			( ((n * k)%2==0) ? (n * k) : (n * k)+1 ) +
+			( ((m * k)%2==0) ? (m * n) : (m * n)+1 ) ) * sizeof(XTYPE ) );
 
 #ifdef __PHITEST_MEM_PINNED
 	if( cudaHostAlloc( ( void ** ) &GPU_buffer_memory_ptr, byte_GPU_buffer, cudaHostAllocPortable ) != cudaSuccess )
@@ -268,7 +272,15 @@ int main(int argc, char **argv)
 #elif defined __CUDA_TYPE_DOUBLE_COMPLEX
 	fprintf( stdout, "\nPERFORMING ZGEMM operations\n");
 #endif
+
 	// initialize host memory pointers
+//	shift = 0;
+//	A = (char*) GPU_buffer_memory_ptr + shift;
+//	shift += ( ((m * k)%2==0) ? (m * k) : (m * k)+1 )*sizeof(XTYPE);
+//	B = (char*)GPU_buffer_memory_ptr + shift;
+//	shift += ( ((k * n)%2==0) ? (k * n) : (k * n)+1 )*sizeof(XTYPE);
+//	C_phigemm = (char*) GPU_buffer_memory_ptr + shift;
+
 	A = ( XTYPE* ) GPU_buffer_memory_ptr;
 	B = A + (m * k);
 	C_phigemm = B + (k * n);
@@ -296,64 +308,68 @@ int main(int argc, char **argv)
 	 */
 
 #if (defined __CUDA_TYPE_FLOAT)
-	float alpha=0.5f, beta=0.15f;
+	float alpha=0.5, beta=0.15;
 #elif (defined __CUDA_TYPE_DOUBLE)
-	double alpha=1.33d, beta=-0.25d;
+	double alpha=0.33, beta=-0.25;
 #elif (defined __CUDA_TYPE_COMPLEX)
 	cuComplex alpha, beta;
-	alpha.x = 2.0f;
-	alpha.y = 1.0f;
-	beta.x = 1.0f;
-	beta.y = -0.5f;
+	alpha.x = (float) 0.29;
+	alpha.y = (float) -0.86;
+	beta.x = (float) -0.48;
+	beta.y = (float) 0.38;
 #elif (defined __CUDA_TYPE_DOUBLE_COMPLEX)
 	cuDoubleComplex alpha, beta;
-	alpha.x = 2.0d;
-	alpha.y = 1.0d;
-	beta.x = 1.0d;
-	beta.y = -0.5d;
+	alpha.x = (double) 2.0;
+	alpha.y = (double) 1.0;
+	beta.x = (double) 1.0;
+	beta.y = (double) -0.5;
 #endif
 
 	for ( j = 0; j < m; j++ ) {
+		srand ( time(NULL) );
 		for ( i = 0; i < k; i++ ) {
 			int index = i * m + j;
 #if defined __CUDA_TYPE_COMPLEX
-			A[ index ].x = ( float ) rand() / (RAND_MAX / 23410 + 1);
-			A[ index ].y = ( float ) rand() / (RAND_MAX / 123045 + 1);
+			A[ index ].x = (float) rand()/(RAND_MAX+1.0);
+			A[ index ].y = ( float ) rand()/(RAND_MAX+1.0);
 #elif defined __CUDA_TYPE_DOUBLE_COMPLEX
-			A[ index ].x = ( double ) rand() / (RAND_MAX / 12340 + 1);
-			A[ index ].y = ( double ) rand() / (RAND_MAX / 134510 + 1);
+			A[ index ].x = ( double ) rand()/(RAND_MAX+1.0);
+			A[ index ].y = ( double ) rand()/(RAND_MAX+1.0);
 #else
-			A[ index ] =  ( XTYPE ) rand() / (RAND_MAX / 12240 + 1);
+			A[ index ] =  ( XTYPE )  rand()/(RAND_MAX+1.0);
 #endif
 		}
 	}
 
 	for ( j = 0; j < k; j++ ) {
+		srand ( time(NULL) );
 		for ( i = 0; i < n; i++ ) {
 			int index = i * k + j;
 #if defined __CUDA_TYPE_COMPLEX
-			B[ index ].x = ( float ) rand() / (RAND_MAX / 41147 + 1);
-			B[ index ].y = ( float ) rand() / (RAND_MAX / 177670 + 1);
+			B[ index ].x = ( float ) rand()/(RAND_MAX+1.0);
+			B[ index ].y = ( float ) rand()/(RAND_MAX+1.0);
 #elif defined __CUDA_TYPE_DOUBLE_COMPLEX
-			B[ index ].x = ( double ) rand() / (RAND_MAX / 11120 + 1);
-			B[ index ].y = ( double ) rand() / (RAND_MAX / 21410 + 1);
+			B[ index ].x = ( double ) rand()/(RAND_MAX+1.0);
+			B[ index ].y = ( double )  rand()/(RAND_MAX+1.0);
 #else
-			B[ index ] =  ( XTYPE ) rand() / (RAND_MAX / 13450 + 1);
+			B[ index ] =  ( XTYPE )  rand()/(RAND_MAX+1.0);
 #endif
 		}
 	}
 
+
 	for ( j = 0; j < m; j++ ) {
+		srand ( time(NULL) );
 		for ( i = 0; i < n; i++ ) {
 			int index = i * m + j;
 #if defined __CUDA_TYPE_COMPLEX
-			C[ index ].x = ( float ) (rand() / (RAND_MAX / 1227890 + 1));
-			C[ index ].y  = ( float ) (rand() / (RAND_MAX / 1410 + 1));
+			C[ index ].x = ( float )  rand()/(RAND_MAX+1.0);
+			C[ index ].y  = ( float )  rand()/(RAND_MAX+1.0);
 #elif defined __CUDA_TYPE_DOUBLE_COMPLEX
-			C[ index ].x = ( double ) (rand() / (RAND_MAX / 672 + 1));
-			C[ index ].y  = ( double ) (rand() / (RAND_MAX / 3210 + 1));
+			C[ index ].x = ( double ) rand()/(RAND_MAX+1.0);
+			C[ index ].y  = ( double )  rand()/(RAND_MAX+1.0);
 #else
-			C[ index ] =  ( XTYPE ) (rand() / (RAND_MAX / 5555 + 1));
+			C[ index ] =  ( XTYPE )  rand()/(RAND_MAX+1.0);
 #endif
 		}
 	}
@@ -393,11 +409,11 @@ int main(int argc, char **argv)
 	is_transb[3] = 1;
 
 
-	// Edit only to perform one single test ...
-	//	transa[0] = 'c';
-	//	transb[0] = 'n';
-	//	is_transa[0] = 1;
-	//	is_transb[0] = 0;
+	//Edit only to perform one single test ...
+	transa[0] = 'c';
+	transb[0] = 'n';
+	is_transa[0] = 1;
+	is_transb[0] = 0;
 
 	for( count = 0; count < 1; count +=1 ){
 
@@ -495,7 +511,7 @@ int main(int argc, char **argv)
 			}
 
 			// Be AWARE when you load data in this way... always align by 16!
-			size_t shift = 0;
+			shift = 0;
 			d_A[0] = (char*) test_scratch[0] + shift;
 			shift += ( ((m * k)%2==0) ? (m * k) : (m * k)+1 )*sizeof(XTYPE);
 			d_B[0] = (char*) test_scratch[0] + shift;
@@ -594,16 +610,35 @@ int main(int argc, char **argv)
 //#pragma omp parallel for reduction (+ : errors)
 			for( i = 0; i < m * n ; i++ ) {
 
+				// REAL PART
 #if defined(__CUDA_TYPE_COMPLEX)
 				float tmp_error;
-				tmp_error = (float) abs( (float)C_mkl[ i ].x - (float)C_phigemm[ i ].x );
+				tmp_error = (float) fabs( (float)C_mkl[ i ].x - (float)C_cuda[ i ].x );
 #endif
 
 #if defined( __CUDA_TYPE_DOUBLE_COMPLEX)
 				double tmp_error;
-				tmp_error = abs( (double)C_mkl[ i ].y - (double)C_phigemm[ i ].y );
+				tmp_error = fabs( (double)C_mkl[ i ].x - (double)C_phigemm[ i ].x );
 #endif
-				if (tmp_error > MAX_ERROR ) errors++;
+//				printf("position %d : %f %f\n", i, C_mkl[ i ].x, C_phigemm[ i ].x); fflush(stdout);
+
+				if (tmp_error > MAX_ERROR ) {
+					errors++;
+					printf("position %d : %f %f\n", i, C_mkl[ i ].x, C_cuda[ i ].x); fflush(stdout);
+				}
+
+				// COMPLEX PART
+#if defined(__CUDA_TYPE_COMPLEX)
+				tmp_error = (float) fabs( (float)C_mkl[ i ].y - (float)C_cuda[ i ].y );
+#endif
+
+#if defined( __CUDA_TYPE_DOUBLE_COMPLEX)
+				tmp_error = fabs( (double)C_mkl[ i ].y - (double)C_phigemm[ i ].y );
+#endif
+				if (tmp_error > MAX_ERROR ) {
+					errors++;
+					printf("position %d : %f %f\n", i, C_mkl[ i ].y, C_cuda[ i ].y); fflush(stdout);
+				}
 			}
 
 
@@ -612,8 +647,11 @@ int main(int argc, char **argv)
 
 //#pragma omp parallel for reduction (+ : errors)
 			for( i = 0; i < m * n ; i++ ) {
-				tmp_error = (XTYPE) abs( (XTYPE)(C_mkl[ i ] - C_phigemm[ i ]) );
-				if (tmp_error > MAX_ERROR ) errors++;
+				tmp_error = (XTYPE) fabs( (XTYPE)C_mkl[ i ] - (XTYPE)C_phigemm[ i ] );
+				if (tmp_error > MAX_ERROR ) {
+					errors++;
+					printf("position %d : %f %f\n", i, C_mkl[ i ], C_phigemm[ i ]); fflush(stdout);
+				}
 			}
 
 #endif
