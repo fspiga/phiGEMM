@@ -138,7 +138,7 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 }
 
 /* This routine returns the selected strategy for CPU-GPU splitting */
-int cpuGPUheuristic(int m, int n, int k, char type, int enable_k) {
+int cpuGPUheuristic(int m, int n, int k, char type) {
 
 	double ratio_km = (double) k/m;
 	double ratio_kn = (double) k/n;
@@ -157,7 +157,7 @@ int cpuGPUheuristic(int m, int n, int k, char type, int enable_k) {
 	// return 2;
 
 #if !defined(__PHIGEMM_DISABLE_SPECIALK)
-	if ((type == 'd' || type == 'z') && enable_k) {
+	if (type == 'd' || type == 'z') {
 
 #if defined(__PHIGEMM_DEBUG_4)
 	printf("[PHIGEMM_DEBUG][4] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);

@@ -109,12 +109,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		selfPhigemmInit();
 	}
 
-	if ( ground_level) {
-		select_case = cpuGPUheuristic( (*m), (*n), (*k), 'd', 1);
-	} else {
-		// If you start to split then disable the Special-K
-		select_case = cpuGPUheuristic( (*m), (*n), (*k), 'd', 0);
-	}
+	select_case = cpuGPUheuristic( (*m), (*n), (*k), 'd');
 #endif
 
 	switch (select_case)
