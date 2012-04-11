@@ -18,6 +18,8 @@
 #define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
 #endif
 
+#define EVENIZE(x) ( ((x)%2==0) ? (x) : (x)+1 )
+
 #define cublasGemm cublasCgemm
 #define gemm_mkl cgemm_
 #define PHIGEMM_M phicgemm_
@@ -598,7 +600,8 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 	size_t a_offset_gpu[NSTREAMS *MAX_GPUS], b_offset_gpu[NSTREAMS *MAX_GPUS], c_offset_gpu[NSTREAMS *MAX_GPUS];
 	size_t shiftA, shiftB, shiftC;
 
-	cuComplex *devPtrA[NSTREAMS *MAX_GPUS], *devPtrB[NSTREAMS *MAX_GPUS], *devPtrC[NSTREAMS *MAX_GPUS];
+	size_t shift = 0;
+	void *devPtrA[NSTREAMS *MAX_GPUS], *devPtrB[NSTREAMS *MAX_GPUS], *devPtrC[NSTREAMS *MAX_GPUS];
 	cublasStatus_t status;
 	cudaError_t cudaErr;
 
@@ -700,7 +703,8 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		for (j = 0; j < 7; j++)
 			cudaEventCreate(&(events[iDev % phiGemmNumDevices][j]));
 
-		devPtrA[iDev]=(cuComplex *)(dev_scratch[iDev]);
+		shift = 0;
+		devPtrA[iDev]=(char *) dev_scratch[iDev] + shift;
 
 		cudaEventRecord(events[iDev][0], phiStreams[iDev] );
 
@@ -718,7 +722,9 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 
 		cudaEventRecord(events[iDev][1], phiStreams[iDev] );
 
-		devPtrB[iDev] = devPtrA[iDev] + m_gpu[iDev] * k_gpu[iDev];
+		shift += (EVENIZE(m_gpu[iDev] * k_gpu[iDev])) *sizeof(cuComplex);
+		devPtrB[iDev] = (char *) dev_scratch[iDev] + shift;
+
 		if ( is_transb ) {
 			status = cublasSetMatrixAsync (n_h2d[iDev], k_h2d[iDev],
 					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
@@ -734,7 +740,9 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		cudaEventRecord(events[iDev][2], phiStreams[iDev] );
 
 		/* set the matrix C to device */
-		devPtrC[iDev] = devPtrB[iDev] + k_gpu[iDev] * n_gpu[iDev];
+		shift += (EVENIZE(k_gpu[iDev] * n_gpu[iDev]) )*sizeof(cuComplex);
+		devPtrC[iDev] = (char *) dev_scratch[iDev] + shift;
+
 		if ( beta->x != 0.0 || beta->y != 0.0 ){
 			status = cublasSetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
 					sizeof(cuComplex), C+shiftC, *ldc, devPtrC[iDev],
