@@ -13,10 +13,6 @@
 #include <stddef.h>
 #include <string.h>
 
-#if defined(__PHIGEMM_PARA)
-#include <mpi.h>
-#endif
-
 #include <time.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -341,7 +337,7 @@ void estmSplitFactor(const char* optype, char transa, char transb)
 }
 
 
-void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond )
+void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag )
 {
 
         unsigned int i;
@@ -458,19 +454,17 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	value = getenv("PHIGEMM_PROFILE_PREFIX");
 
-#if defined(__PHIGEMM_PARA)
-
-	MPI_Comm_rank(MPI_COMM_WORLD, &i);
-	if (value != NULL)
-		sprintf(finalFileName, "%s.%d.%s.csv", base, i, value);
-	else
-		sprintf(finalFileName, "%s.%d.csv", base, i);
-#else
-	if (value != NULL)
-		sprintf(finalFileName, "%s.%s.csv", base, value);
-	else
-		sprintf(finalFileName, "%s.csv", base);
-#endif
+	if (tag < 0) {
+		if (value != NULL)
+			sprintf(finalFileName, "%s.%s.csv", base, value);
+		else
+			sprintf(finalFileName, "%s.csv", base);
+	} else {
+		if (value != NULL)
+			sprintf(finalFileName, "%s.%d.%s.csv", base, tag, value);
+		else
+			sprintf(finalFileName, "%s.%d.csv", base, tag);
+	}
 
 	phiProfileFile = fopen (finalFileName, "a");
 
@@ -519,338 +513,6 @@ void phiGemmShutdown()
 #endif
 }
 
-
-void selfPhigemmInit(){
-
-	/* *** This routine is experimental *** */
-
-        int i;
-
-	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
-	 * to capture all the GEMM call and profile them */
-#if !defined(__PHIGEMM_HACK_CPUONLY)
-
-	int lNumDevicesThisNode, deviceCount, ierr ;
-	int ngpus_detected, ngpus_used, ngpus_per_process;
-
-	size_t free, total;
-
-	struct cudaDeviceProp deviceProp;
-
-#if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] *** Self-Init ***\n");
-	fflush(stdout);
-#endif
-
-#if defined(__PHIGEMM_PARA)
-
-	int lRank, lSize, sDeviceBoundTo, tmp;
-	char lNodeName[MPI_MAX_PROCESSOR_NAME];
-	int lNodeNameLength, sIsCudaCapable, lNumRanksThisNode;
-	int lRankThisNode = 0, lSizeThisNode = 0;
-	char *lNodeNameRbuf;
-	int *lRanksThisNode;
-
-	MPI_Group lWorldGroup;
-	MPI_Group lThisNodeGroup;
-	MPI_Comm  lThisNodeComm;
-
-	MPI_Comm_rank(MPI_COMM_WORLD, &lRank);
-	MPI_Comm_size(MPI_COMM_WORLD, &lSize);
-
-	MPI_Get_processor_name(lNodeName, &lNodeNameLength);
-
-	lNodeNameRbuf = (char*) malloc(lSize * MPI_MAX_PROCESSOR_NAME * sizeof(char));
-
-	MPI_Allgather(lNodeName, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, lNodeNameRbuf, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, MPI_COMM_WORLD);
-	MPI_Barrier(MPI_COMM_WORLD);
-
-	// lRanksThisNode is a list of the global ranks running on this node
-	lRanksThisNode = (int*) malloc(lSize * sizeof(int));
-
-	for(i=0; i<lSize; i++)
-	{
-		if(strncmp(lNodeName, (lNodeNameRbuf + i * MPI_MAX_PROCESSOR_NAME), MPI_MAX_PROCESSOR_NAME) == 0)
-		{
-			lRanksThisNode[lNumRanksThisNode] = i;
-			lNumRanksThisNode++;
-		}
-	}
-
-	/* Create a communicator consisting of the ranks running on this node. */
-	MPI_Comm_group(MPI_COMM_WORLD, &lWorldGroup);
-	MPI_Group_incl(lWorldGroup, lNumRanksThisNode, lRanksThisNode, &lThisNodeGroup);
-	MPI_Comm_create(MPI_COMM_WORLD, lThisNodeGroup, &lThisNodeComm);
-	MPI_Comm_rank(lThisNodeComm, &lRankThisNode);
-	MPI_Comm_size(lThisNodeComm, &lSizeThisNode);
-
-	/* Attach all MPI processes on this node to the available GPUs in round-robin fashion */
-	cudaGetDeviceCount(&lNumDevicesThisNode);
-
-	if (lNumDevicesThisNode == 0 && lRankThisNode == 0)
-	{
-		printf("***ERROR: no CUDA-capable devices were found on node %s.\n", lNodeName);
-		MPI_Abort( MPI_COMM_WORLD, EXIT_FAILURE );
-	}
-
-	ngpus_detected = lNumDevicesThisNode;
-
-	if ( (lSizeThisNode % lNumDevicesThisNode ) != 0  )
-	{
-		printf("***WARNING: unbalanced configuration (%d MPI per node, %d GPUs per node)\n", lSizeThisNode, lNumDevicesThisNode);
-		fflush(stdout);
-	}
-
-	if (ngpus_detected <= lSizeThisNode ){
-		/* if GPUs are less then (or equal of) the number of  MPI processes on a single node,
-		 * then PWscf uses all the GPU and one single GPU is assigned to one or multiple MPI processes with overlapping. */
-		ngpus_used = ngpus_detected;
-		ngpus_per_process = 1;
-	} else {
-		/* multi-GPU in parallel calculations is allowed ONLY if CUDA >= 4.0 */
-#if defined(__CUDA_3)
-		ngpus_used = ngpus_detected;
-		ngpus_per_process = 1;
-#else
-		/* if GPUs are more than the MPI processes on a single node,
-		 * then PWscf uses all the GPU and one or more GPUs are assigned to every single MPI processes without overlapping.
-		 * *** NOT IMPLEMENTED YET *** */
-		ngpus_used = ngpus_detected;
-		ngpus_per_process = 1;
-#endif
-	}
-
-	for (i = 0; i < ngpus_per_process; i++) {
-
-		deviceIds[i] = lRankThisNode % lNumDevicesThisNode;
-
-		/* query the real free memory, taking into account the "stack" */
-		if ( cudaSetDevice(deviceIds[i]) != cudaSuccess) {
-			printf("*** ERROR *** cudaSetDevice(%d) failed!", deviceIds[i] );
-			exit(EXIT_FAILURE);
-		}
-
-		scratch_size[i] = (size_t) 0;
-
-		ierr = cudaMalloc ( (void**) &(dev_scratch[i]), scratch_size[i] );
-		if ( ierr != cudaSuccess) {
-			fprintf( stderr, "\nError in (first zero) memory allocation [GPU %d] , program will be terminated!!! Bye...\n\n", deviceIds[i]);
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	/* is this barrier smart? I guess yes... */
-	MPI_Barrier(lThisNodeComm);
-
-	for (i = 0; i < ngpus_per_process; i++) {
-		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
-
-		// see cuda_env.h for a description of the hack
-#if defined(__CUDA_GET_MEM_HACK)
-		free = (size_t)  __GPU_MEM_AMOUNT_HACK__;
-#else
-		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
-
-#if defined(__PHIGEMM_DEBUG)
-		printf("[PHIGEMM_DEBUG - GPU %d - rank: %d (internal rank:%d) ] before: %lu (total: %lu)\n", deviceIds[i], lRank, lRankThisNode, (unsigned long)free, (unsigned long)total); fflush(stdout);
-#endif
-#endif
-
-		int procs_per_gpu = (lSizeThisNode < lNumDevicesThisNode) ? lSizeThisNode : lSizeThisNode / lNumDevicesThisNode;
-		scratch_size[i] = (size_t) (free * __SCALING_MEM_FACTOR__ / procs_per_gpu);
-
-		ierr = cudaMalloc ( (void**) &(dev_scratch[i]), (size_t) scratch_size[i] );
-		if ( ierr != cudaSuccess) {
-			fprintf( stderr, "\nError in memory allocation [GPU %d] , program will be terminated (%d)!!! Bye...\n\n", deviceIds[i], ierr );
-			exit(EXIT_FAILURE);
-		}
-
-#if defined(__PHIGEMM_DEBUG)
-		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
-		printf("[PHIGEMM_DEBUG - GPU %d - rank: %d (internal rank:%d)] after: %lu (total: %lu)\n", deviceIds[i], lRank, lRankThisNode, (unsigned long)free, (unsigned long)total); fflush(stdout);
-#endif
-	}
-
-
-	is_alloc_external = 0; //quite important that this is 0!
-
-	/* set the initialization flag */
-	is_phigemm_init = 1;
-#else
-
-	cudaGetDeviceCount(&lNumDevicesThisNode);
-
-	if (lNumDevicesThisNode == 0)
-	{
-		fprintf( stderr,"***ERROR*** no CUDA-capable devices were found on the machine.\n");
-		exit(EXIT_FAILURE);
-	}
-
-#if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] %d GPUs detected.\n", lNumDevicesThisNode);
-	fflush(stdout);
-#endif
-
-	ngpus_detected = lNumDevicesThisNode;
-
-	/* multi-GPU in serial calculations is allowed ONLY if CUDA >= 4.0 */
-#if defined(__PHIGEMM_MULTI_GPU) && !defined(__CUDA_3)
-	ngpus_used = ngpus_per_process = lNumDevicesThisNode;
-#else
-	ngpus_used = ngpus_per_process = 1;
-#endif
-
-#if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] %d GPUs used.\n", ngpus_per_process);
-	fflush(stdout);
-#endif
-
-	/* Init GPU data structures for managing multiGPU */
-	for( i = 0; i < ngpus_per_process; i++ )
-	{
-		dev_scratch[ i ] = NULL;
-		scratch_size[ i ] = 0;
-	}
-
-	for (i = 0; i < ngpus_per_process; i++) {
-
-		/* Bond devices. NOTE: qe_gpu_bonded[0] is ALWAYS the main device for non multi-GPU kernels.*/
-		deviceIds[i] = i;
-
-		/* query the real free memory, taking into account the "stack" */
-		if ( cudaSetDevice(deviceIds[i]) != cudaSuccess) {
-			printf("*** ERROR *** cudaSetDevice(%d) failed!", deviceIds[i] );
-			exit(EXIT_FAILURE);
-		}
-
-		scratch_size[i] = (size_t) 0;
-
-		ierr = cudaMalloc ( (void**) &(dev_scratch[i]), scratch_size[i] );
-		if ( ierr != cudaSuccess) {
-			fprintf( stderr, "\nError in (first zero) memory allocation [GPU %d] , program will be terminated!!! Bye...\n\n", deviceIds[i]);
-			exit(EXIT_FAILURE);
-		}
-
-		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
-
-		// see cuda_env.h for a description of the hack
-#if defined(__CUDA_GET_MEM_HACK)
-		free = (size_t)  __GPU_MEM_AMOUNT_HACK__;
-#else
-		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
-
-#if defined(__PHIGEMM_DEBUG)
-		printf("[PHIGEMM_DEBUG - GPU %d] before: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
-#endif
-#endif
-		scratch_size[i] = (size_t) (free * __SCALING_MEM_FACTOR__);
-
-		ierr = cudaMalloc ( (void**) &(dev_scratch[i]), (size_t) scratch_size[i] );
-		if ( ierr != cudaSuccess) {
-			fprintf( stderr, "\nError in memory allocation [GPU %d] , program will be terminated (%d)!!! Bye...\n\n", deviceIds[i], ierr );
-			exit(EXIT_FAILURE);
-		}
-
-#if defined(__PHIGEMM_DEBUG)
-		cudaMemGetInfo((size_t*)&free,(size_t*)&total);
-		printf("[PHIGEMM_DEBUG - GPU %d] after: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
-#endif
-	}
-
-#endif
-
-	if ( cudaSetDevice(deviceIds[0]) != cudaSuccess) {
-		printf("*** ERROR *** cudaSetDevice(0) failed!");
-		exit(EXIT_FAILURE);
-	}
-
-	phiGemmNumDevices = ngpus_per_process;
-
-	is_alloc_external = 0; //quite important that this is 0!
-
-	/* find the split factor */
-#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
-
-#if defined(__PHIGEMM_DEBUG)
-	printf("*** phiGEMM *** The (explicit) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
-	fflush(stdout);
-#endif
-
-#else
-
-	/* Now there is only one generic split factor. Parameters are temporary ignored... */
-	estmSplitFactor("xxx", 'n', 'n');
-
-#if defined(__PHIGEMM_DEBUG)
-	printf("*** phiGEMM *** The (initial) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
-	fflush(stdout);
-#endif
-
-#endif
-
-	/* Init GPU data structures for managing multiGPU */
-	for( i = 0; i < phiGemmNumDevices ; i++ )
-	{
-		phiHandles[ i ] = NULL;
-		phiStreams[ i ] = NULL;
-	}
-
-	cudaError_t err;
-
-	for (i = 0; i < phiGemmNumDevices ; i++) {
-
-		/* Attempt to establish a runtime API context */
-		if ( cudaSetDevice( deviceIds[i]) != cudaSuccess) {
-			printf("*** phiGEMM *** ERROR *** cudaSetDevice(%d) failed!\n",i );
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-
-		/* Attempt to initialize CUBLAS */
-		if ( cublasCreate( &phiHandles[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
-			printf("*** phiGEMM *** ERROR *** cublasInit() for device %d failed!\n",i);
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-
-		if( cudaStreamCreate( &phiStreams[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
-			printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i);
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-		cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
-	}
-
-	/* set the initialization flag */
-	is_phigemm_init = 1;
-#endif
-
-#if defined(__PHIGEMM_PROFILE)
-
-	char *value = NULL;
-	char finalFileName [ FILENAME_MAX ];
-
-	value = getenv("PHIGEMM_PROFILE_PREFIX");
-
-#if defined(__PHIGEMM_PARA)
-
-	MPI_Comm_rank(MPI_COMM_WORLD, &i);
-	if (value != NULL)
-		sprintf(finalFileName, "%s.%d.%s.csv", base, i, value);
-	else
-		sprintf(finalFileName, "%s.%d.csv", base, i);
-#else
-	if (value != NULL)
-		sprintf(finalFileName, "%s.%s.csv", base, value);
-	else
-		sprintf(finalFileName, "%s.csv", base);
-#endif
-
-	phiProfileFile = fopen (finalFileName, "a");
-
-#endif
-}
-
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
 	scratch_size[ deviceIds[gpu_id] ] = (size_t) new_dev_memsize;
 
@@ -861,15 +523,13 @@ void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
 }
 
 
-void phigemminit_(int nGPU, phiGemmMemDevPtr* ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond ){ phiGemmInit( nGPU, ptr, dev_memsize, deviceToBond); }
+void phigemminit_(int nGPU, phiGemmMemDevPtr* ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag ){ phiGemmInit( nGPU, ptr, dev_memsize, deviceToBond, tag); }
 
 void phigemmshutdown_(){ phiGemmShutdown(); }
 
 int phigemmisinit_(){return phiGemmIsInit();}
 
 void phigemmsetsplitfactor_(float *x) { phigemmSetSplitFactor(x); }
-
-void selfphigemminit_(){return selfPhigemmInit(); }
 
 void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize) { phiGemmSetAvaiableScratchSpace(gpu_id, new_dev_memsize); }
 

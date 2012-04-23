@@ -20,13 +20,11 @@ extern "C"
 
 /* C interface - does it work? */
 
-void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond);
+void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag);
 
 void phiGemmShutdown();
 
 int phiGemmIsInit();
-
-void selfPhigemmInit();
 
 void phigemmSetSplitFactor(float *x);
 
@@ -111,13 +109,11 @@ void phiZgemm (const char *transa, const char *transb, const int *m,
 
 /* Fortran interface */
 
-void phigemminit_(int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond);
+void phigemminit_(int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag);
 
 void phigemmshutdown_();
 
 int phigemmisinit_();
-
-void selfphigemminit_();
 
 void phigemmsetsplitfactor_(float *x);
 

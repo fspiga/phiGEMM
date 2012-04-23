@@ -104,12 +104,11 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	if ( ground_level && !phiGemmIsInit()  )
 	{
-		fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do self-init.\n"); fflush(stdout);
-		local_init = 1;
-		selfPhigemmInit();
+		fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do CPU-only.\n"); fflush(stdout);
+		select_case = 0;
+	} else {
+		select_case = cpuGPUheuristic( (*m), (*n), (*k), 'd');
 	}
-
-	select_case = cpuGPUheuristic( (*m), (*n), (*k), 'd');
 #endif
 
 	switch (select_case)
@@ -249,11 +248,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		ground_level = 1;
 		first_call = 0;
 		splitting_level = 0;
-
-		if ( local_init ) {
-			/* local init -> local shutdown (only at the end )*/
-			phiGemmShutdown();
-		}
 
 		if ( cudaSetDevice(deviceIds[0]) != cudaSuccess) {
 			printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");

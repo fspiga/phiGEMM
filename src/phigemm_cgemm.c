@@ -106,8 +106,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	if ( ground_level && !phiGemmIsInit()  )
 	{
 		fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do self-init.\n"); fflush(stdout);
-		local_init = 1;
-		selfPhigemmInit();
+		exit(-1);
 	}
 
 	is_splitA = (*n > *m) ? 0:1;
@@ -190,11 +189,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			PHIGEMM_CGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
 #endif
 		}
-	}
-
-	if ( local_init ) {
-		/* local init -> local shutdown (only at the end )*/
-		phiGemmShutdown();
 	}
 
 	if ( cudaSetDevice(deviceIds[0]) != cudaSuccess) {

@@ -18,10 +18,6 @@
 #include <dlfcn.h>
 #include <ctype.h>
 
-#ifdef __PHIGEMM_PARA
-#include <mpi.h>
-#endif
-
 #include "cublas_api.h"
 
 #include <time.h>
