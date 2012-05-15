@@ -153,7 +153,8 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	// return 2;
 
 #if !defined(__PHIGEMM_DISABLE_SPECIALK)
-	if (type == 'd' || type == 'z') {
+	//if (type == 'd' || type == 'z') {
+	if (type == 'd') {
 
 #if defined(__PHIGEMM_DEBUG_4)
 	printf("[PHIGEMM_DEBUG][4] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);
