@@ -18,7 +18,7 @@
 #include <dlfcn.h>
 #include <ctype.h>
 
-#include "cublas_api.h"
+#include "cublas_v2.h"
 
 #include <time.h>
 #include <sys/types.h>

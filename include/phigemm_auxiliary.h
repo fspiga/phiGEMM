@@ -13,9 +13,6 @@
 
 #include "phigemm_common.h"
 
-#include "cublas_api.h"
-#include "cublas_v2.h"
-
 #define GEMM_ADD(m, n, k) ((m) * (n) * (k))
 #define GEMM_MUL(m, n, k) ((m) * (n) * (k))
 
