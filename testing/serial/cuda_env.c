@@ -83,7 +83,8 @@ void initcudaenv_()
 #endif
 	}
 
-	phiGemmInit(ngpus_per_process , (phiTestCudaMemDevPtr*)&dev_scratch_test, (phiTestCudaMemSizes*)&cuda_memory_allocated, (int *)gpu_bonded);
+	// tag = 0 (fake value)
+	phiGemmInit(ngpus_per_process , (phiTestCudaMemDevPtr*)&dev_scratch_test, (phiTestCudaMemSizes*)&cuda_memory_allocated, (int *)gpu_bonded, 0);
 }
 
 

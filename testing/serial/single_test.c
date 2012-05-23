@@ -224,7 +224,8 @@ int main(int argc, char **argv)
 #endif
 
 #if defined __PERFORM_PHIGEMM_INIT
-	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond);
+	// tag = 0 (fake value)
+	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
 #endif
 	cudaDeviceSynchronize();
 
@@ -613,31 +614,31 @@ int main(int argc, char **argv)
 				// REAL PART
 #if defined(__CUDA_TYPE_COMPLEX)
 				float tmp_error;
-				tmp_error = (float) fabs( (float)C_mkl[ i ].x - (float)C_cuda[ i ].x );
+				tmp_error = (float) fabs( (float)C_mkl[ i ].x - (float)C_phigemm[ i ].x );
 #endif
 
 #if defined( __CUDA_TYPE_DOUBLE_COMPLEX)
 				double tmp_error;
-				tmp_error = fabs( (double)C_mkl[ i ].x - (double)C_phigemm[ i ].x );
+				tmp_error = (double)  fabs( (double)C_mkl[ i ].x - (double)C_phigemm[ i ].x );
 #endif
 //				printf("position %d : %f %f\n", i, C_mkl[ i ].x, C_phigemm[ i ].x); fflush(stdout);
 
 				if (tmp_error > MAX_ERROR ) {
 					errors++;
-					printf("position %d : %f %f\n", i, C_mkl[ i ].x, C_cuda[ i ].x); fflush(stdout);
+//					printf("position %d : %f %f\n", i, C_mkl[ i ].x, C_phigemm[ i ].x); fflush(stdout);
 				}
 
 				// COMPLEX PART
 #if defined(__CUDA_TYPE_COMPLEX)
-				tmp_error = (float) fabs( (float)C_mkl[ i ].y - (float)C_cuda[ i ].y );
+				tmp_error = (float) fabs( (float)C_mkl[ i ].y - (float)C_phigemm[ i ].y );
 #endif
 
 #if defined( __CUDA_TYPE_DOUBLE_COMPLEX)
-				tmp_error = fabs( (double)C_mkl[ i ].y - (double)C_phigemm[ i ].y );
+				tmp_error = (double) fabs( (double)C_mkl[ i ].y - (double)C_phigemm[ i ].y );
 #endif
 				if (tmp_error > MAX_ERROR ) {
 					errors++;
-					printf("position %d : %f %f\n", i, C_mkl[ i ].y, C_cuda[ i ].y); fflush(stdout);
+//					printf("position %d : %f %f\n", i, C_mkl[ i ].y, C_phigemm[ i ].y); fflush(stdout);
 				}
 			}
 
@@ -645,12 +646,12 @@ int main(int argc, char **argv)
 #else
 			XTYPE tmp_error;
 
-//#pragma omp parallel for reduction (+ : errors)
+#pragma omp parallel for reduction (+ : errors)
 			for( i = 0; i < m * n ; i++ ) {
-				tmp_error = (XTYPE) fabs( (XTYPE)C_mkl[ i ] - (XTYPE)C_phigemm[ i ] );
+				tmp_error = (XTYPE) fabs( (XTYPE)C_mkl[ i ] - (XTYPE)C_cuda[ i ] );
 				if (tmp_error > MAX_ERROR ) {
 					errors++;
-					printf("position %d : %f %f\n", i, C_mkl[ i ], C_phigemm[ i ]); fflush(stdout);
+//					printf("position %d : %e %e\n", i, C_mkl[ i ], C_cuda[ i ]); fflush(stdout);
 				}
 			}
 
