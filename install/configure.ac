@@ -217,6 +217,7 @@ ccflags="-O3 -openmp -fPIC"
 ldflags="-O3 -openmp -fPIC"
 ldsharedflag="--shared"
 fcpreprocessflags="-fpp"
+f90flags="-module ../include/"
 fi
 
 if test "$cc" = "pgcc"; then
@@ -224,6 +225,7 @@ ccflags="-O3 -mp -fPIC"
 ldflags="-O3 -mp -fPIC"
 ldsharedflag="-shared"
 fcpreprocessflags="-Mpreprocess"
+f90flags="-module ../include/"
 fi
 
 ld_library_path=`echo $LD_LIBRARY_PATH | sed 's/:/ /g'`
@@ -360,7 +362,7 @@ if test -e "$cuda_path/include/cuda.h"; then
     have_valid_cuda_header=1
 fi
 
-if test "$have_valid_cuda_header" == 1  && 
+if test "$have_valid_cuda_header" == 1  && \ 
     test "$have_valid_cuda_compiler" == 1 
 then 
     # check for CUDA libs
@@ -496,6 +498,7 @@ AC_SUBST(ccflags)
 AC_SUBST(cpp)
 AC_SUBST(cppflags)
 AC_SUBST(f90)
+AC_SUBST(f90flags)
 AC_SUBST(ld)
 AC_SUBST(ldflags)
 AC_SUBST(ldsharedflag)

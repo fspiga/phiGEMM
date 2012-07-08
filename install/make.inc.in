@@ -1,6 +1,6 @@
 #
 # Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
-#
+# Copyright (C) 2010-201 Irish Centre for High-End Computing (ICHEC)
 # This file is distributed under the terms of the
 # GNU General Public License. See the file `License'
 # in the root directory of the present package,
@@ -13,13 +13,15 @@ AR          = @ar@
 ARFLAGS     = @arflags@
 
 CC          = @cc@
+CFLAGS      = @ccflags@
+
 FC          = @f90@
-LD          = @cc@
+FFLAGS      = @f90flags@
 
 CPP         = @cpp@
 CPPFLAGS    = @cppflags@
 
-CFLAGS          = @ccflags@
+LD              = @cc@
 LD_FLAGS        = @ldflags@
 LD_SHARED_FLAGS = @ldsharedflag@
 FC_PREPROC_FLAG = @fcpreprocessflags@
