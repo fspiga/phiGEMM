@@ -232,8 +232,48 @@ float phigemmGetSplitFactor(int selection) {
 }
 
 
-void estmSplitFactor(const char* optype, char transa, char transb)
+void readEnv()
 {
+	/*
+	 * PHIGEMM_TUNE         = (default: 1)
+	 * PHIGEMM_SPLITK       = (default: 1)
+	 * PHIGEMM_LOG_VERBOS   = (default: 0, dependency: __PHIGEMM_PROFILING)
+	 *
+	 * PHIGEMM_SGEMM_SPLIT  = (default: )
+	 * PHIGEMM_CGEMM_SPLIT  = (default: )
+	 * PHIGEMM_DGEMM_SPLIT  = (default: )
+	 * PHIGEMM_ZGEMM_SPLIT  = (default: )
+	 *
+	 * PHIGEMM_LOWER_NM     = (default: )
+	 * PHIGEMM_UPPER_NM     = (default: )
+	 * PHIGEMM_UPPER_K      = (default: )
+     * PHIGEMM_SPLITK_MN    = (default: 20)
+     *
+     * PHIGEMM_SPLITK_D     = (default: 2048)
+     * PHIGEMM_SPLITK_Z     = (default: 2048)
+     *
+     * PHIGEMM_TUNE_BAL_L   = negative threshold limit around perfect balance (default: )
+     * PHIGEMM_TUNE_BAL_P   = positive threshold limit around perfect balance (default: )
+     * PHIGEMM_TUNE_SHIFT_P = positive split shift (default: )
+     * PHIGEMM_TUNE_SHIFT_L = positive split shift (default: )
+     *
+     *
+     * int phiGemmControl[4]={PHIGEMM_TUNE, PHIGEMM_SPLITK, PHIGEMM_LOG_VERBOS}
+	 *
+	 * float phiGemmSplitFactor[4]={PHIGEMM_SGEMM_SPLIT, PHIGEMM_CGEMM_SPLIT,
+	 * 								PHIGEMM_DGEMM_SPLIT, PHIGEMM_ZGEMM_SPLIT}
+	 *
+	 * int phiGemmSpecialK[4]={PHIGEMM_SPLITK, PHIGEMM_LOWER_NM, PHIGEMM_UPPER_NM,
+	 * 							PHIGEMM_UPPER_K }
+	 *
+	 * int phiGemmKDimBlocks[4]={ *not used*, *not used*,
+	 * 									PHIGEMM_SPLITK_D, PHIGEMM_SPLITK_Z}
+	 *
+	 * float phiGemmAutoTune[4]={PHIGEMM_TUNE_BAL_L, PHIGEMM_TUNE_BAL_P,
+	 * 								PHIGEMM_TUNE_SHIFT_P, PHIGEMM_TUNE_SHIFT_L}
+	 *
+	 */
+
 	float envar_split;
 	char *value = NULL;
 
@@ -445,8 +485,8 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	is_phigemm_init = 1;
 #endif
 
-	/* Now there is only one generic split factor. Parameters are temporary ignored... */
-	estmSplitFactor("xxx", 'n', 'n');
+	/* Read environment PHI_* variables (this reading override the default */
+	readEnv();
 
 #if defined(__PHIGEMM_PROFILE)
 
