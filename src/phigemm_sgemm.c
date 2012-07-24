@@ -23,16 +23,7 @@
 #define cublasGemm cublasSgemm
 #define gemm_mkl sgemm_
 #define PHIGEMM_M phisgemm_
-//#define sgemm PHIGEMM_M
-//#define sgemm_ PHIGEMM_M
 #define phiSgemm PHIGEMM_M
-
-extern phiGemmMemSizes scratch_size;
-extern phiGemmMemDevPtr dev_scratch;
-extern phiGemmDeviceIds deviceIds;
-extern float phiGemmSplitFactor[4];
-extern int phiGemmNumDevices;
-extern int phiGemmCPUThreeads;
 
 #if defined(__PHIGEMM_PROFILE)
 extern FILE *phiProfileFile;

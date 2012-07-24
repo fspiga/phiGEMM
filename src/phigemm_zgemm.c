@@ -21,8 +21,6 @@
 #define cublasGemm cublasZgemm
 #define gemm_mkl zgemm_
 #define PHIGEMM_M phizgemm_
-//#define zgemm PHIGEMM_M
-//#define zgemm_ PHIGEMM_M
 #define phiZgemm PHIGEMM_M
 
 #if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
@@ -30,15 +28,6 @@
 #else
 #define PHIGEMM_EVENTS 7
 #endif
-
-extern phiGemmMemSizes scratch_size;
-extern phiGemmMemDevPtr dev_scratch;
-extern phiGemmDeviceIds deviceIds;
-extern float phiGemmSplitFactor[4];
-extern float phiGemmPrevSplitFactor[4];
-extern float phiGemmLowerPositiveSplitFactor[4];
-extern int phiGemmNumDevices;
-extern int phiGemmCPUThreads;
 
 #if defined(__PHIGEMM_PROFILE)
 extern FILE *phiProfileFile;

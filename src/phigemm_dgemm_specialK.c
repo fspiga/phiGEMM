@@ -24,13 +24,6 @@
 #define PHIGEMM_M phidgemm_specialK
 #define PHIGEMM_GEMM_MF phigemm_specialK
 
-extern phiGemmMemSizes scratch_size;
-extern phiGemmMemDevPtr dev_scratch;
-extern phiGemmDeviceIds deviceIds;
-extern float phiGemmSplitFactor[4];
-extern int phiGemmNumDevices;
-extern int phiGemmCPUThreads;
-
 #if defined(__PHIGEMM_PROFILE)
 extern FILE *phiProfileFile;
 #endif

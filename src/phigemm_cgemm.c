@@ -27,12 +27,12 @@
 //#define cgemm_ PHIGEMM_M
 #define phiCgemm PHIGEMM_M
 
-extern phiGemmMemSizes scratch_size;
-extern phiGemmMemDevPtr dev_scratch;
-extern phiGemmDeviceIds deviceIds;
-extern float phiGemmSplitFactor[4];
-extern int phiGemmNumDevices;
-extern int phiGemmCPUThreads;
+//extern phiGemmMemSizes scratch_size;
+//extern phiGemmMemDevPtr dev_scratch;
+//extern phiGemmDeviceIds deviceIds;
+//extern float phiGemmSplitFactor[4];
+//extern int phiGemmNumDevices;
+//extern int phiGemmCPUThreads;
 
 #if defined(__PHIGEMM_PROFILE)
 extern FILE *phiProfileFile;
