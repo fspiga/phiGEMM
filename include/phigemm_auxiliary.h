@@ -21,14 +21,22 @@ extern "C"
 {
 #endif
 
-cudaStream_t  phiStreams[ NSTREAMS * MAX_GPUS ];
-cublasHandle_t phiHandles[ NSTREAMS * MAX_GPUS ];
-
-int phiGemmNumDevices;
-float phiGemmSplitFactor[4];
+/* For AutoTuning purposes*/
 float phiGemmPrevSplitFactor[4];
 float phiGemmLowerPositiveSplitFactor[4];
+
+/* Control variables (see 'readEnv' in phigemm_auxiliary.c)*/
+float phiGemmSplitFactor[4];
+float phiGemmAutoTune[4];
+int phiGemmSpecialK[4];
+int phiGemmKDimBlocks[4];
+int phiGemmControl[4];
+
+int phiGemmNumDevices;
 int phiGemmCPUThreads;
+
+cudaStream_t  phiStreams[ NSTREAMS * MAX_GPUS ];
+cublasHandle_t phiHandles[ NSTREAMS * MAX_GPUS ];
 
 phiGemmMemDevPtr dev_scratch;
 phiGemmMemSizes scratch_size;
