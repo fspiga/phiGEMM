@@ -50,7 +50,7 @@ shared: dgemm.o zgemm.o sgemm.o cgemm.o util.o dgemm_specialK.o zgemm_specialK.o
 
 fortran:
 	$(CPP) $(CPPFLAGS) $(GEMM_OPT) phigemm.f90 phigemm.F90
-	$(FC) -c phigemm.F90 -o .objs/phigemm.o -module ../include/
+	$(FC) $(FFLAGS) -c phigemm.F90 -o .objs/phigemm.o
 
 	chmod 755 ../include/phigemm.mod
 
