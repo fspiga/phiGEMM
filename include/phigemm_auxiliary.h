@@ -11,16 +11,35 @@
 #ifndef __PHIGEMM_AUXILIARY_H__
 #define __PHIGEMM_AUXILIARY_H__
 
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "cuda.h"
+#include "cublas_api.h"
+#include <cuda_runtime.h>
+#include "cublas_v2.h"
+
 #include "phigemm_common.h"
+
+/* ---------------------------------- MACROS ------------------------------- */
+
+#define __SCALING_MEM_FACTOR__ 0.80
+
+#if defined(__CUDA_GET_MEM_HACK)
+#define __GPU_MEM_AMOUNT_HACK__ 2400000000
+#endif
 
 #define GEMM_ADD(m, n, k) ((m) * (n) * (k))
 #define GEMM_MUL(m, n, k) ((m) * (n) * (k))
+
+/* ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+/* ------------------------- SHARED DATA STRUCTURES ------------------------ */
 /* For AutoTuning purposes*/
 float phiGemmPrevSplitFactor[4];
 float phiGemmLowerPositiveSplitFactor[4];
@@ -42,6 +61,10 @@ phiGemmMemDevPtr dev_scratch;
 phiGemmMemSizes scratch_size;
 phiGemmDeviceIds deviceIds;
 
+/* ------------------------------------------------------------------------- */
+
+/* --------------------- INTERNAL FUNCTIONS PROTOTYPES --------------------- */
+
 void estmSplitFactor(const char* optype, char transa, char transb);
 
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in);
@@ -51,6 +74,8 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 int cpuGPUheuristic(int m, int n, int k, char type);
 
 double phigemm_cclock(void);
+
+/* ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
 }

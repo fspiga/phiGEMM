@@ -20,40 +20,25 @@
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
-#include "cuda.h"
+//#include "cuda.h"
+//#include "cublas_api.h"
+//#include <cuda_runtime.h>
+//#include "cublas_v2.h"
 
-#include "cublas_api.h"
-#include <cuda_runtime.h>
-#include "cublas_v2.h"
-
-
-#if defined(__CUDA_GET_MEM_HACK)
-#define __GPU_MEM_AMOUNT_HACK__ 2400000000
+#if defined(__PHIGEMM_PROFILE)
+FILE *phiProfileFile;
+const char base[] = "phigemm.profile";
 #endif
-
-#define __SCALING_MEM_FACTOR__ 0.80
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#if defined(__PHIGEMM_PROFILE)
-FILE *phiProfileFile;
-#endif
-
 static int is_phigemm_init = 0;
 static int is_alloc_external = 0;
 
-#if defined(__PHIGEMM_PROFILE)
-const char base[] = "phigemm.profile";
-#endif
-
-extern int phiGemmNumDevices;
-
-// ----
-
-/* This routine computes the memory required to store the consideres matrices */
+/* This routine computes the memory required to store the considered matrices */
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
 	int m_split, n_split, tmp;
@@ -235,7 +220,7 @@ float phigemmGetSplitFactor(int selection) {
 void readEnv()
 {
 	/*
-	 * PHIGEMM_TUNE         = (default: 1)
+	 * PHIGEMM_TUNE         = Apply auto-tune strategy (default: 1)
 	 * PHIGEMM_SPLITK       = (default: 1)
 	 * PHIGEMM_LOG_VERBOS   = (default: 0, dependency: __PHIGEMM_PROFILING)
 	 *
