@@ -162,7 +162,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		if( count != 0 ) {
 			cudaStreamSynchronize( streamPtr[(stream+1)%MAX_N_STREAM] );
-// mkl_domain_set_num_threads ( 1, MKL_BLAS );
+			// mkl_domain_set_num_threads ( 1, MKL_BLAS );
 			for(i=0, offsetC=0; i<(*n); i++){
 				daxpy_( m, &DA, C_buf[(stream+1)%MAX_N_STREAM]+offsetC, &inc, C+offsetC, &inc);
 				offsetC += (* ldc);
@@ -176,7 +176,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		}
 
-	    stop_axpy = phigemm_cclock();
+		stop_axpy = phigemm_cclock();
 		time_axpy += stop_axpy - start_axpy;
 
 		if( is_transa) offsetA += splitted_size;
@@ -194,7 +194,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		offsetC += (* ldc);
 	}
 
-    stop_axpy = phigemm_cclock();
+	stop_axpy = phigemm_cclock();
 	time_axpy += stop_axpy - start_axpy;
 
 	cudaStreamDestroy( streamPtr[0] );
@@ -215,10 +215,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 #if defined(__PHIGEMM_PROFILE)
 	printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d %d %d ~ Special K ~ local_split:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
-		file, line, iDev % phiGemmNumDevices, *m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
+			file, line, iDev % phiGemmNumDevices, *m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
 #else
 	printf ("[PHIGEMM_DEBUG - GPU %d] %d %d %d ~ Special K ~ local_split:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
-		iDev % phiGemmNumDevices, *m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
+			iDev % phiGemmNumDevices, *m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
 #endif
 #endif
 

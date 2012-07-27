@@ -158,7 +158,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	} else {
 
-		 mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(cuComplex);
+		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(cuComplex);
 
 		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
 		{
@@ -759,17 +759,17 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 				m_gpu[iDev]);
 
 		if (status != CUBLAS_STATUS_SUCCESS) {
-		  fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
+			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 
 		cudaEventRecord(events[iDev][4], phiStreams[iDev] );
 
 		if (is_splitA) {
-		  shiftB = 0;
-		  shiftC += m_h2d[iDev];
+			shiftB = 0;
+			shiftC += m_h2d[iDev];
 		} else {
-		  shiftA = 0;
-		  shiftC += n_h2d[iDev] * (*ldc);
+			shiftA = 0;
+			shiftC += n_h2d[iDev] * (*ldc);
 		}
 	}
 
@@ -901,7 +901,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 					n_gpu[iDev],
 					n_cpu,
 					split,
-                                        *k,
+					*k,
 					time_mem_h2d,
 					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuComplex)),
 					time_mkl,
@@ -914,25 +914,25 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 					time_total,
 					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k))/(time_total*1000));
 #else
-			printf ("[PHIGEMM_DEBUG GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-					iDev % phiGemmNumDevices,
-					*m,
-					*n,
-					n_gpu[iDev],
-					n_cpu,
-					split,
-                                        *k,
-					time_mem_h2d,
-					(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuComplex)),
-					time_mkl,
-					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_cpu, (double)(*k) )/(time_mkl*1000),
-					time_dgemm_cuda,
-					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_gpu[iDev], (double)(*k) )/(time_dgemm_cuda*1000),
-					time_mem_d2h,
-					m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(cuComplex)),
-					unbalance,
-					time_total,
-					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
+	printf ("[PHIGEMM_DEBUG GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
+			iDev % phiGemmNumDevices,
+			*m,
+			*n,
+			n_gpu[iDev],
+			n_cpu,
+			split,
+			*k,
+			time_mem_h2d,
+			(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuComplex)),
+			time_mkl,
+			1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_cpu, (double)(*k) )/(time_mkl*1000),
+			time_dgemm_cuda,
+			1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_gpu[iDev], (double)(*k) )/(time_dgemm_cuda*1000),
+			time_mem_d2h,
+			m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(cuComplex)),
+			unbalance,
+			time_total,
+			1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 #endif
 		}
 		fflush(stdout);

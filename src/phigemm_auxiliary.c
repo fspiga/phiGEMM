@@ -46,19 +46,19 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
 	if (is_splitA) {
 		tmp = (m_in) * split;
-//		if (m_in < 128)
-			m_split = tmp;
-//		else
-//			m_split = floor(tmp/64.0)*64;
+		//		if (m_in < 128)
+		m_split = tmp;
+		//		else
+		//			m_split = floor(tmp/64.0)*64;
 
 		return ( m_split*k_in/phiGemmNumDevices + k_in*n_in + m_split*n_in/phiGemmNumDevices );
 
 	} else {
 		tmp = (n_in) * split;
-//		if (n_in < 128)
-			n_split = tmp;
-//		else
-//			n_split = floor(tmp/64.0)*64;
+		//		if (n_in < 128)
+		n_split = tmp;
+		//		else
+		//			n_split = floor(tmp/64.0)*64;
 
 		return( m_in*k_in + k_in*n_split/phiGemmNumDevices + m_in*n_split/phiGemmNumDevices );
 	}
@@ -143,10 +143,10 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	if (type == 'd') {
 
 #if defined(__PHIGEMM_DEBUG_4)
-	printf("[PHIGEMM_DEBUG][4] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);
+		printf("[PHIGEMM_DEBUG][4] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);
 #endif
 
-	// Matrices are small but not so small...
+		// Matrices are small but not so small...
 		if ( (n >= LOWER_LIMIT_NM) && (m >= LOWER_LIMIT_NM) ){
 			// over the UPPER limit, they have to be rectangular...
 			if ( ((n >= UPPER_LIMIT_K) && (m >= UPPER_LIMIT_K)) && ((ratio_km >= SPLITK_FACTOR) || (ratio_kn >= SPLITK_FACTOR)) )
@@ -233,18 +233,18 @@ void readEnv()
 	 * PHIGEMM_LOWER_NM     = (default: )
 	 * PHIGEMM_UPPER_NM     = (default: )
 	 * PHIGEMM_UPPER_K      = (default: )
-     * PHIGEMM_SPLITK_MN    = (default: 20)
-     *
-     * PHIGEMM_SPLITK_D     = (default: 2048)
-     * PHIGEMM_SPLITK_Z     = (default: 2048)
-     *
-     * PHIGEMM_TUNE_BAL_L   = negative threshold limit around perfect balance (default: )
-     * PHIGEMM_TUNE_BAL_P   = positive threshold limit around perfect balance (default: )
-     * PHIGEMM_TUNE_SHIFT_P = positive split shift (default: )
-     * PHIGEMM_TUNE_SHIFT_L = positive split shift (default: )
-     *
-     *
-     * int phiGemmControl[4]={PHIGEMM_TUNE, PHIGEMM_SPLITK, PHIGEMM_LOG_VERBOS}
+	 * PHIGEMM_SPLITK_MN    = (default: 20)
+	 *
+	 * PHIGEMM_SPLITK_D     = (default: 2048)
+	 * PHIGEMM_SPLITK_Z     = (default: 2048)
+	 *
+	 * PHIGEMM_TUNE_BAL_L   = negative threshold limit around perfect balance (default: )
+	 * PHIGEMM_TUNE_BAL_P   = positive threshold limit around perfect balance (default: )
+	 * PHIGEMM_TUNE_SHIFT_P = positive split shift (default: )
+	 * PHIGEMM_TUNE_SHIFT_L = positive split shift (default: )
+	 *
+	 *
+	 * int phiGemmControl[4]={PHIGEMM_TUNE, PHIGEMM_SPLITK, PHIGEMM_LOG_VERBOS}
 	 *
 	 * float phiGemmSplitFactor[4]={PHIGEMM_SGEMM_SPLIT, PHIGEMM_CGEMM_SPLIT,
 	 * 								PHIGEMM_DGEMM_SPLIT, PHIGEMM_ZGEMM_SPLIT}
@@ -367,7 +367,7 @@ void readEnv()
 void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag )
 {
 
-        unsigned int i;
+	unsigned int i;
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
@@ -544,8 +544,8 @@ void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
 	scratch_size[ deviceIds[gpu_id] ] = (size_t) new_dev_memsize;
 
 #if defined(__PHIGEMM_DEBUG)
-    printf("[PHIGEMM_DEBUG] %lu Bytes of GPU memory available %d\n", (unsigned long)scratch_size[gpu_id], deviceIds[gpu_id]);
-   fflush(stdout);
+	printf("[PHIGEMM_DEBUG] %lu Bytes of GPU memory available %d\n", (unsigned long)scratch_size[gpu_id], deviceIds[gpu_id]);
+	fflush(stdout);
 #endif
 }
 
