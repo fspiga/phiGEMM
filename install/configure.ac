@@ -1,3 +1,6 @@
+# Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
+# Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+
 AC_INIT(phiGEMM, 1.8, , phigemm)
 
 AC_ARG_ENABLE(cpu_multithread,
