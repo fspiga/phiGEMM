@@ -87,7 +87,7 @@
 #endif
 
 
-#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.1
+#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.9
 
 #define MAX_GPU_SERIAL_TEST 8
 
@@ -379,8 +379,6 @@ int main(int argc, char **argv)
 
 	transa[0] = 'n';
 	transb[0] = 'n';
-	is_transa[0] = 0;
-	is_transb[0] = 0;
 
 #if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 	transa[1] = 'c'; // 'c' for conjugate complex
@@ -388,8 +386,6 @@ int main(int argc, char **argv)
 	transa[1] = 't';
 #endif
 	transb[1] = 'n';
-	is_transa[1] = 1;
-	is_transb[1] = 0;
 
 	transa[2] = 'n';
 #if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
@@ -397,8 +393,6 @@ int main(int argc, char **argv)
 #else
 	transb[2] = 't';
 #endif
-	is_transa[2] = 0;
-	is_transb[2] = 1;
 
 #if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
 	transa[3] = 'c'; // 'c' for conjugate complex
@@ -407,15 +401,17 @@ int main(int argc, char **argv)
 	transa[3] = 't';
 	transb[3] = 't';
 #endif
-	is_transa[3] = 1;
-	is_transb[3] = 1;
 
 
-	//Edit only to perform one single test ...
-	transa[0] = 'c';
-	transb[0] = 'n';
-	is_transa[0] = 1;
-	is_transb[0] = 0;
+	//Edit only to edit the first test ...
+	// transa[0] = 'n';
+	// transb[0] = 'n';
+
+
+	for( count = 0; count < 4; count +=1 ){
+		is_transa[count] = (transa[count] != 'n') ? 1 : 0;
+		is_transb[count] = (transb[count] != 'n') ? 1 : 0;
+	}
 
 	for( count = 0; count < 1; count +=1 ){
 
