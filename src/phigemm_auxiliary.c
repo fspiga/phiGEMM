@@ -27,7 +27,6 @@
 //#include "cublas_v2.h"
 
 #if defined(__PHIGEMM_PROFILE)
-FILE *phiProfileFile;
 const char base[] = "phigemm.profile";
 #endif
 
@@ -37,7 +36,14 @@ extern "C"
 #endif
 
 static int is_phigemm_init = 0;
-static int is_alloc_external = 0;
+static int is_external_memory_alloc = 0;
+static int is_internal_memory_alloc = 0;
+
+/* auxiliary */
+int stringCmp( const void *a, const void *b)
+{
+	return strcmp((const char*)a,(const char*)b);
+}
 
 /* This routine computes the memory required to store the considered matrices */
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
@@ -163,15 +169,47 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	return 2;
 }
 
-
 // ----
 
 
+/*
+ * Name			: phiGemmIsInit
+ * Description	: return if phiGEMM is initialized or not
+ * Visibility	: public
+ */
 int phiGemmIsInit()
 {
 	return is_phigemm_init;
 }
 
+
+/*
+ * Name			: phiGemmIsInternalMemAlloc
+ * Description	: return if memory has been allocated internally by phiGEMM
+ * Visibility	: phiGEMM only
+ */
+int phiGemmIsInternalMemAlloc()
+{
+	return is_internal_memory_alloc;
+}
+
+
+/*
+ * Name			: phiGemmIsExternalMemAlloc
+ * Description	: return if memory has been allocated externally by the caller
+ * Visibility	: phiGEMM only
+ */
+int phiGemmIsExternalMemAlloc()
+{
+	return is_external_memory_alloc;
+}
+
+
+/*
+ * Name			: phigemm_cclock
+ * Description	: return time in milliseconds
+ * Visibility	: phiGEMM only
+ */
 double phigemm_cclock(void)
 {
 	struct timeval tv;
@@ -187,12 +225,12 @@ double phigemm_cclock(void)
 }
 
 
-int stringCmp( const void *a, const void *b)
-{
-	return strcmp((const char*)a,(const char*)b);
-}
-
-
+/*
+ * Name			: phigemmSetSplitFactor
+ * Description	: the method set the current value of a specified
+ * 				  split factor {S, C, D, Z}
+ * Visibility	: public
+ */
 void phigemmSetSplitFactor(float *x) {
 #if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
 	float tmp,tmp2;
@@ -209,6 +247,12 @@ void phigemmSetSplitFactor(float *x) {
 }
 
 
+/*
+ * Name			: phigemmGetSplitFactor
+ * Description	: the method returns the current value of a specified
+ * 				  split factor {S, C, D, Z}
+ * Visibility	: public
+ */
 float phigemmGetSplitFactor(int selection) {
 #if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
 	return phiGemmSplitFactor[selection];
@@ -217,7 +261,12 @@ float phigemmGetSplitFactor(int selection) {
 #endif
 }
 
-
+/*
+ * Name			: readEnv
+ * Description	: the method read from the environment some special variables
+ * 				  and eventually overwrite the defaults
+ * Visibility	: this file only
+ */
 void readEnv()
 {
 	/*
@@ -363,11 +412,20 @@ void readEnv()
 
 }
 
-
+/*
+ * Name			: phiGemmInit
+ * Description	: the method initialize the library, both GPU binding and
+ * 				  memory allocation according to the parameters
+ * Visibility	: public
+ */
 void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag )
 {
-
 	unsigned int i;
+
+#if defined(__PHIGEMM_PROFILE)
+	char *value = NULL;
+	char finalFileName [ FILENAME_MAX ];
+#endif
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
@@ -378,8 +436,6 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	if ( is_phigemm_init == 1 )
 		return;
-
-	is_alloc_external = 1;
 
 	cudaGetDeviceCount(&deviceCount);
 
@@ -397,21 +453,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	phiGemmNumDevices = nGPU;
 
-#if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] %d GPUs detected.\n", phiGemmNumDevices);
-	fflush(stdout);
-#endif
-
-	/* find the split factor */
-
-
-
-#if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] The (initial) split factors are: %g %g %g %g\n", phiGemmSplitFactor[0], phiGemmSplitFactor[1], phiGemmSplitFactor[2], phiGemmSplitFactor[3]);
-	fflush(stdout);
-#endif
-
-	/* Init GPU data structures for managing multiGPU */
+	/* Initialize internal phiGEMM data structures */
 	for( i = 0; i < phiGemmNumDevices * NSTREAMS; i++ )
 	{
 		dev_scratch[ i ] = NULL;
@@ -420,11 +462,58 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 		phiStreams[ i ] = NULL;
 	}
 
-	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+	/* Read environment PHI_* variables (this reading override the default */
+	readEnv();
 
-		/* Assign devices to processes
-		 * note: one process may have assigned more than one device */
+	/* Assign GPU devices to process(es) */
+	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
 		deviceIds[i] = deviceToBond[i % phiGemmNumDevices];
+	}
+
+	/* Initialize the memory */
+	if(dev_ptr != NULL) {
+		phiGemmInitMemory( dev_ptr, dev_memsize );
+	}
+
+	/* set the initialization flag */
+	is_phigemm_init = 1;
+#endif
+
+#if defined(__PHIGEMM_PROFILE)
+	/* Create file descriptor where store the profiling information */
+
+	value = getenv("PHIGEMM_PROFILE_PREFIX");
+
+	if (tag < 0) {
+		if (value != NULL)
+			sprintf(finalFileName, "%s.%s.csv", base, value);
+		else
+			sprintf(finalFileName, "%s.csv", base);
+	} else {
+		if (value != NULL)
+			sprintf(finalFileName, "%s.%d.%s.csv", base, tag, value);
+		else
+			sprintf(finalFileName, "%s.%d.csv", base, tag);
+	}
+
+	phiProfileFile = fopen (finalFileName, "a");
+#endif
+
+	return;
+}
+
+/*
+ * Name			: phiGemmInitMemory
+ * Description	: the method performs the memory allocation on the GPU card
+ * 				: based on the parameters
+ * Visibility	: this file only
+ *
+ */
+void phiGemmInitMemory( phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize )
+{
+	unsigned int i;
+
+	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
 
 		scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAMS;
 
@@ -467,39 +556,31 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 		cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
 	}
 
-	/* set the initialization flag */
-	is_phigemm_init = 1;
-#endif
-
-	/* Read environment PHI_* variables (this reading override the default */
-	readEnv();
-
-#if defined(__PHIGEMM_PROFILE)
-
-	char *value = NULL;
-	char finalFileName [ FILENAME_MAX ];
-
-	value = getenv("PHIGEMM_PROFILE_PREFIX");
-
-	if (tag < 0) {
-		if (value != NULL)
-			sprintf(finalFileName, "%s.%s.csv", base, value);
-		else
-			sprintf(finalFileName, "%s.csv", base);
-	} else {
-		if (value != NULL)
-			sprintf(finalFileName, "%s.%d.%s.csv", base, tag, value);
-		else
-			sprintf(finalFileName, "%s.%d.csv", base, tag);
-	}
-
-	phiProfileFile = fopen (finalFileName, "a");
-
-#endif
+	is_external_memory_alloc = 1;
+	return;
 }
 
+
+/*
+ * Name			: phiGemmInitMemory
+ * Description	: the method performs the memory allocation on the GPU card
+ * 				: from scratch
+ * Visibility	: phiGEMM only
+ */
+void phiGemmInitScratchMemory( )
+{
+	is_internal_memory_alloc = 1;
+	return;
+}
+
+/*
+ * Name			: phiGemmInitMemory
+ * Description	: the method performs the memory allocation on the GPU card
+ * Visibility	: public
+ */
 void phiGemmShutdown()
 {
+
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
 #if !defined(__PHIGEMM_HACK_CPUONLY)
@@ -507,7 +588,7 @@ void phiGemmShutdown()
 	int i;
 
 #if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] *** shutdown *** is_phigemm_init:%d, is_alloc_external:%d, devices: %d\n",is_phigemm_init, is_alloc_external, phiGemmNumDevices);
+	printf("[PHIGEMM_DEBUG] *** shutdown *** is_phigemm_init:%d, is_memory_alloc:%d, devices: %d\n",is_phigemm_init, is_memory_alloc, phiGemmNumDevices);
 	fflush(stdout);
 #endif
 
@@ -526,11 +607,11 @@ void phiGemmShutdown()
 		cublasDestroy( phiHandles[ i ]);
 	}
 
-	for ( i = 0; i < phiGemmNumDevices; i++ ){
-
-		if ( !is_alloc_external )
-			cudaFree(dev_scratch[i]);
-	}
+//	for ( i = 0; i < phiGemmNumDevices; i++ ){
+//
+//		if ( is_memory_alloc )
+//			cudaFree(dev_scratch[i]);
+//	}
 
 	is_phigemm_init = 0;
 #endif
@@ -538,6 +619,8 @@ void phiGemmShutdown()
 #if defined(__PHIGEMM_PROFILE)
 	fclose (phiProfileFile);
 #endif
+
+	return;
 }
 
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
@@ -549,7 +632,7 @@ void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
 #endif
 }
 
-
+/* ------------ FORTRAN INTERFACES FOR PHIGEMM PUBLIC METHODS -------------- */
 void phigemminit_(int nGPU, phiGemmMemDevPtr* ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag ){ phiGemmInit( nGPU, ptr, dev_memsize, deviceToBond, tag); }
 
 void phigemmshutdown_(){ phiGemmShutdown(); }
@@ -559,6 +642,8 @@ int phigemmisinit_(){return phiGemmIsInit();}
 void phigemmsetsplitfactor_(float *x) { phigemmSetSplitFactor(x); }
 
 void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize) { phiGemmSetAvaiableScratchSpace(gpu_id, new_dev_memsize); }
+
+/* ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
 }

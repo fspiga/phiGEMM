@@ -62,9 +62,16 @@ phiGemmMemDevPtr dev_scratch;
 phiGemmMemSizes scratch_size;
 phiGemmDeviceIds deviceIds;
 
+#if defined(__PHIGEMM_PROFILE)
+FILE *phiProfileFile;
+#endif
 /* ------------------------------------------------------------------------- */
 
 /* --------------------- INTERNAL FUNCTIONS PROTOTYPES --------------------- */
+
+int phiGemmIsInternalMemAlloc();
+
+int phiGemmIsExternalMemAlloc();
 
 void estmSplitFactor(const char* optype, char transa, char transb);
 
@@ -73,6 +80,8 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in);
 void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2);
 
 int cpuGPUheuristic(int m, int n, int k, char type);
+
+void phiGemmInitScratchMemory( );
 
 double phigemm_cclock(void);
 

@@ -30,9 +30,6 @@
 #define PHIGEMM_EVENTS 7
 #endif
 
-#if defined(__PHIGEMM_PROFILE)
-extern FILE *phiProfileFile;
-#endif
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_DGEMM_MF(const char *transa, const char *transb, const int *m,
@@ -68,11 +65,11 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	size_t memsize_gpu, mem_gpu;
 	float split = -1;
 	static int ground_level = 1;
-	static int splitting_level =0;
+	static int splitting_level = 0;
 	int first_call = 0;
 	int local_init = 0;
 
-	/* determine which matrix is to be splitted */
+	/* determine which matrix has to be split */
 	int is_splitA = -1;
 	int is_specialK = -1;
 
@@ -122,6 +119,13 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	case 1:
 		ground_level = 0;
 
+		if ( ground_level && !phiGemmIsExternalMemAlloc() ) {
+#if defined(__PHIGEMM_DEBUG_3)
+			printf ("[PHIGEMM_DEBUG][3] Internal allocation of the GPU memory \n");  fflush(stdout);
+#endif
+			/* init the memory */
+		}
+
 #if defined(__PHIGEMM_DEBUG_3)
 		printf ("[PHIGEMM_DEBUG][3] COMPUTE IN splitting_level=%d [SPECIAL-K]\n", splitting_level);  fflush(stdout);
 #endif
@@ -137,6 +141,12 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [SPECIAL-K]\n", splitting_level);  fflush(stdout);
 #endif
 
+		if ( ground_level && phiGemmIsInternalMemAlloc() ) {
+#if defined(__PHIGEMM_DEBUG_3)
+			printf ("[PHIGEMM_DEBUG][3] Free GPU memory internally allocated\n" );  fflush(stdout);
+#endif
+			/* free the memory */
+		}
 		break;
 
 	case 2:
@@ -266,6 +276,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 			break;
 		}
+
+		// fflush ( phiProfileFile );
 #endif
 	}
 
