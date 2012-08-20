@@ -256,6 +256,7 @@ IMPORTANT NOTE: this feature is not yet in the repository because can
  
 6. >>> Releases
 
+v2.0   - August XX, 2012    ( ... )
 v1.9   - May 23, 2012       ( fixes + compatibility CUDA 5.x )
 v1.8   - April 1, 2012      ( ACML and PGI supported - internal tests work )
 v1.7   - March 10, 2012     ( special DGEMM/ZGEMM for rectangular matrices )
