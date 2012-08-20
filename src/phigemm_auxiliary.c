@@ -512,6 +512,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 void phiGemmInitMemory( phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize )
 {
 	unsigned int i;
+	cudaError_t err;
 
 	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
 
@@ -529,8 +530,6 @@ void phiGemmInitMemory( phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize 
 		fflush(stdout);
 #endif
 	}
-
-	cudaError_t err;
 
 	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
 
@@ -562,13 +561,98 @@ void phiGemmInitMemory( phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize 
 
 
 /*
- * Name			: phiGemmInitMemory
+ * Name			: phiGemmInitScratchMemory
  * Description	: the method performs the memory allocation on the GPU card
  * 				: from scratch
  * Visibility	: phiGEMM only
  */
 void phiGemmInitScratchMemory( )
 {
+	/*                               ***Important Node***
+	 * This methods works assuming NSTREAMS = 1, MPI:GPU = 1:1 and no multi-gpu */
+
+	int i;
+	cudaError_t err;
+	int ierr = 0;
+	size_t free, total;
+
+
+	/* Allocate the memory ... */
+
+	for (i = 0; i < phiGemmNumDevices; i++) {
+
+		if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
+			printf("*** phiGEMM *** ERROR *** cudaSetDevice(%d) failed!\n",i );
+			fflush(stdout);
+			exit( EXIT_FAILURE );
+		}
+
+		scratch_size[i] = (size_t) 0;
+
+		ierr = cudaMalloc ( (void**) &(dev_scratch[i]), scratch_size[i] );
+		if ( ierr != cudaSuccess) {
+			fprintf( stderr, "*** phiGEMM *** ERROR *** Error in (first zero) memory allocation [GPU %d] , program will be terminated!!! Bye...\n\n", deviceIds[i]);
+			exit(EXIT_FAILURE);
+		}
+
+		cudaMemGetInfo(&free, &total);
+
+		scratch_size[ i ] = (size_t) (free * __SCALING_MEM_FACTOR__ );
+
+#if defined(__PHIGEMM_DEBUG)
+		printf("[PHIGEMM_DEBUG] GPU %d - before: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
+#endif
+
+		cuda_memory_allocated[i] = (size_t) (free * __SCALING_MEM_FACTOR__);
+
+		ierr = cudaMalloc ( (void**) &(dev_scratch[i]), scratch_size[i] );
+		if ( ierr != cudaSuccess) {
+			fprintf( stderr, "\nError in memory allocation [GPU %d] , program will be terminated (%d)!!! Bye...\n\n", deviceIds[i], ierr );
+			exit(EXIT_FAILURE);
+		}
+
+#if defined(__PHIGEMM_DEBUG)
+		cudaMemGetInfo(&free, &total);
+		printf("[PHIGEMM_DEBUG] GPU %d - after: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
+#endif
+
+	}
+
+
+	for (i = 0; i < phiGemmNumDevices; i++) {
+
+		scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ];
+
+#if defined(__PHIGEMM_DEBUG)
+		printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long)scratch_size[i], deviceIds[i]);
+		fflush(stdout);
+#endif
+	}
+
+	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+
+		/* Attempt to establish a runtime API context */
+		if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
+			printf("*** phiGEMM *** ERROR *** cudaSetDevice(%d) failed!\n",i );
+			fflush(stdout);
+			exit( EXIT_FAILURE );
+		}
+
+		/* Attempt to initialize CUBLAS */
+		if ( cublasCreate( &phiHandles[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
+			printf("*** phiGEMM *** ERROR *** cublasInit() for device %d failed!\n",i);
+			fflush(stdout);
+			exit( EXIT_FAILURE );
+		}
+
+		if( cudaStreamCreate( &phiStreams[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
+			printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i % phiGemmNumDevices);
+			fflush(stdout);
+			exit( EXIT_FAILURE );
+		}
+		cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
+	}
+
 	is_internal_memory_alloc = 1;
 	return;
 }

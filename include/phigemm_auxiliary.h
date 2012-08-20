@@ -24,7 +24,7 @@
 
 /* ---------------------------------- MACROS ------------------------------- */
 
-#define __SCALING_MEM_FACTOR__ 0.80
+#define __SCALING_MEM_FACTOR__ 0.95
 
 #if defined(__CUDA_GET_MEM_HACK)
 #define __GPU_MEM_AMOUNT_HACK__ 2400000000
