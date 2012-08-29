@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  * Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+ * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
  * This file is distributed under the terms of the
  * GNU General Public License. See the file `License'
@@ -93,7 +93,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 
 
-#if defined(__PHIGEMM_HACK_CPUONLY)
+#if defined(__PHIGEMM_CPUONLY)
 	gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 #else
 

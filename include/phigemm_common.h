@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  * Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+ * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
  * This file is distributed under the terms of the
  * GNU General Public License. See the file `License'
@@ -38,6 +38,8 @@
 #define PHIGEMM_SPLITK_ZGEMM 2048
 
 #define SPLITK_FACTOR 20
+
+#define __SCALING_MEM_FACTOR__ 0.95
 
 typedef void* phiGemmMemDevPtr[MAX_GPUS*NSTREAMS];
 typedef size_t phiGemmMemSizes[MAX_GPUS*NSTREAMS];

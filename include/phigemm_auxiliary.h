@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  * Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+ * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
  * This file is distributed under the terms of the
  * GNU General Public License. See the file `License'
@@ -32,6 +32,18 @@
 
 #define GEMM_ADD(m, n, k) ((m) * (n) * (k))
 #define GEMM_MUL(m, n, k) ((m) * (n) * (k))
+
+//#if defined(PRECISION_D) || defined(PRECISION_S)
+//#define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
+//#else
+//#define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
+//#endif
+
+#if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
+#define PHIGEMM_EVENTS 6
+#else
+#define PHIGEMM_EVENTS 7
+#endif
 
 /* ------------------------------------------------------------------------- */
 

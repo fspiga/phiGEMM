@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  * Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+ * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
  * This file is distributed under the terms of the
  * GNU General Public License. See the file `License'
@@ -23,12 +23,6 @@
 #define gemm_mkl zgemm_
 #define PHIGEMM_M phizgemm_
 #define phiZgemm PHIGEMM_M
-
-#if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
-#define PHIGEMM_EVENTS 6
-#else
-#define PHIGEMM_EVENTS 7
-#endif
 
 #if defined(__PHIGEMM_PROFILE)
 extern FILE *phiProfileFile;
@@ -88,7 +82,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 	}
 
-#if defined(__PHIGEMM_HACK_CPUONLY)
+#if defined(__PHIGEMM_CPUONLY)
 	select_case = 0;
 #else
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  * Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+ * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
  * This file is distributed under the terms of the
  * GNU General Public License. See the file `License'
@@ -20,11 +20,6 @@
 
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
-
-//#include "cuda.h"
-//#include "cublas_api.h"
-//#include <cuda_runtime.h>
-//#include "cublas_v2.h"
 
 #if defined(__PHIGEMM_PROFILE)
 const char base[] = "phigemm.profile";
@@ -48,6 +43,7 @@ int stringCmp( const void *a, const void *b)
 /* This routine computes the memory required to store the considered matrices */
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
+#if !defined(__PHIGEMM_GPUONLY)
 	int m_split, n_split, tmp;
 
 	if (is_splitA) {
@@ -68,6 +64,9 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
 		return( m_in*k_in + k_in*n_split/phiGemmNumDevices + m_in*n_split/phiGemmNumDevices );
 	}
+#else
+	return ( m_in*k_in + k_in*n_in + m_in*n_in );
+#endif
 }
 
 /* This routine computes the recursive split */
@@ -261,161 +260,98 @@ float phigemmGetSplitFactor(int selection) {
 #endif
 }
 
+
 /*
- * Name			: readEnv
- * Description	: the method read from the environment some special variables
- * 				  and eventually overwrite the defaults
+ * Name			: phiGemmInitMemory
+ * Description	: the method performs the phiGEMM memory allocation and initialization
+ * 				: based on the parameters
  * Visibility	: this file only
+ *
  */
-void readEnv()
+void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 {
-	/*
-	 * PHIGEMM_TUNE         = Apply auto-tune strategy (default: 1)
-	 * PHIGEMM_SPLITK       = (default: 1)
-	 * PHIGEMM_LOG_VERBOS   = (default: 0, dependency: __PHIGEMM_PROFILING)
-	 *
-	 * PHIGEMM_SGEMM_SPLIT  = (default: )
-	 * PHIGEMM_CGEMM_SPLIT  = (default: )
-	 * PHIGEMM_DGEMM_SPLIT  = (default: )
-	 * PHIGEMM_ZGEMM_SPLIT  = (default: )
-	 *
-	 * PHIGEMM_LOWER_NM     = (default: )
-	 * PHIGEMM_UPPER_NM     = (default: )
-	 * PHIGEMM_UPPER_K      = (default: )
-	 * PHIGEMM_SPLITK_MN    = (default: 20)
-	 *
-	 * PHIGEMM_SPLITK_D     = (default: 2048)
-	 * PHIGEMM_SPLITK_Z     = (default: 2048)
-	 *
-	 * PHIGEMM_TUNE_BAL_L   = negative threshold limit around perfect balance (default: )
-	 * PHIGEMM_TUNE_BAL_P   = positive threshold limit around perfect balance (default: )
-	 * PHIGEMM_TUNE_SHIFT_P = positive split shift (default: )
-	 * PHIGEMM_TUNE_SHIFT_L = positive split shift (default: )
-	 *
-	 *
-	 * int phiGemmControl[4]={PHIGEMM_TUNE, PHIGEMM_SPLITK, PHIGEMM_LOG_VERBOS}
-	 *
-	 * float phiGemmSplitFactor[4]={PHIGEMM_SGEMM_SPLIT, PHIGEMM_CGEMM_SPLIT,
-	 * 								PHIGEMM_DGEMM_SPLIT, PHIGEMM_ZGEMM_SPLIT}
-	 *
-	 * int phiGemmSpecialK[4]={PHIGEMM_SPLITK, PHIGEMM_LOWER_NM, PHIGEMM_UPPER_NM,
-	 * 							PHIGEMM_UPPER_K }
-	 *
-	 * int phiGemmKDimBlocks[4]={ *not used*, *not used*,
-	 * 									PHIGEMM_SPLITK_D, PHIGEMM_SPLITK_Z}
-	 *
-	 * float phiGemmAutoTune[4]={PHIGEMM_TUNE_BAL_L, PHIGEMM_TUNE_BAL_P,
-	 * 								PHIGEMM_TUNE_SHIFT_P, PHIGEMM_TUNE_SHIFT_L}
-	 *
-	 */
+	unsigned int i;
+	cudaError_t ierr;
+	size_t total, free;
 
-	float envar_split;
-	char *value = NULL;
+	// I do not even know how many memory is available on the device...
 
-#if !defined(__PHIGEMM_HACK_CPUONLY)
-	/* split factor may vary between S/D/Z GEMMs */
+	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
 
-	/* SGEMM */
-	value = getenv("PHI_SGEMM_SPLIT");
-	if (value != NULL)
-	{
-		envar_split = atof(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SGEMM split factor from environment variable: %f \n", envar_split);
-#endif
-	} else {
-		/* Default split if no env variables are specified */
-		envar_split = 0.85;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SGEMM default split factor: %f \n", envar_split);
-#endif
+		if (scratch_size[ i ] == 0)
+		{
+			if(dev_memsize == NULL) {
+				// Detect how much memory is available
+				// Assuming a process has exclusive access to the GPU
+
+				/* query the real free memory, taking into account the "stack" */
+				if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
+					printf("*** ERROR *** cudaSetDevice(%d) failed!", deviceIds[i % phiGemmNumDevices] ); fflush(stdout);
+					exit(EXIT_FAILURE);
+				}
+
+				ierr = cudaMalloc ( (void**) &(dev_scratch[i]), (size_t) 0 );
+				if ( ierr != cudaSuccess) {
+					fprintf( stderr, "\nError in (first zero) memory allocation , program will be terminated!!! Bye...\n\n");
+					exit(EXIT_FAILURE);
+				}
+
+				cudaMemGetInfo((size_t*)&free, (size_t*)&total);
+
+				scratch_size[i] = (size_t) (((free * __SCALING_MEM_FACTOR__ ) * 16.0) / 16.0);
+
+			} else {
+
+					scratch_size[ i ] = ( *dev_memsize )[ i ];
+			}
+		}
 	}
-	phiGemmSplitFactor[0] = envar_split;
-	phiGemmPrevSplitFactor[0] = envar_split;
-	phiGemmLowerPositiveSplitFactor[0] = 0.995 ;
 
-	/* DGEMM */
-	value = getenv("PHI_DGEMM_SPLIT");
-	if (value != NULL)
-	{
-		envar_split = atof(value);
+	// Allocate & Initialize
+
+	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+		/* query the real free memory, taking into account the "stack" */
+		if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
+			printf("*** ERROR *** cudaSetDevice(%d) failed!",  deviceIds[i % phiGemmNumDevices] ); fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		ierr = cudaMalloc ( (void**) &(dev_scratch[i % phiGemmNumDevices]), (size_t) scratch_size[ i ] );
+		if ( ierr != cudaSuccess) {
+			fprintf( stderr, "\nError in memory allocation, program will be terminated (%d)!!! Bye...\n\n", ierr );
+			exit(EXIT_FAILURE);
+		}
+
 #if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] DGEMM split factor from environment variable: %f \n", envar_split);
+		printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated internally on GPU %d\n", (unsigned long)scratch_size[i], deviceIds[i]);
+		fflush(stdout);
 #endif
-	} else {
-		/* Default split if no env variables are specified */
-		envar_split = 0.875;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] DGEMM default split factor: %f \n", envar_split);
-#endif
+
+		/* Attempt to initialize CUBLAS */
+		if ( cublasCreate( &phiHandles[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
+			printf("*** phiGEMM *** ERROR *** cublasInit() for device %d failed!\n",i);
+			fflush(stdout);
+			exit( EXIT_FAILURE );
+		}
+
+		if( cudaStreamCreate( &phiStreams[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
+			printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i % phiGemmNumDevices);
+			fflush(stdout);
+			exit( EXIT_FAILURE );
+		}
+		cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
 	}
-	phiGemmSplitFactor[1] = envar_split;
-	phiGemmPrevSplitFactor[1] = envar_split;
-	phiGemmLowerPositiveSplitFactor[1] = 0.995 ;
 
-	/* CGEMM */
-	value = getenv("PHI_CGEMM_SPLIT");
-	if (value != NULL)
-	{
-		envar_split = atof(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] CGEMM split factor from environment variable: %f \n", envar_split);
-#endif
-	} else {
-
-		/* Default split if no env variables are specified */
-		envar_split = 0.9;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] CGEMM  default split factor: %f \n", envar_split);
-#endif
-	}
-	phiGemmSplitFactor[2] = envar_split;
-	phiGemmPrevSplitFactor[2] = envar_split;
-	phiGemmLowerPositiveSplitFactor[2] = 0.995 ;
-
-	/* ZGEMM */
-	value = getenv("PHI_ZGEMM_SPLIT");
-	if (value != NULL)
-	{
-		envar_split = atof(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] ZGEMM split factor from environment variable: %f \n", envar_split);
-#endif
-	} else {
-
-		/* Default split if no env variables are specified */
-		envar_split = 0.925;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] ZGEMM  default split factor: %f \n", envar_split);
-#endif
-	}
-	phiGemmSplitFactor[3] = envar_split;
-	phiGemmPrevSplitFactor[3] = envar_split;
-	phiGemmLowerPositiveSplitFactor[3] = 0.995 ;
-
-#endif
-
-	/* This is to avoid not-defined OMP_NUM_THREADS in the environment.
-	 * Default threads num = 1 */
-	value = getenv("OMP_NUM_THREADS");
-	if (value != NULL)
-	{
-		phiGemmCPUThreads = atoi(value);
-	} else {
-
-		/* Default threads num = 1 */
-		phiGemmCPUThreads = 1;
-	}
-#if defined(__PHIGEMM_DEBUG)
-	printf ("[PHIGEMM_DEBUG] phiGemmCPUThreads: %d \n", phiGemmCPUThreads);
-#endif
-
+	is_internal_memory_alloc = 1;
+	return;
 }
+
 
 /*
  * Name			: phiGemmInit
  * Description	: the method initialize the library, both GPU binding and
  * 				  memory allocation according to the parameters
+ * 				  *** EXPECTED TO CALL ONLY ONCE ***
  * Visibility	: public
  */
 void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag )
@@ -429,7 +365,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
-#if !defined(__PHIGEMM_HACK_CPUONLY)
+#if !defined(__PHIGEMM_CPUONLY)
 
 	struct cudaDeviceProp deviceProp;
 	int deviceCount;
@@ -470,9 +406,54 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 		deviceIds[i] = deviceToBond[i % phiGemmNumDevices];
 	}
 
-	/* Initialize the memory */
+	/* No memory pointer is provided -> Initialize the memory */
 	if(dev_ptr != NULL) {
-		phiGemmInitMemory( dev_ptr, dev_memsize );
+		phiGemmInitMemory( dev_memsize );
+	} else {
+
+		for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+
+			scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAMS;
+
+			/* SAFE pointer operation! Remember that void pointers cannot be
+			 * directly dereferenced because 'void' is NOT a real type! */
+
+			/// THIS OPERATION IS WEIRD ///
+			size_t offset = ( i / phiGemmNumDevices ) * scratch_size[ i ];
+			char * tmp_ptr = (char*) ( ( *dev_ptr )[ i % phiGemmNumDevices ] );
+			dev_scratch[ i ] = (void*) (tmp_ptr + offset) ;
+
+#if defined(__PHIGEMM_DEBUG)
+			printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long)scratch_size[i], deviceIds[i]);
+			fflush(stdout);
+#endif
+		}
+
+		for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+
+			/* Attempt to establish a runtime API context */
+			if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
+				printf("*** phiGEMM *** ERROR *** cudaSetDevice(%d) failed!\n",i );
+				fflush(stdout);
+				exit( EXIT_FAILURE );
+			}
+
+			/* Attempt to initialize CUBLAS */
+			if ( cublasCreate( &phiHandles[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
+				printf("*** phiGEMM *** ERROR *** cublasInit() for device %d failed!\n",i);
+				fflush(stdout);
+				exit( EXIT_FAILURE );
+			}
+
+			if( cudaStreamCreate( &phiStreams[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
+				printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i % phiGemmNumDevices);
+				fflush(stdout);
+				exit( EXIT_FAILURE );
+			}
+			cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
+		}
+
+		is_external_memory_alloc = 1;
 	}
 
 	/* set the initialization flag */
@@ -499,63 +480,6 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	phiProfileFile = fopen (finalFileName, "a");
 #endif
 
-	return;
-}
-
-/*
- * Name			: phiGemmInitMemory
- * Description	: the method performs the memory allocation on the GPU card
- * 				: based on the parameters
- * Visibility	: this file only
- *
- */
-void phiGemmInitMemory( phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize )
-{
-	unsigned int i;
-	cudaError_t err;
-
-	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
-
-		scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAMS;
-
-		/* SAFE pointer operation! Remember that void pointers cannot be
-		 * directly dereferenced because 'void' is NOT a real type! */
-		size_t offset = ( i / phiGemmNumDevices ) * scratch_size[ i ];
-		char * tmp_ptr = (char*) ( ( *dev_ptr )[ i % phiGemmNumDevices ] );
-		dev_scratch[ i ] = (void*) (tmp_ptr + offset) ;
-
-
-#if defined(__PHIGEMM_DEBUG)
-		printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long)scratch_size[i], deviceIds[i]);
-		fflush(stdout);
-#endif
-	}
-
-	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
-
-		/* Attempt to establish a runtime API context */
-		if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
-			printf("*** phiGEMM *** ERROR *** cudaSetDevice(%d) failed!\n",i );
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-
-		/* Attempt to initialize CUBLAS */
-		if ( cublasCreate( &phiHandles[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
-			printf("*** phiGEMM *** ERROR *** cublasInit() for device %d failed!\n",i);
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-
-		if( cudaStreamCreate( &phiStreams[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
-			printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i % phiGemmNumDevices);
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-		cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
-	}
-
-	is_external_memory_alloc = 1;
 	return;
 }
 
@@ -603,8 +527,6 @@ void phiGemmInitScratchMemory( )
 		printf("[PHIGEMM_DEBUG] GPU %d - before: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
 #endif
 
-		cuda_memory_allocated[i] = (size_t) (free * __SCALING_MEM_FACTOR__);
-
 		ierr = cudaMalloc ( (void**) &(dev_scratch[i]), scratch_size[i] );
 		if ( ierr != cudaSuccess) {
 			fprintf( stderr, "\nError in memory allocation [GPU %d] , program will be terminated (%d)!!! Bye...\n\n", deviceIds[i], ierr );
@@ -616,17 +538,6 @@ void phiGemmInitScratchMemory( )
 		printf("[PHIGEMM_DEBUG] GPU %d - after: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
 #endif
 
-	}
-
-
-	for (i = 0; i < phiGemmNumDevices; i++) {
-
-		scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ];
-
-#if defined(__PHIGEMM_DEBUG)
-		printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long)scratch_size[i], deviceIds[i]);
-		fflush(stdout);
-#endif
 	}
 
 	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
@@ -667,7 +578,7 @@ void phiGemmShutdown()
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
-#if !defined(__PHIGEMM_HACK_CPUONLY)
+#if !defined(__PHIGEMM_CPUONLY)
 
 	int i;
 

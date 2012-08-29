@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  * Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+ * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
  * This file is distributed under the terms of the
  * GNU General Public License. See the file `License'
@@ -9,10 +9,11 @@
  *
  */
 
+// #define PRECISION_D
+
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
-#define PRECISION_D
 #if defined(PRECISION_D) || defined(PRECISION_S)
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
 #else
@@ -23,12 +24,6 @@
 #define gemm_mkl dgemm_
 #define PHIGEMM_M phidgemm_
 #define phiDgemm PHIGEMM_M
-
-#if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
-#define PHIGEMM_EVENTS 6
-#else
-#define PHIGEMM_EVENTS 7
-#endif
 
 
 #if defined(__PHIGEMM_PROFILE)
@@ -85,17 +80,27 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 	}
 
-#if defined(__PHIGEMM_HACK_CPUONLY)
+#if defined(__PHIGEMM_CPUONLY)
 	select_case = 0;
+#elif defined(__PHIGEMM_GPUONLY)
+	select_case = 2;
 #else
 
-	if ( ground_level && !phiGemmIsInit()  )
-	{
-		fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do CPU-only.\n"); fflush(stdout);
-		select_case = 0;
-	} else {
-		select_case = cpuGPUheuristic( (*m), (*n), (*k), 'd');
+	if ( ground_level  ) {
+		if (!phiGemmIsInit() ) {
+			fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do CPU-only.\n"); fflush(stdout);
+			select_case = 0;
+		} else {
+			if ( !phiGemmIsInternalMemAlloc() && !phiGemmIsExternalMemAlloc()  )
+			{
+				// Memory has not been allocated even if phiGEMM has been initialized.
+				// Perform memory allocation before any operation!
+				phiGemmInitMemory(NULL);
+			}
+			select_case = cpuGPUheuristic( (*m), (*n), (*k), 'd');
+		}
 	}
+
 #endif
 
 	switch (select_case)
@@ -327,12 +332,16 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 
 	if ( (*transa != 'n') && (*transa != 'N') )	is_transa = 1;
 	if ( (*transb != 'n') && (*transb != 'N') ) is_transb = 1;
+
 	cu_transa = ((*transa == 'c')||(*transa == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transa = ((*transa == 't')||(*transa == 'T')) ? CUBLAS_OP_T : cu_transa;
 	cu_transa = ((*transa == 'n')||(*transa == 'N')) ? CUBLAS_OP_N : cu_transa;
 	cu_transb = ((*transb == 'c')||(*transb == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transb = ((*transb == 't')||(*transb == 'T')) ? CUBLAS_OP_T : cu_transb;
 	cu_transb = ((*transb == 'n')||(*transb == 'N')) ? CUBLAS_OP_N : cu_transb;
+
+	// if split == 1 --> all GPU (is it working?)
+
 	/* split A only */
 	if (is_splitA)
 	{
@@ -502,8 +511,10 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 
 	start_mkl = phigemm_cclock();
 
+#if !defined(__PHIGEMM_GPUONLY)
 	gemm_mkl(transa, transb, &m_cpu, &n_cpu, &k_cpu, alpha, A+a_offset,
 			lda, B+b_offset, ldb, beta, C+c_offset, ldc);
+#endif
 
 	stop_mkl= phigemm_cclock();
 
@@ -545,8 +556,10 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 
 start_mkl = phigemm_cclock();
 
+#if !defined(__PHIGEMM_GPUONLY)
 gemm_mkl(transa, transb, &m_cpu, &n_cpu, &k_cpu, alpha, A+a_offset,
 		lda, B+b_offset, ldb, beta, C+c_offset, ldc);
+#endif
 
 stop_mkl= phigemm_cclock();
 
