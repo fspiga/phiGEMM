@@ -1,5 +1,11 @@
 # Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
 # Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
+# This file is distributed under the terms of the
+# GNU General Public License. See the file `License'
+# in the root directory of the present package,
+# or http://www.gnu.org/copyleft/gpl.txt .
+#
+# Author: Filippo Spiga (spiga.filippo@gmail.com)
 
 AC_INIT(phiGEMM, 2.0, , phigemm)
 
@@ -280,6 +286,8 @@ cc=$CC
 
 echo setting CC... $cc
 
+# No MACRO by defaults...
+try_phigemm_opts=""
 
 case "$arch:$f90_version" in
 ia32:ifort* | ia64:ifort* | x86_64:ifort*  )
@@ -292,7 +300,7 @@ ia32:ifort* | ia64:ifort* | x86_64:ifort*  )
         try_fflags="$try_fflags -g -traceback -par-report0 -vec-report0"
     fi
     try_openmp="-openmp"
-    try_dflags="$try_dflags -D__INTEL"
+    try_phigemm_opts="-D__INTEL"
     ;;
 ia32:pgf* | ia64:pgf* | x86_64:pgf* )
 	try_ccflags="-O3 -fPIC"
@@ -301,17 +309,17 @@ ia32:pgf* | ia64:pgf* | x86_64:pgf* )
 	pre_fdflags="-Mpreprocess"
 	try_f90flags="-module ../include/"
     try_openmp="-mp"
-    try_dflags="$try_dflags -D__PGI"
+    try_phigemm_opts="-D__PGI"
     have_cpp=0 #???
 	;;
 *:gfortran )
 	try_ccflags="-O3 -fPIC"
 	try_ldflags="-O3 -fPIC"
 	try_ldsharedflag="-shared" # to check
-	pre_fdflags="-Mpreprocess" # to check
-	try_f90flags="-x f95-cpp-input -module ../include/"
+	pre_fdflags="" # it appears is no needed...
+	try_f90flags="-x f95-cpp-input -J ../include/"
     try_openmp="-fopenmp"
-    try_dflags="$try_dflags -D__GFORTRAN -D__STD_F95"
+    try_phigemm_opts="-D__GFORTRAN -D__STD_F95"
     have_cpp=0 #???
 	;;
 crayxt*:pgf* )
@@ -321,7 +329,7 @@ crayxt*:pgf* )
 	pre_fdflags="-Mpreprocess"
 	try_f90flags="-module ../include/"
     try_openmp="-mp"
-    try_dflags="$try_dflags -D__PGI -D__CRAY"
+    try_phigemm_opts="-D__PGI -D__CRAY"
     have_cpp=0 #???
 	;;
 * )
@@ -338,6 +346,8 @@ fi
 if test "$ccflags"  = "" ; then ccflags=$try_ccflags   ; fi
 if test "$ldflags"  = "" ; then ldflags=$try_ldflags   ; fi
 if test "$f90flags" = "" ; then f90flags=$try_f90flags ; fi
+
+ldsharedflag=$try_ldsharedflag
 
 
 # linker and archiver
@@ -418,6 +428,8 @@ do
             done
         fi
         
+        GEMM_LIB=""
+        
         # Testing for MKL...
         if test "$use_multithread" -eq 0; then
             AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
@@ -458,6 +470,8 @@ do
             done
         fi
         
+        GEMM_LIB=""
+        
         # Testing for MKL...
         if test "$use_multithread" -eq 0; then
             AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
@@ -496,6 +510,8 @@ do
                 then break ; fi
             done
         fi
+        
+        GEMM_LIB=""
         
         # Testing for MKL...
         if test "$use_multithread" -eq 0; then
@@ -643,7 +659,7 @@ fi
 nvccflags="-ccbin gcc -O3 --compiler-options '-fPIC -fopenmp'"
 
 # Starting from empty flags....
-phigemm_opts=""
+phigemm_opts=$try_phigemm_opts
 
 if test "$use_debug" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_DEBUG"

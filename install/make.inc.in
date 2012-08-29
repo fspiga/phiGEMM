@@ -7,7 +7,7 @@
 # in the root directory of the present package,
 # or http://www.gnu.org/copyleft/gpl.txt .
 #
-# Author: Filippo Spiga (filippo.spiga@gmail.com)
+# Author: Filippo Spiga (spiga.filippo@gmail.com)
 
 .SUFFIXES :
 .SUFFIXES : .o .c
@@ -21,7 +21,7 @@
 # remember the tabulator in the first column !!!
 
 .c.o:
-	$(NVCC) $(NVCC_FLAGS) $(GEMM_OPT) $(EXT_INC) -I../include/ -c $< -o .objs/$*.o 
+	$(NVCC) $(NVCC_FLAGS) $(GEMM_OPT) $(EXT_INC) -I../include/ -c $< -o $*.o 
 
 PHIGEMM_TOP = .
 
