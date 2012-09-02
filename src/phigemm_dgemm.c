@@ -9,10 +9,11 @@
  *
  */
 
-// #define PRECISION_D
-
+//
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
+
+#define PRECISION_D
 
 #if defined(PRECISION_D) || defined(PRECISION_S)
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
@@ -159,7 +160,11 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		is_splitA = (*n > *m) ? 0:1;
 
 		/* Assign the split factor for phidgemm (1: DGEMM) */
+#if !defined(__PHIGEMM_GPUONLY)
 		split = phiGemmSplitFactor[1];
+#else
+		split = 1.0;
+#endif
 
 		/* recursive splitting */
 		/* There is an assumption here: all the cards has the same amount of memory.
@@ -265,14 +270,14 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		{
 		case 0:
 			/* Comma-Separated Value (csv) format:
-			 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, time, GFlops */
-			fprintf (phiProfileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, CPU-ONLY, %10.6f, %10.4f\n", file, line, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+			 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, 0 (=CPU-ONLY), time, GFlops */
+			fprintf (phiProfileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, 0, %10.6f, %10.4f\n", file, line, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 			break;
 
 		case 1:
 			/* Comma-Separated Value (csv) format:
-			 * file, line, nGPU, nThreads, transA, transB, m, n, k, SPECIAL-K, time, GFlops */
-			fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, SPECIAL-K, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+			 * file, line, nGPU, nThreads, transA, transB, m, n, k, -1 (=SPECIAL-K), time, GFlops */
+			fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, -1, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 			break;
 
 		case 2:
@@ -598,9 +603,17 @@ for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
 stop_total = phigemm_cclock();
 
 #if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+
 float time_temp, time_mem_h2d, time_dgemm_cuda, time_mem_d2h;
+
 double time_total = stop_total - start_total;
+
+#if !defined(__PHIGEMM_GPUONLY)
 double time_mkl = stop_mkl - start_mkl;
+#else
+double time_mkl = 0;
+#endif
+
 double unbalance;
 float new_split;
 
@@ -645,7 +658,7 @@ for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
 	unbalance = time_dgemm_cuda - time_mkl;
 #endif
 
-#if defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_SELFTUNE)&& !defined(__PHIGEMM_GPUONLY)
 	// Default tolerance: >0.0025
 	if ((unbalance > 0.0f) && (fabs(unbalance) > 0.0005f ) ) {
 		/* Decremento lo split, piu' lavoro alla CPU */
@@ -717,7 +730,11 @@ for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
 						time_mem_h2d,
 						(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(double)),
 						time_mkl,
+#if !defined(__PHIGEMM_GPUONLY)
 						1.e-6 * PHIGEMM_FLOPS( (double)m_cpu, (double)(*n), (double)(*k) )/(time_mkl*1000),
+#else
+						0.0,
+#endif
 						time_dgemm_cuda,
 						1.e-6 * PHIGEMM_FLOPS( (double)m_gpu[iDev], (double)(*n), (double)(*k) )/(time_dgemm_cuda*1000),
 						time_mem_d2h,
@@ -746,7 +763,11 @@ for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
 						time_mem_h2d,
 						(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(double)),
 						time_mkl,
+#if !defined(__PHIGEMM_GPUONLY)
 						1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_cpu, (double)(*k) )/(time_mkl*1000),
+#else
+						0.0,
+#endif
 						time_dgemm_cuda,
 						1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_gpu[iDev], (double)(*k) )/(time_dgemm_cuda*1000),
 						time_mem_d2h,

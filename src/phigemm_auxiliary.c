@@ -121,6 +121,7 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 		*p2 = n - (*p1);
 	}
 #endif
+
 	return;
 }
 
