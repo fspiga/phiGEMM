@@ -407,7 +407,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	}
 
 	/* No memory pointer is provided -> Initialize the memory */
-	if(dev_ptr != NULL) {
+	if(dev_ptr == NULL) {
 		phiGemmInitMemory( dev_memsize );
 	} else {
 
@@ -583,7 +583,7 @@ void phiGemmShutdown()
 	int i;
 
 #if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] *** shutdown *** is_phigemm_init:%d, is_memory_alloc:%d, devices: %d\n",is_phigemm_init, is_memory_alloc, phiGemmNumDevices);
+	printf("[PHIGEMM_DEBUG] *** shutdown *** is_phigemm_init:%d, is_external_memory_alloc:%d, is_internal_memory_alloc:%d, devices: %d\n",is_phigemm_init, is_external_memory_alloc, is_internal_memory_alloc, phiGemmNumDevices);
 	fflush(stdout);
 #endif
 
