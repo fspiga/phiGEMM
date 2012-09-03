@@ -1,5 +1,6 @@
 # Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
 # Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
+#
 # This file is distributed under the terms of the
 # GNU General Public License. See the file `License'
 # in the root directory of the present package,
@@ -103,7 +104,7 @@ AC_ARG_WITH(cuda_dir,
 
 AC_ARG_WITH(magma_dir, 
    [AS_HELP_STRING([--with-magma-dir=<path>],
-    [specify MAGMA installation directory (default is /usr/local/magma/)])],
+   	[specify MAGMA installation directory (default is /usr/local/magma/)])],
     [magma_path="$withval"], 
     [magma_path="/usr/local/magma/"])
 
@@ -552,11 +553,11 @@ fi
 have_cuda=0
 have_magma=0
 
-# Earning
-if test "$use_magmablas" -eq 1; then
-    AC_MSG_WARN([MAGMA support has not yet fully implemented, stay tuned for the next version.])
-    use_magmablas=0
-fi
+# Warning
+#if test "$use_magmablas" -eq 1; then
+#    AC_MSG_WARN([MAGMA support has not yet fully implemented, stay tuned for the next version.])
+#    use_magmablas=0
+#fi
 
 # check for CUDA headers
 have_valid_cuda_header=0
@@ -582,9 +583,8 @@ then
                 try_loption=
         else                  
                 try_loption="-L$dir"
-        fi			
-        
-        # ATTENTION: MAGMA requires CUBLAS ** ALWAYS **	 
+        fi	
+		
         if test "$have_cuda" -eq 0 ; then
 			CFLAGS="$test_cflags"
 			LDFLAGS="$try_loption"
@@ -606,42 +606,34 @@ then
 				have_cuda=1
 			fi
 		fi
-
-#        if test "$have_magma" -eq 0 && test "$use_magmablas" -eq 1 ; then
-#			CFLAGS="$test_cflags"
-#			LDFLAGS="$try_loption"
-#	        LIBS=""    
-#	        echo $ECHO_N "in $dir: " $ECHO_C				
-#			AC_SEARCH_LIBS(cudaGetDeviceCount,cudart, 
-#			      cuda_libs="$cuda_libs $LIBS",,)
-#			LIBS=""
-#			
-#			echo $ECHO_N "in $dir: " $ECHO_C	
-#			AC_SEARCH_LIBS(XXXXX,, 
-#				cuda_libs="$cuda_libs $LIBS",,)			  
-#	 	 			  
-#	 		cuda_libs="$try_loption $cuda_libs"
-#	 	
-#			if test "$ac_cv_search_cudaGetDeviceCount" != "no" && 
-#				test "$ac_cv_search_cublasInit" != "no"
-#			then			
-#				have_magma=1
-#			fi
-#		fi
-	
-		if test "$use_magmablas" -eq 1 ; then
-			if test "$have_cuda" -eq 1 && test "$have_magma" -eq 1
-			then break ; fi
-		else
-			if test "$have_cuda" -eq 1
-			then break ; fi
-		fi
+		
+		if test "$have_cuda" -eq 1
+		then break ; fi
 		
 	done   	
-	AC_LANG_POP(C)  	
 else
     AC_MSG_ERROR([Please check if CUDA is correctly installed.]) 
 fi
+
+# check for MAGMABLAS 
+# ATTENTION: MAGMA requires CUBLAS ** ALWAYS **	 
+if test "$have_cuda" -eq 1  && test "$use_magmablas" -eq 1 
+then 
+
+    try_libdirs="$magma_path $libdirs $ld_library_path"
+	
+    for dir in $try_libdirs
+    do        
+        MAGMA_LIB="$dir/libmagmablas.a"
+        AC_CHECK_FILE($MAGMA_LIB, have_magma=1 cuda_libs="$MAGMA_LIB $cuda_libs",)
+		
+		if test "$have_magma" -eq 1
+		then break ; fi
+	done   	
+fi
+
+#?
+AC_LANG_POP(C)  	
 
 # Warning message ...
 if test "$use_magmablas" -eq 1 && test "$have_magma" -eq 0 ; then
@@ -685,7 +677,7 @@ if test "$use_explicit_factor" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
 fi
 	
-if test "$use_selftune" == 1 ; then
+if test "$use_selftune" -eq 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_SELFTUNE"
 fi	
 
@@ -704,7 +696,7 @@ if test "$use_gpu_only" -eq 1; then
 fi
 	       
 cuda_include="-I$cuda_path/include -I$topdir/include"
-blas_libs="$topdir/lib/libphigemm.a $blas_libs"   
+# blas_libs="$topdir/lib/libphigemm.a $blas_libs"   
 
 echo setting CUDA_LIBS... $cuda_libs
 	

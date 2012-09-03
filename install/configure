@@ -3921,12 +3921,11 @@ fi
 have_cuda=0
 have_magma=0
 
-# Earning
-if test "$use_magmablas" -eq 1; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: MAGMA support has not yet fully implemented, stay tuned for the next version." >&5
-$as_echo "$as_me: WARNING: MAGMA support has not yet fully implemented, stay tuned for the next version." >&2;}
-    use_magmablas=0
-fi
+# Warning
+#if test "$use_magmablas" -eq 1; then
+#    AC_MSG_WARN([MAGMA support has not yet fully implemented, stay tuned for the next version.])
+#    use_magmablas=0
+#fi
 
 # check for CUDA headers
 have_valid_cuda_header=0
@@ -3954,7 +3953,6 @@ then
                 try_loption="-L$dir"
         fi
 
-        # ATTENTION: MAGMA requires CUBLAS ** ALWAYS **
         if test "$have_cuda" -eq 0 ; then
 			CFLAGS="$test_cflags"
 			LDFLAGS="$try_loption"
@@ -4085,46 +4083,59 @@ fi
 			fi
 		fi
 
-#        if test "$have_magma" -eq 0 && test "$use_magmablas" -eq 1 ; then
-#			CFLAGS="$test_cflags"
-#			LDFLAGS="$try_loption"
-#	        LIBS=""
-#	        echo $ECHO_N "in $dir: " $ECHO_C
-#			AC_SEARCH_LIBS(cudaGetDeviceCount,cudart,
-#			      cuda_libs="$cuda_libs $LIBS",,)
-#			LIBS=""
-#
-#			echo $ECHO_N "in $dir: " $ECHO_C
-#			AC_SEARCH_LIBS(XXXXX,,
-#				cuda_libs="$cuda_libs $LIBS",,)
-#
-#	 		cuda_libs="$try_loption $cuda_libs"
-#
-#			if test "$ac_cv_search_cudaGetDeviceCount" != "no" &&
-#				test "$ac_cv_search_cublasInit" != "no"
-#			then
-#				have_magma=1
-#			fi
-#		fi
-
-		if test "$use_magmablas" -eq 1 ; then
-			if test "$have_cuda" -eq 1 && test "$have_magma" -eq 1
-			then break ; fi
-		else
-			if test "$have_cuda" -eq 1
-			then break ; fi
-		fi
+		if test "$have_cuda" -eq 1
+		then break ; fi
 
 	done
-	ac_ext=c
+else
+    as_fn_error "Please check if CUDA is correctly installed." "$LINENO" 5
+fi
+
+# check for MAGMABLAS
+# ATTENTION: MAGMA requires CUBLAS ** ALWAYS **
+if test "$have_cuda" -eq 1  && test "$use_magmablas" -eq 1
+then
+
+    try_libdirs="$magma_path $libdirs $ld_library_path"
+
+    for dir in $try_libdirs
+    do
+        MAGMA_LIB="$dir/libmagmablas.a"
+        as_ac_File=`$as_echo "ac_cv_file_$MAGMA_LIB" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $MAGMA_LIB" >&5
+$as_echo_n "checking for $MAGMA_LIB... " >&6; }
+if { as_var=$as_ac_File; eval "test \"\${$as_var+set}\" = set"; }; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$MAGMA_LIB"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+eval as_val=\$$as_ac_File
+   if test "x$as_val" = x""yes; then :
+  have_magma=1 cuda_libs="$MAGMA_LIB $cuda_libs"
+fi
+
+
+		if test "$have_magma" -eq 1
+		then break ; fi
+	done
+fi
+
+#?
+ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-else
-    as_fn_error "Please check if CUDA is correctly installed." "$LINENO" 5
-fi
 
 # Warning message ...
 if test "$use_magmablas" -eq 1 && test "$have_magma" -eq 0 ; then
@@ -4169,7 +4180,7 @@ if test "$use_explicit_factor" == 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
 fi
 
-if test "$use_selftune" == 1 ; then
+if test "$use_selftune" -eq 1 ; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_SELFTUNE"
 fi
 
@@ -4188,7 +4199,7 @@ if test "$use_gpu_only" -eq 1; then
 fi
 
 cuda_include="-I$cuda_path/include -I$topdir/include"
-blas_libs="$topdir/lib/libphigemm.a $blas_libs"
+# blas_libs="$topdir/lib/libphigemm.a $blas_libs"
 
 echo setting CUDA_LIBS... $cuda_libs
 
