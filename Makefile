@@ -6,9 +6,11 @@
 # in the root directory of the present distribution,
 # or http://www.gnu.org/copyleft/gpl.txt .
 #
-# Filippo Spiga (filippo.spiga@ichec.ie)
+# Filippo Spiga (spiga.filippo@gmail.com)
 
-all: prereq phigemm
+default : prereq phigemm 
+
+all: prereq phigemm test
 
 prereq:
 	mkdir -p ./bin ./lib ./include
