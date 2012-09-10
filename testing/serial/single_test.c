@@ -49,7 +49,7 @@
 /**
  * SGEMM definitions
  */
-#if defined __CUDA_TYPE_FLOAT
+#if defined(__CUDA_TYPE_FLOAT)
 #define XTYPE float
 #define MKL_CALL sgemm_
 #define PHIGEMM_CALL phisgemm_
@@ -58,7 +58,7 @@
 /**
  * DGEMM definitions
  */
-#elif defined __CUDA_TYPE_DOUBLE
+#elif defined(__CUDA_TYPE_DOUBLE)
 #define XTYPE double
 #define MKL_CALL dgemm_
 #define PHIGEMM_CALL phidgemm_
@@ -67,7 +67,7 @@
 /*
  * vim M definitions
  */
-#elif defined __CUDA_TYPE_COMPLEX
+#elif defined(__CUDA_TYPE_COMPLEX)
 #define XTYPE cuComplex
 #define MKL_CALL cgemm
 #define PHIGEMM_CALL phicgemm_
@@ -76,7 +76,7 @@
 /**
  * ZGEMM definitions
  */
-#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
+#elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 #define MKL_CALL zgemm_
 #define PHIGEMM_CALL phizgemm_
 #define CUBLAS_GEMM cublasZgemm
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 		memsize[ i ] =  0;
 	}
 
-#if defined __PERFORM_PHIGEMM_INIT
+#if defined(__PERFORM_PHIGEMM_INIT)
 	/* GPU environment initialization */
 	for ( i = 0; i < nGPU; i++ ) {
 
@@ -197,19 +197,21 @@ int main(int argc, char **argv)
 
 		cudaMemGetInfo((size_t*)&freeMem, (size_t*)&totalMem);
 
-#if defined __CUDA_DEBUG
+#if defined(__PHIGEMM_TESTCASE_DEBUG)
 		printf("[GPU %d] before: %lu (total: %lu)\n", i, (unsigned long)freeMem, (unsigned long)totalMem); fflush(stdout);
 #endif
 
 		memsize[ i ] = (size_t) (freeMem * __FRACTION_OF_DEVICE_MEM_TO_USE__);
 
+#if !defined(__PERFORM_ONLY_GPU_BIND)
 		ierr = cudaMalloc ( (void**) &(test_scratch[ i ]), (size_t) memsize[ i ] );
 		if ( ierr != cudaSuccess) {
 			fprintf( stderr, "\nError in memory allocation [GPU %d] , program will be terminated (%d)!!! Bye...\n\n", i, ierr );
 			exit(EXIT_FAILURE);
 		}
+#endif
 
-#if defined __CUDA_DEBUG
+#if defined(__PHIGEMM_TESTCASE_DEBUG)
 		cudaMemGetInfo((size_t*)&freeMem, (size_t*)&totalMem);
 		printf("[GPU %d] after: %lu (total: %lu)\n", i, (unsigned long)freeMem, (unsigned long)totalMem); fflush(stdout);
 #endif
@@ -218,15 +220,22 @@ int main(int argc, char **argv)
 	}
 #endif
 
-#if defined(__PHIGEMM_DEBUG_3)
+//#if defined(__PHIGEMM_DEBUG_3)
 	// only for single-GPU tests...
-	printf( "*** SPACE REQUIRED ON THE GPU : %f MByte \n", (( m*k + k*n + m*n ) * sizeof(XTYPE))/(1024.0*1024.0) ); fflush(stdout);
-	printf( "*** SPACE AVAILABLE ON THE GPU : %lu Byte (%f MByte) \n", memsize[0] ,  memsize[0]/(1024.0*1024.0) ); fflush(stdout);
+//	printf( "*** SPACE REQUIRED ON THE GPU : %f MByte \n", (( m*k + k*n + m*n ) * sizeof(XTYPE))/(1024.0*1024.0) ); fflush(stdout);
+//	printf( "*** SPACE AVAILABLE ON THE GPU : %lu Byte (%f MByte) \n", memsize[0] ,  memsize[0]/(1024.0*1024.0) ); fflush(stdout);
+//#endif
+
+#if defined(__PERFORM_PHIGEMM_INIT)
+	// tag = 0 (fake value)
+
+#if !defined(__PERFORM_ONLY_GPU_BIND)
+	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
+#else
+	//	phiGemmInit( nGPU, NULL, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
+	phiGemmInit( nGPU, NULL, NULL, (int *)&devicesToBond, 0);
 #endif
 
-#if defined __PERFORM_PHIGEMM_INIT
-	// tag = 0 (fake value)
-	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
 #endif
 	cudaDeviceSynchronize();
 
@@ -237,7 +246,7 @@ int main(int argc, char **argv)
 			( ((n * k)%2==0) ? (n * k) : (n * k)+1 ) +
 			( ((m * k)%2==0) ? (m * n) : (m * n)+1 ) ) * sizeof(XTYPE ) );
 
-#ifdef __PHITEST_MEM_PINNED
+#if defined(__PHITEST_MEM_PINNED)
 	if( cudaHostAlloc( ( void ** ) &GPU_buffer_memory_ptr, byte_GPU_buffer, cudaHostAllocPortable ) != cudaSuccess )
 	{
 		printf( "*** ERROR allocating PINNED MEMORY on CPU\n" );
@@ -250,7 +259,7 @@ int main(int argc, char **argv)
 		exit( EXIT_FAILURE );
 	}
 
-#if defined __PHITEST_FORCE_PINNED
+#if defined(__PHITEST_FORCE_PINNED)
 
 	/* the first call makes no sense */
 	tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
@@ -265,13 +274,13 @@ int main(int argc, char **argv)
 #endif
 
 	fprintf( stdout, "\nsizeof(XTYPE) = %lu", (size_t) sizeof(XTYPE) );
-#if defined __CUDA_TYPE_FLOAT
+#if defined(__CUDA_TYPE_FLOAT)
 	fprintf( stdout, "\nPERFORMING SGEMM operations\n");
-#elif defined __CUDA_TYPE_COMPLEX
+#elif defined(__CUDA_TYPE_COMPLEX)
 	fprintf( stdout, "\nPERFORMING CGEMM operations\n");
-#elif defined __CUDA_TYPE_DOUBLE
+#elif defined(__CUDA_TYPE_DOUBLE)
 	fprintf( stdout, "\nPERFORMING DGEMM operations\n");
-#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
+#elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	fprintf( stdout, "\nPERFORMING ZGEMM operations\n");
 #endif
 
@@ -288,7 +297,7 @@ int main(int argc, char **argv)
 	C_phigemm = B + (k * n);
 	memset( GPU_buffer_memory_ptr, 0, byte_GPU_buffer );
 
-#ifdef __PHITEST_MEM_PINNED
+#if defined(__PHITEST_MEM_PINNED)
 	if( cudaHostAlloc( ( void ** ) &C, m * n * sizeof( XTYPE ), cudaHostAllocPortable ) != cudaSuccess )
 	{
 		printf( "*** ERROR allocating PINNED MEMORY on cpu\n" );
@@ -309,17 +318,17 @@ int main(int argc, char **argv)
 	 *       "Appendix B: CUBLAS Fortran Bindings" of CUBLAS library documentation.
 	 */
 
-#if (defined __CUDA_TYPE_FLOAT)
+#if defined(__CUDA_TYPE_FLOAT)
 	float alpha=0.5, beta=0.15;
-#elif (defined __CUDA_TYPE_DOUBLE)
+#elif defined(__CUDA_TYPE_DOUBLE)
 	double alpha=0.33, beta=-0.25;
-#elif (defined __CUDA_TYPE_COMPLEX)
+#elif defined(__CUDA_TYPE_COMPLEX))
 	cuComplex alpha, beta;
 	alpha.x = (float) 0.29;
 	alpha.y = (float) -0.86;
 	beta.x = (float) -0.48;
 	beta.y = (float) 0.38;
-#elif (defined __CUDA_TYPE_DOUBLE_COMPLEX)
+#elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	cuDoubleComplex alpha, beta;
 	alpha.x = (double) 2.0;
 	alpha.y = (double) 1.0;
@@ -331,10 +340,10 @@ int main(int argc, char **argv)
 		srand ( time(NULL) );
 		for ( i = 0; i < k; i++ ) {
 			int index = i * m + j;
-#if defined __CUDA_TYPE_COMPLEX
+#if defined(__CUDA_TYPE_COMPLEX)
 			A[ index ].x = (float) rand()/(RAND_MAX+1.0);
 			A[ index ].y = ( float ) rand()/(RAND_MAX+1.0);
-#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
+#elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			A[ index ].x = ( double ) rand()/(RAND_MAX+1.0);
 			A[ index ].y = ( double ) rand()/(RAND_MAX+1.0);
 #else
@@ -347,10 +356,10 @@ int main(int argc, char **argv)
 		srand ( time(NULL) );
 		for ( i = 0; i < n; i++ ) {
 			int index = i * k + j;
-#if defined __CUDA_TYPE_COMPLEX
+#if defined(__CUDA_TYPE_COMPLEX)
 			B[ index ].x = ( float ) rand()/(RAND_MAX+1.0);
 			B[ index ].y = ( float ) rand()/(RAND_MAX+1.0);
-#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
+#elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			B[ index ].x = ( double ) rand()/(RAND_MAX+1.0);
 			B[ index ].y = ( double )  rand()/(RAND_MAX+1.0);
 #else
@@ -364,10 +373,10 @@ int main(int argc, char **argv)
 		srand ( time(NULL) );
 		for ( i = 0; i < n; i++ ) {
 			int index = i * m + j;
-#if defined __CUDA_TYPE_COMPLEX
+#if defined(__CUDA_TYPE_COMPLEX)
 			C[ index ].x = ( float )  rand()/(RAND_MAX+1.0);
 			C[ index ].y  = ( float )  rand()/(RAND_MAX+1.0);
-#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
+#elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			C[ index ].x = ( double ) rand()/(RAND_MAX+1.0);
 			C[ index ].y  = ( double )  rand()/(RAND_MAX+1.0);
 #else
@@ -380,7 +389,7 @@ int main(int argc, char **argv)
 	transa[0] = 'n';
 	transb[0] = 'n';
 
-#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
+#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	transa[1] = 'c'; // 'c' for conjugate complex
 #else
 	transa[1] = 't';
@@ -388,13 +397,13 @@ int main(int argc, char **argv)
 	transb[1] = 'n';
 
 	transa[2] = 'n';
-#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
+#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	transb[2] = 'c'; // 'c' for conjugate complex
 #else
 	transb[2] = 't';
 #endif
 
-#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
+#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	transa[3] = 'c'; // 'c' for conjugate complex
 	transb[3] = 'c'; // 'c' for conjugate complex
 #else
@@ -432,7 +441,7 @@ int main(int argc, char **argv)
 		for ( j = 0; j < m; j++ ) {
 			for ( i = 0; i < n; i++ ) {
 				int index = i * m + j;
-#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
+#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 				C_mkl[ index ].x = C[ index ].x;
 				C_mkl[ index ].y = C[ index ].y;
 #else
@@ -451,13 +460,17 @@ int main(int argc, char **argv)
 
 		/* ----------------------------------------------------------- */
 
+
 		/* --------------------- test the CUBLAS --------------------- */
 
-		/* if "__PERFORM_PHIGEMM_INIT" not defined, this test does not make sense
+		/* if "__PERFORM_PHIGEMM_INIT" not defined or if
+		 * "__PERFORM_ONLY_GPU_BIND" is defined, this test does not make sense
 		 * because there is no memory allocated on the device. CUBLAS fails but
 		 * the program can continue because we do not capture the error of
 		 * cudaGetMatrix (that fails because there is no data to retrieve)
 		 * */
+
+#if !defined(__PERFORM_ONLY_GPU_BIND)
 
 		mem_gpu = ( m*k + k*n + m*n ) * sizeof(XTYPE);
 
@@ -473,7 +486,7 @@ int main(int argc, char **argv)
 				exit( EXIT_FAILURE );
 			}
 
-#ifdef __PHITEST_MEM_PINNED
+#if defined(__PHITEST_MEM_PINNED)
 			if( cudaHostAlloc( ( void ** ) &C_cuda, m * n * sizeof( XTYPE ), cudaHostAllocPortable ) != cudaSuccess )
 			{
 				printf( "*** ERROR allocating PINNED MEMORY on cpu\n" );
@@ -488,7 +501,7 @@ int main(int argc, char **argv)
 			for ( j = 0; j < m; j++ ) {
 				for ( i = 0; i < n; i++ ) {
 					int index = i * m + j;
-#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
+#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 					C_cuda[ index ].x = C[ index ].x;
 					C_cuda[ index ].y = C[ index ].y;
 #else
@@ -563,6 +576,7 @@ int main(int argc, char **argv)
 
 		}
 		/* ----------------------------------------------------------- */
+#endif
 
 		/* --------------------- Run MxM using PHIGEMM -------------------- */
 		currentSplitFactor = lowerSplitFactor;
@@ -571,7 +585,7 @@ int main(int argc, char **argv)
 			for ( j = 0; j < m; j++ ) {
 				for ( i = 0; i < n; i++ ) {
 					int index = i * m + j;
-#if defined __CUDA_TYPE_COMPLEX || defined __CUDA_TYPE_DOUBLE_COMPLEX
+#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 					C_phigemm[ index ].x = C[ index ].x;
 					C_phigemm[ index ].y = C[ index ].y;
 #else
@@ -591,7 +605,7 @@ int main(int argc, char **argv)
 			phigemmSetSplitFactor((float *)&splits);
 
 			t1 = seconds();
-#if defined  __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 			PHIGEMM_CALL(&transa[ count ], &transb[ count ], &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C_phigemm, &m, __FILE__, __LINESTR__);
 #else
 			PHIGEMM_CALL(&transa[ count ], &transb[ count ], &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C_phigemm, &m);
@@ -600,10 +614,9 @@ int main(int argc, char **argv)
 
 
 			int errors = 0;
-#ifdef __CHECK_ERROR
+#if defined(__CHECK_ERROR)
 
 #if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
-
 
 //#pragma omp parallel for reduction (+ : errors)
 			for( i = 0; i < m * n ; i++ ) {
@@ -614,7 +627,7 @@ int main(int argc, char **argv)
 				tmp_error = (float) fabs( (float)C_mkl[ i ].x - (float)C_phigemm[ i ].x );
 #endif
 
-#if defined( __CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 				double tmp_error;
 				tmp_error = (double)  fabs( (double)C_mkl[ i ].x - (double)C_phigemm[ i ].x );
 #endif
@@ -630,7 +643,7 @@ int main(int argc, char **argv)
 				tmp_error = (float) fabs( (float)C_mkl[ i ].y - (float)C_phigemm[ i ].y );
 #endif
 
-#if defined( __CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 				tmp_error = (double) fabs( (double)C_mkl[ i ].y - (double)C_phigemm[ i ].y );
 #endif
 				if (tmp_error > MAX_ERROR ) {
@@ -645,10 +658,10 @@ int main(int argc, char **argv)
 
 #pragma omp parallel for reduction (+ : errors)
 			for( i = 0; i < m * n ; i++ ) {
-				tmp_error = (XTYPE) fabs( (XTYPE)C_mkl[ i ] - (XTYPE)C_cuda[ i ] );
+				tmp_error = (XTYPE) fabs( (XTYPE)C_mkl[ i ] - (XTYPE)C_phigemm[ i ] );
 				if (tmp_error > MAX_ERROR ) {
 					errors++;
-//					printf("position %d : %e %e\n", i, C_mkl[ i ], C_cuda[ i ]); fflush(stdout);
+//					printf("position %d : %e %e\n", i, C_mkl[ i ], C_phigemm[ i ]); fflush(stdout);
 				}
 			}
 
@@ -664,13 +677,13 @@ int main(int argc, char **argv)
 #endif
 
 			int id;
-#if defined __CUDA_TYPE_FLOAT
+#if defined(__CUDA_TYPE_FLOAT)
 			id = 0;
-#elif defined __CUDA_TYPE_DOUBLE
+#elif defined(__CUDA_TYPE_DOUBLE)
 			id = 1;
-#elif defined __CUDA_TYPE_COMPLEX
+#elif defined(__CUDA_TYPE_COMPLEX)
 			id = 2;
-#elif defined __CUDA_TYPE_DOUBLE_COMPLEX
+#elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			id = 3;
 #endif
 			fprintf( stdout, "[%c%c]  phiGEMM ( %d CPU / %d GPUs ) phiGEMM (split: %5.4f): Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\t errors: %c\n", transa[ count ], transb[ count ], atoi( getenv( "OMP_NUM_THREADS" ) ), nGPU, phigemmGetSplitFactor(id), hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor, (errors > 0 ? 'Y' : (errors == 0 ? 'N' : 'X')) );
@@ -691,7 +704,7 @@ int main(int argc, char **argv)
 		/* end */
 	}
 
-#if defined __PERFORM_PHIGEMM_INIT
+#if defined(__PERFORM_PHIGEMM_INIT)
 	for( i = 0 ; i < nGPU ; i++) {
 
 		if( cudaSetDevice( devicesToBond[i] ) != cudaSuccess )
@@ -709,18 +722,18 @@ int main(int argc, char **argv)
 #endif
 
 	/* RELEASE RESOURCES */
-#if defined __PERFORM_PHIGEMM_INIT
+#if defined(__PERFORM_PHIGEMM_INIT)
 	phiGemmShutdown();
 #endif
 
 	free( C_mkl );
 
-#ifdef __PHITEST_MEM_PINNED
+#if defined(__PHITEST_MEM_PINNED)
 	cudaFreeHost( GPU_buffer_memory_ptr );
 	if ( !(mem_gpu > memsize[ 0 ]) ) cudaFreeHost( C_cuda );
 #else
 
-#if defined __PHITEST_FORCE_PINNED
+#if defined(__PHITEST_FORCE_PINNED)
 
 	/* the first call makes no sense */
 //        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
@@ -733,9 +746,12 @@ int main(int argc, char **argv)
 	printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
 #endif
 
+#if !defined(__PERFORM_ONLY_GPU_BIND)
 	free( GPU_buffer_memory_ptr );
 
 	if ( !(mem_gpu > memsize[ 0 ]) ) free( C_cuda );
+
+#endif
 #endif
 
 
