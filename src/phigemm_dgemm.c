@@ -101,6 +101,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				// Memory has not been allocated even if phiGEMM has been initialized.
 				// Perform memory allocation before any operation!
 				phiGemmInitMemory(NULL);
+				//phiGemmInitScratchMemory();
 			}
 			select_case = cpuGPUheuristic( (*m), (*n), (*k), 'd');
 		}
@@ -266,6 +267,13 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		if ( cudaSetDevice(deviceIds[0]) != cudaSuccess) {
 			printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
 			exit(EXIT_FAILURE);
+		}
+
+		if ( phiGemmIsInternalMemAlloc() ){
+			/* Since phiGemmIsInternalMemAlloc() is True then phiGEMM
+			   is still in a initialized state, it means that GPU-process
+			   bindings are valid */
+			phiGemmShutdown();
 		}
 
 #if defined(__PHIGEMM_PROFILE)
@@ -495,10 +503,10 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 		if ( is_transb ) gpu_ldb = n_gpu[iDev];
 
 #if defined(__PHIGEMM_MAGMABLAS)
-		gpuGemm (transa, transb,
+		gpuGemm (*transa, *transb,
 				m_gpu[iDev], n_gpu[iDev], k_gpu[iDev],
 				alpha, devPtrA[iDev], gpu_lda, devPtrB[iDev], gpu_ldb,
-				beta, devPtrC[iDev], m_gpu[iDev]);
+				beta, devPtrC[iDev], gpu_lda);
 #else
 		gpuGemm (phiHandles[ iDev ], cu_transa, cu_transb,
 				m_gpu[iDev], n_gpu[iDev], k_gpu[iDev],
@@ -557,10 +565,10 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 	if ( is_transb ) gpu_ldb = n_gpu[iDev];
 
 #if defined(__PHIGEMM_MAGMABLAS)
-	gpuGemm (transa, transb, m_gpu[iDev],
+	gpuGemm (*transa, *transb, m_gpu[iDev],
 			n_gpu[iDev], k_gpu[iDev], alpha, devPtrA[iDev],
 			gpu_lda, devPtrB[iDev], gpu_ldb, beta, devPtrC[iDev],
-			m_gpu[iDev]);
+			gpu_lda);
 #else
 	gpuGemm (phiHandles[ iDev ], cu_transa, cu_transb, m_gpu[iDev],
 			n_gpu[iDev], k_gpu[iDev], alpha, devPtrA[iDev],

@@ -282,6 +282,7 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 		if (scratch_size[ i ] == 0)
 		{
 			if(dev_memsize == NULL) {
+
 				// Detect how much memory is available
 				// Assuming a process has exclusive access to the GPU
 
@@ -291,6 +292,7 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 					exit(EXIT_FAILURE);
 				}
 
+				/* Perform the alocation */
 				ierr = cudaMalloc ( (void**) &(dev_scratch[i]), (size_t) 0 );
 				if ( ierr != cudaSuccess) {
 					fprintf( stderr, "\nError in (first zero) memory allocation , program will be terminated!!! Bye...\n\n");
@@ -324,7 +326,7 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 		}
 
 #if defined(__PHIGEMM_DEBUG)
-		printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated internally on GPU %d\n", (unsigned long)scratch_size[i], deviceIds[i]);
+		printf("\n\n[PHIGEMM_DEBUG] %lu Bytes of memory is allocated internally on GPU %d\n\n", (unsigned long)scratch_size[i], deviceIds[i]);
 		fflush(stdout);
 #endif
 
@@ -408,9 +410,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	}
 
 	/* No memory pointer is provided -> Initialize the memory */
-	if(dev_ptr == NULL) {
-		phiGemmInitMemory( dev_memsize );
-	} else {
+	if(dev_ptr != NULL) {
 
 		for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
 
@@ -591,25 +591,50 @@ void phiGemmShutdown()
 	if ( !is_phigemm_init )
 		return;
 
-	for (i = 0; i < phiGemmNumDevices ; i++) {
+	if ( phiGemmIsExternalMemAlloc() ){
 
-		/* Attempt to establish a runtime API context */
-		if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices] ) != cudaSuccess) {
-			printf("*** phiGEMM: *** ERROR *** cudaSetDevice(%d) failed!\n",i);
-			exit(EXIT_FAILURE);
+		for (i = 0; i < phiGemmNumDevices ; i++) {
+
+			/* Attempt to establish a runtime API context */
+			if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices] ) != cudaSuccess) {
+				printf("*** phiGEMM: *** ERROR *** cudaSetDevice(%d) failed!\n",i);
+				exit(EXIT_FAILURE);
+			}
+
+			cudaStreamDestroy( phiStreams[ i ] );
+			cublasDestroy( phiHandles[ i ]);
 		}
-
-		cudaStreamDestroy( phiStreams[ i ] );
-		cublasDestroy( phiHandles[ i ]);
 	}
 
-//	for ( i = 0; i < phiGemmNumDevices; i++ ){
-//
-//		if ( is_memory_alloc )
-//			cudaFree(dev_scratch[i]);
-//	}
+	if ( phiGemmIsInternalMemAlloc() ){
 
-	is_phigemm_init = 0;
+		for ( i = 0; i < phiGemmNumDevices; i++ ){
+
+			/* Attempt to establish a runtime API context */
+			if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices] ) != cudaSuccess) {
+				printf("*** phiGEMM: *** ERROR *** cudaSetDevice(%d) failed!\n",i);
+				exit(EXIT_FAILURE);
+			}
+
+			if (  cudaFree(dev_scratch[i]) != cudaSuccess) {
+				printf("*** phiGEMM: *** ERROR *** cudaFree(%d) failed!\n",i);
+				// exit(EXIT_FAILURE);
+			}
+
+			cudaStreamDestroy( phiStreams[ i ] );
+			cublasDestroy( phiHandles[ i ]);
+
+			dev_scratch[ i ] = NULL;
+			scratch_size[ i ] = 0;
+			phiHandles[ i ] = NULL;
+			phiStreams[ i ] = NULL;
+		}
+
+		is_internal_memory_alloc = 0;
+	} else {
+		is_phigemm_init = 0;
+	}
+
 #endif
 
 #if defined(__PHIGEMM_PROFILE)
