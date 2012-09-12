@@ -17,7 +17,7 @@ EXE = $(OBJ:.o=)
 # supported TEST_DATATYPE_FLAGS flags = __CUDA_TYPE_FLOAT, __CUDA_TYPE_DOUBLE, __CUDA_TYPE_COMPLEX, __CUDA_TYPE_DOUBLE_COMPLEX (one is mandatory)
 TEST_DATATYPE_FLAGS = -D__CUDA_TYPE_DOUBLE
 
-# supported TEST_OUTPUT_FLAGS flags = __CHECK_ERROR __PERFORM_PHIGEMM_INIT __PERFORM_ONLY_GPU_BIND
+# supported TEST_OUTPUT_FLAGS flags = __CHECK_ERROR __PERFORM_PHIGEMM_INIT __PERFORM_ONLY_GPU_BIND __PERFORM_MEM_DETECT
 # ** FOR DEBUGGING ONLY ** = __PHIGEMM_TESTCASE_DEBUG
 # NOTE1: -D__PERFORM_PHIGEMM_INIT and -D__PHIGEMM_EXPLICIT_SPLITFACTOR are mutually exclusive
 # NOTE2: if -D__PERFORM_PHIGEMM_INIT is missing, phiGEMM perform auto-init
@@ -39,7 +39,7 @@ test:
 	gcc $(GEMM_OPT) -c $(CSCRPATH)/cptimer.c -o .objs/cptimer.o
 	gcc $(GEMM_OPT) -c $(CUDA_PATH)/src/fortran_thunking.c -I$(CUDA_PATH)/src $(EXT_INC) -o .objs/fortran_thunking.o
 	gcc $(GEMM_OPT) -c $(CSCRPATH)/cuda_env.c -I$(CSCRPATH) $(EXT_INC) -o .objs/cuda_env.o
-	$(FC) $(FC_PREPROC_FLAG) $(GEMM_OPT) $(TEST_FLAGS) $(EXT_INC) .objs/cuda_env.o $(CSCRPATH)/compute_split_matrix.f90 .objs/fortran_thunking.o .objs/cptimer.o $(LD_LIB) -o $(PHIGEMM)/bin/compute_split_matrix
+	# $(FC) $(FC_PREPROC_FLAG) $(GEMM_OPT) $(TEST_FLAGS) $(EXT_INC) .objs/cuda_env.o $(CSCRPATH)/compute_split_matrix.f90 .objs/fortran_thunking.o .objs/cptimer.o $(LD_LIB) -o $(PHIGEMM)/bin/compute_split_matrix
 	
 run:
 	./testsuite.sh
