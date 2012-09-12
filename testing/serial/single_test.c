@@ -87,7 +87,7 @@
 #endif
 
 
-#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.9
+#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.4
 
 #define MAX_GPU_SERIAL_TEST 8
 
@@ -232,8 +232,12 @@ int main(int argc, char **argv)
 #if !defined(__PERFORM_ONLY_GPU_BIND)
 	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
 #else
-	//	phiGemmInit( nGPU, NULL, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
+
+#if defined(__PERFORM_MEM_DETECT)
+	phiGemmInit( nGPU, NULL, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
+#else
 	phiGemmInit( nGPU, NULL, NULL, (int *)&devicesToBond, 0);
+#endif
 #endif
 
 #endif

@@ -39,8 +39,6 @@
 
 #define SPLITK_FACTOR 20
 
-#define __SCALING_MEM_FACTOR__ 0.95
-
 typedef void* phiGemmMemDevPtr[MAX_GPUS*NSTREAMS];
 typedef size_t phiGemmMemSizes[MAX_GPUS*NSTREAMS];
 typedef int phiGemmDeviceIds[MAX_GPUS*NSTREAMS];

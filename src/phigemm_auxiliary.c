@@ -33,6 +33,7 @@ extern "C"
 static int is_phigemm_init = 0;
 static int is_external_memory_alloc = 0;
 static int is_internal_memory_alloc = 0;
+static int is_internal_memory_probed = 0;
 
 /* auxiliary */
 int stringCmp( const void *a, const void *b)
@@ -286,6 +287,8 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 				// Detect how much memory is available
 				// Assuming a process has exclusive access to the GPU
 
+				is_internal_memory_probed = 1;
+
 				/* query the real free memory, taking into account the "stack" */
 				if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
 					printf("*** ERROR *** cudaSetDevice(%d) failed!", deviceIds[i % phiGemmNumDevices] ); fflush(stdout);
@@ -392,6 +395,8 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	phiGemmNumDevices = nGPU;
 
+	is_internal_memory_probed = 0;
+
 	/* Initialize internal phiGEMM data structures */
 	for( i = 0; i < phiGemmNumDevices * NSTREAMS; i++ )
 	{
@@ -410,11 +415,22 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	}
 
 	/* No memory pointer is provided -> Initialize the memory */
-	if(dev_ptr != NULL) {
+	if(dev_memsize != NULL) {
+
+		// is_internal_memory_probed = 0;
 
 		for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
 
 			scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAMS;
+		}
+	}
+
+	/* No memory pointer is provided -> Initialize the memory */
+	if(dev_ptr != NULL) {
+
+		for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+
+			// scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAMS;
 
 			/* SAFE pointer operation! Remember that void pointers cannot be
 			 * directly dereferenced because 'void' is NOT a real type! */
@@ -625,7 +641,9 @@ void phiGemmShutdown()
 			cublasDestroy( phiHandles[ i ]);
 
 			dev_scratch[ i ] = NULL;
-			scratch_size[ i ] = 0;
+			if (is_internal_memory_probed) {
+				scratch_size[ i ] = 0;
+			}
 			phiHandles[ i ] = NULL;
 			phiStreams[ i ] = NULL;
 		}
