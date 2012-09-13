@@ -76,6 +76,7 @@ phiGemmDeviceIds deviceIds;
 
 #if defined(__PHIGEMM_PROFILE)
 FILE *phiProfileFile;
+char finalFileName [ FILENAME_MAX ];
 #endif
 /* ------------------------------------------------------------------------- */
 

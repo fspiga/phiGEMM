@@ -111,5 +111,4 @@ void closecudaenv_()
 	}
 
 	phiGemmShutdown();
-
 }

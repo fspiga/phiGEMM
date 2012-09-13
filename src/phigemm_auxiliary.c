@@ -295,7 +295,7 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 					exit(EXIT_FAILURE);
 				}
 
-				/* Perform the alocation */
+				/* Perform the allocation */
 				ierr = cudaMalloc ( (void**) &(dev_scratch[i]), (size_t) 0 );
 				if ( ierr != cudaSuccess) {
 					fprintf( stderr, "\nError in (first zero) memory allocation , program will be terminated!!! Bye...\n\n");
@@ -348,6 +348,11 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 		cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
 	}
 
+#if defined(__PHIGEMM_PROFILE)
+	// printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
+	phiProfileFile = fopen (finalFileName, "a");
+#endif
+
 	is_internal_memory_alloc = 1;
 	return;
 }
@@ -366,15 +371,34 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 #if defined(__PHIGEMM_PROFILE)
 	char *value = NULL;
-	char finalFileName [ FILENAME_MAX ];
+#endif
+
+#if !defined(__PHIGEMM_CPUONLY)
+	struct cudaDeviceProp deviceProp;
+	int deviceCount;
+#endif
+
+#if defined(__PHIGEMM_PROFILE)
+	/* Create file descriptor where store the profiling information */
+
+	value = getenv("PHIGEMM_PROFILE_PREFIX");
+
+	if (tag < 0) {
+		if (value != NULL)
+			sprintf(finalFileName, "%s.%s.csv", base, value);
+		else
+			sprintf(finalFileName, "%s.csv", base);
+	} else {
+		if (value != NULL)
+			sprintf(finalFileName, "%s.%d.%s.csv", base, tag, value);
+		else
+			sprintf(finalFileName, "%s.%d.csv", base, tag);
+	}
 #endif
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
 #if !defined(__PHIGEMM_CPUONLY)
-
-	struct cudaDeviceProp deviceProp;
-	int deviceCount;
 
 	if ( is_phigemm_init == 1 )
 		return;
@@ -470,120 +494,30 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 			cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
 		}
 
+#if defined(__PHIGEMM_PROFILE)
+		// printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
+		phiProfileFile = fopen (finalFileName, "a");
+#endif
 		is_external_memory_alloc = 1;
 	}
 
 	/* set the initialization flag */
 	is_phigemm_init = 1;
-#endif
+
+	return;
+
+#else
 
 #if defined(__PHIGEMM_PROFILE)
-	/* Create file descriptor where store the profiling information */
-
-	value = getenv("PHIGEMM_PROFILE_PREFIX");
-
-	if (tag < 0) {
-		if (value != NULL)
-			sprintf(finalFileName, "%s.%s.csv", base, value);
-		else
-			sprintf(finalFileName, "%s.csv", base);
-	} else {
-		if (value != NULL)
-			sprintf(finalFileName, "%s.%d.%s.csv", base, tag, value);
-		else
-			sprintf(finalFileName, "%s.%d.csv", base, tag);
-	}
-
+	printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
 	phiProfileFile = fopen (finalFileName, "a");
 #endif
 
 	return;
+
+#endif
 }
 
-
-/*
- * Name			: phiGemmInitScratchMemory
- * Description	: the method performs the memory allocation on the GPU card
- * 				: from scratch
- * Visibility	: phiGEMM only
- */
-void phiGemmInitScratchMemory( )
-{
-	/*                               ***Important Node***
-	 * This methods works assuming NSTREAMS = 1, MPI:GPU = 1:1 and no multi-gpu */
-
-	int i;
-	cudaError_t err;
-	int ierr = 0;
-	size_t free, total;
-
-
-	/* Allocate the memory ... */
-
-	for (i = 0; i < phiGemmNumDevices; i++) {
-
-		if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
-			printf("*** phiGEMM *** ERROR *** cudaSetDevice(%d) failed!\n",i );
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-
-		scratch_size[i] = (size_t) 0;
-
-		ierr = cudaMalloc ( (void**) &(dev_scratch[i]), scratch_size[i] );
-		if ( ierr != cudaSuccess) {
-			fprintf( stderr, "*** phiGEMM *** ERROR *** Error in (first zero) memory allocation [GPU %d] , program will be terminated!!! Bye...\n\n", deviceIds[i]);
-			exit(EXIT_FAILURE);
-		}
-
-		cudaMemGetInfo(&free, &total);
-
-		scratch_size[ i ] = (size_t) (free * __SCALING_MEM_FACTOR__ );
-
-#if defined(__PHIGEMM_DEBUG)
-		printf("[PHIGEMM_DEBUG] GPU %d - before: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
-#endif
-
-		ierr = cudaMalloc ( (void**) &(dev_scratch[i]), scratch_size[i] );
-		if ( ierr != cudaSuccess) {
-			fprintf( stderr, "\nError in memory allocation [GPU %d] , program will be terminated (%d)!!! Bye...\n\n", deviceIds[i], ierr );
-			exit(EXIT_FAILURE);
-		}
-
-#if defined(__PHIGEMM_DEBUG)
-		cudaMemGetInfo(&free, &total);
-		printf("[PHIGEMM_DEBUG] GPU %d - after: %lu (total: %lu)\n", deviceIds[i], (unsigned long)free, (unsigned long)total); fflush(stdout);
-#endif
-
-	}
-
-	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
-
-		/* Attempt to establish a runtime API context */
-		if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
-			printf("*** phiGEMM *** ERROR *** cudaSetDevice(%d) failed!\n",i );
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-
-		/* Attempt to initialize CUBLAS */
-		if ( cublasCreate( &phiHandles[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
-			printf("*** phiGEMM *** ERROR *** cublasInit() for device %d failed!\n",i);
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-
-		if( cudaStreamCreate( &phiStreams[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
-			printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i % phiGemmNumDevices);
-			fflush(stdout);
-			exit( EXIT_FAILURE );
-		}
-		cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
-	}
-
-	is_internal_memory_alloc = 1;
-	return;
-}
 
 /*
  * Name			: phiGemmInitMemory
@@ -592,12 +526,11 @@ void phiGemmInitScratchMemory( )
  */
 void phiGemmShutdown()
 {
+	int i;
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
 #if !defined(__PHIGEMM_CPUONLY)
-
-	int i;
 
 #if defined(__PHIGEMM_DEBUG)
 	printf("[PHIGEMM_DEBUG] *** shutdown *** is_phigemm_init:%d, is_external_memory_alloc:%d, is_internal_memory_alloc:%d, devices: %d\n",is_phigemm_init, is_external_memory_alloc, is_internal_memory_alloc, phiGemmNumDevices);
@@ -619,6 +552,15 @@ void phiGemmShutdown()
 
 			cudaStreamDestroy( phiStreams[ i ] );
 			cublasDestroy( phiHandles[ i ]);
+
+			is_external_memory_alloc = 0;
+			is_phigemm_init = 0;
+
+#if defined(__PHIGEMM_PROFILE)
+			// printf("\n\n*** phiGEMM *** close the file \n\n");fflush(stdout);
+			fclose (phiProfileFile);
+#endif
+
 		}
 	}
 
@@ -649,17 +591,20 @@ void phiGemmShutdown()
 		}
 
 		is_internal_memory_alloc = 0;
-	} else {
-		is_phigemm_init = 0;
 	}
 
-#endif
+	return;
+
+#else
 
 #if defined(__PHIGEMM_PROFILE)
+	// printf("\n\n*** phiGEMM *** close the file \n\n");fflush(stdout);
 	fclose (phiProfileFile);
 #endif
 
 	return;
+#endif
+
 }
 
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {

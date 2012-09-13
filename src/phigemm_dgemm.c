@@ -77,6 +77,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	double start, stop;
 #endif
 
+	// printf("\n\n*** phiGEMM *** phiGemmIsInternalMemAlloc() = %d, phiGemmIsExternalMemAlloc() = %d [BEGIN] ***\n",phiGemmIsInternalMemAlloc(), phiGemmIsExternalMemAlloc());
+
 	if ( ground_level) {
 		first_call = 1;
 		splitting_level = 0;
@@ -269,12 +271,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			exit(EXIT_FAILURE);
 		}
 
-		if ( phiGemmIsInternalMemAlloc() ){
-			/* Since phiGemmIsInternalMemAlloc() is True then phiGEMM
-			   is still in a initialized state, it means that GPU-process
-			   bindings are valid */
-			phiGemmShutdown();
-		}
+		// printf("\n*** phiGEMM *** phiGemmIsInternalMemAlloc() = %d, phiGemmIsExternalMemAlloc() = %d [END] ***\n\n",phiGemmIsInternalMemAlloc(), phiGemmIsExternalMemAlloc());
 
 #if defined(__PHIGEMM_PROFILE)
 		stop = phigemm_cclock() - start;
@@ -298,11 +295,25 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 			break;
 		}
-
-		// fflush ( phiProfileFile );
 #endif
-	}
 
+
+#if !defined(__PHIGEMM_CPUONLY)
+		if ( phiGemmIsInternalMemAlloc() ){
+			/* Since phiGemmIsInternalMemAlloc() is True then phiGEMM
+			   is still in a initialized state, it means that GPU-process
+			   bindings are valid */
+			phiGemmShutdown();
+
+#if defined(__PHIGEMM_PROFILE)
+			// printf("\n\n*** phiGEMM *** close the file \n\n");fflush(stdout);
+			fclose (phiProfileFile);
+#endif
+
+		}
+#endif
+
+	}
 	return;
 }
 
