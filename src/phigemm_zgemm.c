@@ -66,7 +66,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	int first_call = 0;
 	int local_init = 0;
 
-	/* determine which matrix is to be splitted */
+	/* determine which matrix has to be split */
 	int is_splitA = -1;
 	int is_specialK = -1;
 
@@ -84,14 +84,24 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 #if defined(__PHIGEMM_CPUONLY)
 	select_case = 0;
+#elif defined(__PHIGEMM_GPUONLY)
+	select_case = 2;
 #else
 
-	if ( ground_level && !phiGemmIsInit()  )
-	{
-		fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do CPU-only.\n"); fflush(stdout);
-		select_case = 0;
-	} else {
-		select_case = cpuGPUheuristic( (*m), (*n), (*k), 'z');
+	if ( ground_level  ) {
+		if (!phiGemmIsInit() ) {
+			fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do CPU-only.\n"); fflush(stdout);
+			select_case = 0;
+		} else {
+			if ( !phiGemmIsInternalMemAlloc() && !phiGemmIsExternalMemAlloc()  )
+			{
+				// Memory has not been allocated even if phiGEMM has been initialized.
+				// Perform memory allocation before any operation!
+				phiGemmInitMemory(NULL);
+				//phiGemmInitScratchMemory();
+			}
+			select_case = cpuGPUheuristic( (*m), (*n), (*k), 'z');
+		}
 	}
 #endif
 
@@ -259,8 +269,24 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			break;
 		}
 #endif
-	}
 
+
+#if !defined(__PHIGEMM_CPUONLY)
+		if ( phiGemmIsInternalMemAlloc() ){
+			/* Since phiGemmIsInternalMemAlloc() is True then phiGEMM
+			   is still in a initialized state, it means that GPU-process
+			   bindings are valid */
+			phiGemmShutdown();
+
+#if defined(__PHIGEMM_PROFILE)
+			// printf("\n\n*** phiGEMM *** close the file \n\n");fflush(stdout);
+			fclose (phiProfileFile);
+#endif
+
+		}
+#endif
+
+	}
 	return;
 }
 
@@ -676,7 +702,11 @@ for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
 						time_mem_h2d,
 						(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuDoubleComplex)),
 						time_mkl,
-						1.e-6 * PHIGEMM_FLOPS( (double)m_cpu, (double)(*n), (double)(*k) )/(time_mkl*1000),
+#if !defined(__PHIGEMM_GPUONLY)
+		1.e-6 * PHIGEMM_FLOPS( (double)m_cpu, (double)(*n), (double)(*k) )/(time_mkl*1000),
+#else
+		0.0,
+#endif
 						time_gemm_cuda,
 						1.e-6 * PHIGEMM_FLOPS( (double)m_gpu[iDev], (double)(*n), (double)(*k) )/(time_gemm_cuda*1000),
 						time_mem_d2h,
@@ -705,7 +735,11 @@ for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
 						time_mem_h2d,
 						(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuDoubleComplex)),
 						time_mkl,
-						1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_cpu, (double)(*k) )/(time_mkl*1000),
+#if !defined(__PHIGEMM_GPUONLY)
+		1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_cpu, (double)(*k) )/(time_mkl*1000),
+#else
+		0.0,
+#endif
 						time_gemm_cuda,
 						1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_gpu[iDev], (double)(*k) )/(time_gemm_cuda*1000),
 						time_mem_d2h,
