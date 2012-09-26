@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 	float alpha=0.5, beta=0.15;
 #elif defined(__CUDA_TYPE_DOUBLE)
 	double alpha=0.33, beta=-0.25;
-#elif defined(__CUDA_TYPE_COMPLEX))
+#elif defined(__CUDA_TYPE_COMPLEX)
 	cuComplex alpha, beta;
 	alpha.x = (float) 0.29;
 	alpha.y = (float) -0.86;
