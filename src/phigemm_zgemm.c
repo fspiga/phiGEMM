@@ -13,20 +13,22 @@
 #include "phigemm_auxiliary.h"
 
 #define PRECISION_Z
+
 #if defined(PRECISION_D) || defined(PRECISION_S)
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
 #else
 #define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
 #endif
 
-#define cublasGemm cublasZgemm
+#if defined(__PHIGEMM_MAGMABLAS)
+#define gpuGemm magmablas_zgemm
+#else
+#define gpuGemm cublasZgemm
+#endif
 #define gemm_mkl zgemm_
 #define PHIGEMM_M phizgemm_
 #define phiZgemm PHIGEMM_M
 
-#if defined(__PHIGEMM_PROFILE)
-extern FILE *phiProfileFile;
-#endif
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
@@ -62,7 +64,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	size_t memsize_gpu, mem_gpu;
 	float split = -1;
 	static int ground_level = 1;
-	static int splitting_level =0;
+	static int splitting_level = 0;
 	int first_call = 0;
 	int local_init = 0;
 
@@ -126,6 +128,13 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	case 1:
 		ground_level = 0;
 
+		if ( ground_level && !phiGemmIsExternalMemAlloc() ) {
+#if defined(__PHIGEMM_DEBUG_3)
+			printf ("[PHIGEMM_DEBUG][3] Internal allocation of the GPU memory \n");  fflush(stdout);
+#endif
+			/* init the memory */
+		}
+
 #if defined(__PHIGEMM_DEBUG_3)
 		printf ("[PHIGEMM_DEBUG][3] COMPUTE IN splitting_level=%d [SPECIAL-K]\n", splitting_level);  fflush(stdout);
 #endif
@@ -141,14 +150,24 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [SPECIAL-K]\n", splitting_level);  fflush(stdout);
 #endif
 
+		if ( ground_level && phiGemmIsInternalMemAlloc() ) {
+#if defined(__PHIGEMM_DEBUG_3)
+			printf ("[PHIGEMM_DEBUG][3] Free GPU memory internally allocated\n" );  fflush(stdout);
+#endif
+			/* free the memory */
+		}
 		break;
 
 	case 2:
 		// cpuGPUheuristic(...) = 0 >> CPU+GPU
 		is_splitA = (*n > *m) ? 0:1;
 
-		/* Assign the split factor for phidgemm (1: DGEMM) */
+		/* Assign the split factor for phidgemm (3: ZGEMM) */
+#if !defined(__PHIGEMM_GPUONLY)
 		split = phiGemmSplitFactor[3];
+#else
+		split = 1.0;
+#endif
 
 		/* recursive splitting */
 		/* There is an assumption here: all the cards has the same amount of memory.
@@ -160,13 +179,14 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 			if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
 			{
-				splitting_level++;
 				ground_level = 0;
 
 				bestFit(is_splitA, split, *m, *n, *k, sizeof(cuDoubleComplex), &p1, &p2);
 
 				a_offset = ( *transa == 'n' || *transa == 'N' )? p1 : ((*lda)*p1);
 				c_offset = p1;
+
+				splitting_level++;
 
 #if defined(__PHIGEMM_PROFILE)
 				PHIGEMM_M(transa, transb, &p1, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
@@ -175,7 +195,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				PHIGEMM_M(transa, transb, &p1, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 				PHIGEMM_M(transa, transb, &p2, n, k, alpha, A + a_offset, lda, B, ldb, beta, C + c_offset, ldc);
 #endif
-
 				splitting_level--;
 			} else {
 
@@ -193,7 +212,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
 #endif
 			}
-
 		} else {
 			mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(cuDoubleComplex);
 
@@ -474,7 +492,7 @@ void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
 		if ( is_transa ) gpu_lda = k_gpu[iDev];
 		if ( is_transb ) gpu_ldb = n_gpu[iDev];
 
-		cublasGemm (phiHandles[ iDev ], cu_transa, cu_transb,
+		gpuGemm (phiHandles[ iDev ], cu_transa, cu_transb,
 				m_gpu[iDev], n_gpu[iDev], k_gpu[iDev],
 				alpha, devPtrA[iDev], gpu_lda, devPtrB[iDev], gpu_ldb,
 				beta, devPtrC[iDev], m_gpu[iDev]);
@@ -526,7 +544,7 @@ void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
 	if ( is_transa ) gpu_lda = k_gpu[iDev];
 	if ( is_transb ) gpu_ldb = n_gpu[iDev];
 
-	cublasGemm (phiHandles[ iDev ], cu_transa, cu_transb, m_gpu[iDev],
+	gpuGemm (phiHandles[ iDev ], cu_transa, cu_transb, m_gpu[iDev],
 			n_gpu[iDev], k_gpu[iDev], alpha, devPtrA[iDev],
 			gpu_lda, devPtrB[iDev], gpu_ldb, beta, devPtrC[iDev],
 			m_gpu[iDev]);

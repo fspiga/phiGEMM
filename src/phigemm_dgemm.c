@@ -9,7 +9,6 @@
  *
  */
 
-//
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
@@ -200,7 +199,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				PHIGEMM_M(transa, transb, &p2, n, k, alpha, A + a_offset, lda, B, ldb, beta, C + c_offset, ldc);
 #endif
 				splitting_level--;
-
 			} else {
 
 #if defined(__PHIGEMM_DEBUG_3)
@@ -217,9 +215,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
 #endif
 			}
-
 		} else {
-
 			mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(double);
 
 			if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
@@ -270,8 +266,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
 			exit(EXIT_FAILURE);
 		}
-
-		// printf("\n*** phiGEMM *** phiGemmIsInternalMemAlloc() = %d, phiGemmIsExternalMemAlloc() = %d [END] ***\n\n",phiGemmIsInternalMemAlloc(), phiGemmIsExternalMemAlloc());
 
 #if defined(__PHIGEMM_PROFILE)
 		stop = phigemm_cclock() - start;
