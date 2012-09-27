@@ -270,14 +270,14 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		{
 		case 0:
 			/* Comma-Separated Value (csv) format:
-			 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, time, GFlops */
-			fprintf (phiProfileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, CPU-ONLY, %10.6f, %10.4f\n", file, line, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+			 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, 0 (=CPU-ONLY), time, GFlops */
+			fprintf (phiProfileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, 0, %10.6f, %10.4f\n", file, line, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 			break;
 
 		case 1:
 			/* Comma-Separated Value (csv) format:
-			 * file, line, nGPU, nThreads, transA, transB, m, n, k, SPECIAL-K, time, GFlops */
-			fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, SPECIAL-K, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+			 * file, line, nGPU, nThreads, transA, transB, m, n, k, -1 (=SPECIAL-K), time, GFlops */
+			fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, -1, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 			break;
 
 		case 2:
