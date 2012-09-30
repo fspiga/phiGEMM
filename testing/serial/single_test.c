@@ -580,6 +580,9 @@ int main(int argc, char **argv)
 
 		}
 		/* ----------------------------------------------------------- */
+#else
+		// Only because output has to be "human readable"
+		fprintf( stdout, "\n");fflush( stdout );
 #endif
 
 		/* --------------------- Run MxM using PHIGEMM -------------------- */
