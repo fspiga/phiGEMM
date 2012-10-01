@@ -148,6 +148,17 @@ AC_ARG_WITH(split_by_hand,
    fi],
    [use_explicit_factor=0])
    
+AC_ARG_WITH(special_k,
+   [AS_HELP_STRING([--with-special-k],
+       [enable SPECIAL-K for bad-shaped rectangular matrices (default: no)])],
+    [if   test "$withval" = "yes" ; then
+      use_special_k=1
+   else
+      use_special_k=0
+   fi],
+   [use_special_k=0])
+   
+   
 # -----------------------------
 # store variables from the environment, if set (may be or not be set)
 # If set, they take precedence over configure internal choice.
@@ -694,7 +705,10 @@ fi
 if test "$use_gpu_only" -eq 1; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_GPUONLY"
 fi
-	       
+
+if test "$use_special_k" -eq 1; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_ENABLE_SPECIALK"
+fi
 cuda_include="-I$cuda_path/include -I$topdir/include"
 # blas_libs="$topdir/lib/libphigemm.a $blas_libs"   
 

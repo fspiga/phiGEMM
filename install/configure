@@ -649,6 +649,7 @@ with_cpu_only
 with_gpu_only
 with_pinned
 with_split_by_hand
+with_special_k
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1304,6 +1305,8 @@ Optional Packages:
   --with-mem-pinned       assume host memory is PINNED (default: no)
   --with-split-by-hand    the split factor has to be specified in the code
                           instead of using env variables (default: no)
+  --with-special-k        enable SPECIAL-K for bad-shaped rectangular matrices
+                          (default: no)
 
 Some influential environment variables:
   FC          Fortran compiler command
@@ -2043,6 +2046,20 @@ if test "${with_split_by_hand+set}" = set; then :
 else
   use_explicit_factor=0
 fi
+
+
+
+# Check whether --with-special_k was given.
+if test "${with_special_k+set}" = set; then :
+  withval=$with_special_k; if   test "$withval" = "yes" ; then
+      use_special_k=1
+   else
+      use_special_k=0
+   fi
+else
+  use_special_k=0
+fi
+
 
 
 # -----------------------------
@@ -4198,6 +4215,9 @@ if test "$use_gpu_only" -eq 1; then
     phigemm_opts="$phigemm_opts -D__PHIGEMM_GPUONLY"
 fi
 
+if test "$use_special_k" -eq 1; then
+    phigemm_opts="$phigemm_opts -D__PHIGEMM_ENABLE_SPECIALK"
+fi
 cuda_include="-I$cuda_path/include -I$topdir/include"
 # blas_libs="$topdir/lib/libphigemm.a $blas_libs"
 
