@@ -17,7 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 
 
-0. >>> phiGEMM: CPU-GPU hybrid matrix-matrix multiplication library
+>>> phiGEMM: CPU-GPU hybrid matrix-matrix multiplication library <<<
 
 Authors & Maintainers:
   Filippo Spiga, spiga.filippo@gmail.com
@@ -28,25 +28,62 @@ Past contributors:
 
 
 Starting from a previous NVIDIA project*, ICHEC has developed a library
-called phiGEMM. This library allows the target application to perform 
-[S/D/C/Z]GEMM operations using both CPU and GPU simultaneously. This library 
-implements both the data transfer management and the split logic (amount of 
-computation to be performed in parallel on each device, CPU and GPU, in order
-to achieve an optimal load balance). Since phiGEMM follows standard BLAS 
-interfaces, the users just need to link to the library, like any other 
-common library such as MKL, ACML, ESSL, GotoBLAS, etc. The phiGEMM 
-matrix-matrix multiplication calls simultaneously an external BLAS library 
-single- or multi-threaded) for the CPU-side and one CUBLAS kernel instance 
-on the GPU, as efficiently as possible.
+called phiGEMM within the PRACE project. This library allows the target 
+application to perform [S/D/C/Z]GEMM operations using both CPU and GPU 
+simultaneously. 
+
+     C := alpha*op( A )*op( B ) + beta*C,
+
+  where  op( X ) is one of
+
+     op( X ) = X or  op( X ) = X**T  or  op( X ) = X**H,
+
+  alpha and beta are scalars, and A, B and C are matrices, with op( A )
+  an m by k matrix,  op( B )  a  k by n matrix and  C an m by n matrix.
+
+This library implements both the data transfer management 
+and the split logic (amount of computation to be performed in parallel on 
+each device, CPU and GPU, in order to achieve an optimal load balance). 
+Since phiGEMM follows standard BLAS interfaces, the users just need to 
+link to the library, like any other common library such as MKL, ACML,
+GotoBLAS, etc. The phiGEMM matrix-matrix multiplication calls 
+simultaneously an external BLAS library single- or multi-threaded) for 
+the CPU-side and one CUBLAS kernel instance on the GPU, as efficiently 
+as possible.
+
+
+If you are planning to include phiGEMM in your code and use it,
+We shall greatly appreciate if scientific work done using phiGEMM will 
+contain an explicit acknowledgment and the following references :
+
+* F. Spiga and I. Girotto, "phiGEMM: a CPU-GPU library for porting Quantum 
+ESPRESSO on hybrid systems", Proceeding of 20th Euromicro International 
+Conference on Parallel, Distributed and Network-Based Computing (PDP2012), 
+Special Session on GPU Computing and Hybrid Computing, IEEE Computer Society,
+(ISBN 978-0-7695-4633-9), pp. 368-375 (2012)
 
 * M. Fatica, "Accelerating LINPACK with CUDA on heterogeneous clusters." 
 GPGPU-2: Proceedings of 2nd Workshop on General Purpose Processing on 
 Graphics Processing Units (New York, NY, USA), ACM, 2009, pp. 46--51.
 
 
+0. >>> Know issues and bugs [READ THIS FIRST]
+
+- SPECIAL-K and multi-threaded ACML (acml_mp) can produce some numerical
+  errors (suggestion: keep SPECIAL-K disabled and test it before use it in
+  production)
+- MAGMABLAS interface not yet working
+- if your code mixes BLAS/LAPACK/ScaLAPACK calls is better to replace
+  GEMM symbols manually (or using the preprocessor) where it is necessary
+  in order to avoid troubles or big performance loss
+- call-by-call profiling works only for INTEL and GNU compiler
+- some internal parameters are still hard-coded and manual code changes are 
+  required to tune them
+
+
 1. >>> Requirements
 
-- NVIDIA cards (Tesla or Fermi or Kepler)
+- NVIDIA cards
 - CUDA SDK (>=4.0, >= 5.x)
 - GCC/GFORTRAN
 - Intel compilers (version >=11.x) or PGI compilers (version >=10.x)
@@ -57,21 +94,31 @@ Graphics Processing Units (New York, NY, USA), ACM, 2009, pp. 46--51.
 
 Recognized options of the configure
 
---with-cuda-dir=<path>  : specify the path where CUDA is installed (mandatory)
---with-gpu-arch=<arch>  : specify the GPU target architecture (default: 20)
---enable-cpu-multithread: enable the multi-threading library on CPU side (MKL)
-                          (default: yes)
 --enable-parallel       : enable the MPI support in case of self-initialization
                           (default: no)
+                          
+--with-cuda-dir=<path>  : specify the path where CUDA is installed (mandatory)
+--with-magma-dir=<path> : specify the path where MAGMABLAS is installed 
+                          (not yet working)
+                          
+--enable-cpu-multithread: enable the multi-threading library on CPU side (MKL)
+                          (default: yes)
+--with-cpu-only         : everything is performed only by the CPU, useful for
+                          call-by-call profiling (default: no)
+--with-gpu-only         : everything is performed only by the GPU, useful for
+                          performance comparison and validation (default: no)
+                          
+
 --enable-debug          : turn on verbose debug messages on the stdout
                           (default: no)
 --enable-profiling      : turn on the phiGEMM call-per-call profile. File in
                           CSV format. (default: no)
---enable-multi-gpu      : enable multi-GPU support (default: no) 
 --enable-pinned         : the library marks as non-pageable the host memory
                           (default: no) 
---with-cpu_only         : everything is performed only by the CPU, useful for
-                          call-by-call profiling (default: no)
+--with-special-k        : enable SPECIAL-K for bad-shaped rectangular matrices
+                          (default: no)
+--enable-multi-gpu      : enable multi-GPU support (default: no) 
+
 
 IMPORTANT NOTE: the multi-GPU **REQUIRES** memory allocations at the host side 
                 as non-pageable (pinned memory) otherwise all the H2D and D2H 
@@ -114,7 +161,42 @@ Only the test-suit is able to calculate the optimal split factor comparing
 the performance of the GPU and the CPU, varying the size and the type of the 
 data (FLOAT, DOUBLE, SINGLE COMPLEX and COMPLEX).
  
+ 
+The SPECIAL-K feature allows to combine GPU/CPU operations in a way to maximize
+the GPU FLOP throughput performing all matrix-matrix operation on the GPU (the 
+alpha*op(A)*op(B)) and by adding the final term on the CPU ( beta*C). If the 
+library is compiled with SPECIAL-K enabled then the SPECIAL-K kernel is 
+triggered when those conditions occur:
 
+	
+  // Matrices are small but not so small...
+  if ( (n >= 64) && (m >= 64) ){
+    
+    // over the UPPER limit, they have to be rectangular...
+	if ( ((n >= 1025) && (m >= 1025)) && 
+	   ((ratio_km >= 20) || (ratio_kn >= 20)) )
+	  return SPECIAL-K;
+	
+	// below the UPPER limit, they have to be very rectangular...
+    if ( ((n < 256) && (m < 256)) && 
+       ((ratio_km >= 40) || (ratio_kn >= 40)) )
+	  return SPECIAL-K;
+  }
+	
+where:
+ 
+   ratio_km = (double) k/m;
+   ratio_kn = (double) k/n;
+
+SPECIAL-K is very effective as the ratio_km and/or ratio_kn are high. It
+produces good performance boost especially if a non sub-optimal SPLIT FACTOR
+is used.
+                
+IMPORTANT NOTE: This is an empirical tuning based on previous testing. 
+                Any information provided to improve this heuristic is 
+                really appreciated.
+
+	
 4. >>> Internal test-suite 
 
 This package contains a small test-suite able to perform calculation using 
@@ -252,11 +334,32 @@ what, where and how a standard *GEMM operation is replaced with a phiGEMM ones.
 IMPORTANT NOTE: this feature is not yet in the repository because can 
                 potentially breaks the application. We are working to make it 
                 100% reliable and safe.
-                
- 
-6. >>> Releases
 
-v2.0   - August XX, 2012    ( ... )
+                
+7. >>> Automatic code instruction
+
+Under the folder "script" there are two Python script that can help to made 
+some automatic modifications of your code in order to exploit phiGEMM.
+
+Run the command:
+$ grep -rl -E 'gemm|GEMM' src/* | python addPhigemmSymbs.py
+
+to identify all the files where a GEMM call is and then pass the obtained
+list to the "addPhigemmSymbs.py" script. The script adds a header to each 
+file where some preprocessor macros are defined. The scripts take care 
+of full lower or  full upper capital GEMM symbols. The same script creates 
+a ".orig" copy of each file that contains the original source code.
+
+To restore the original source code simply run the command:
+$ grep -rl -E 'gemm|GEMM' src/* | python remPhigemmSymbs.py 
+
+These script are still in "beta". Please report any error or misfunction. 
+
+ 
+8. >>> Releases
+
+v2.0   - December XX, 2012    [ EXPECTED ]
+v1.9.9 - October 1, 2012    ( various fixes at several levels )
 v1.9   - May 23, 2012       ( fixes + compatibility CUDA 5.x )
 v1.8   - April 1, 2012      ( ACML and PGI supported - internal tests work )
 v1.7   - March 10, 2012     ( special DGEMM/ZGEMM for rectangular matrices )
