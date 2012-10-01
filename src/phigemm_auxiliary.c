@@ -145,7 +145,7 @@ int cpuGPUheuristic(int m, int n, int k, char type) {
 	// Un-comment ONLY for debug/testing purposes...
 	// return 2;
 
-#if !defined(__PHIGEMM_DISABLE_SPECIALK)
+#if defined(__PHIGEMM_ENABLE_SPECIALK)
 	//if (type == 'd' || type == 'z') {
 	if (type == 'd') {
 
