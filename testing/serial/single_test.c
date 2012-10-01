@@ -87,7 +87,7 @@
 #endif
 
 
-#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.4
+#define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.95
 
 #define MAX_GPU_SERIAL_TEST 8
 
