@@ -53,31 +53,54 @@ extern "C"
 #endif
 
 /* ------------------------- SHARED DATA STRUCTURES ------------------------ */
-/* For AutoTuning purposes*/
-float phiGemmPrevSplitFactor[4];
-float phiGemmLowerPositiveSplitFactor[4];
 
-/* Control variables (see 'readEnv' in phigemm_auxiliary.c)*/
-float phiGemmSplitFactor[4];
-float phiGemmAutoTune[4];
-int phiGemmSpecialK[4];
-int phiGemmKDimBlocks[4];
-int phiGemmControl[4];
+typedef struct phiGemmEnv
+{
+	int numDevices;
+	int cores;
 
-int phiGemmNumDevices;
-int phiGemmCPUThreads;
-
-cudaStream_t  phiStreams[ NSTREAMS * MAX_GPUS ];
-cublasHandle_t phiHandles[ NSTREAMS * MAX_GPUS ];
-
-phiGemmMemDevPtr dev_scratch;
-phiGemmMemSizes scratch_size;
-phiGemmDeviceIds deviceIds;
+//	int gpuCapabilities[MAX_GPUS];
+//	int pinnedSuport[MAX_GPUS];
 
 #if defined(__PHIGEMM_PROFILE)
-FILE *phiProfileFile;
-char finalFileName [ FILENAME_MAX ];
+	FILE *profileFile;
+	char filename [ FILENAME_MAX ];
 #endif
+
+} phiGemmEnv_t;
+
+typedef struct phiGemmHandler
+{
+	phiGemmMemDevPtr pmem;
+	phiGemmMemSizes smem;
+	phiGemmDeviceIds devId;
+
+	cudaStream_t  stream[ NSTREAMS * MAX_GPUS ];
+	cublasHandle_t handle[ NSTREAMS * MAX_GPUS ];
+
+} phiGemmHandler_t;
+
+typedef struct phiGemmTuning
+{
+	float split[4];
+	float prevSplit[4];
+	float lpSplit[4];
+
+	/* Control variables (see 'readEnv' in phigemm_auxiliary.c)*/
+	float phiGemmAutoTune[4];
+	int phiGemmSpecialK[4];
+	int phiGemmKDimBlocks[4];
+	int phiGemmControl[4];
+
+} phiGemmTuning_t;
+
+
+phiGemmEnv_t myPhiGemmEnv;
+
+phiGemmHandler_t myPhiGemmHdl;
+
+phiGemmTuning_t myPhiGemmTng;
+
 /* ------------------------------------------------------------------------- */
 
 /* --------------------- INTERNAL FUNCTIONS PROTOTYPES --------------------- */

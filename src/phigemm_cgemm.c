@@ -113,19 +113,19 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	is_splitA = (*n > *m) ? 0:1;
 
 	/* Assign the split factor for phidgemm (2: CGEMM) */
-	split = phiGemmSplitFactor[2];
+	split = myPhiGemmTng.split[2];
 
 	/* recursive splitting */
 	/* There is an assumption here: all the cards has the same amount of memory.
 	 * This can be not true at all! */
-	memsize_gpu = scratch_size[0] * phiGemmNumDevices;
+	memsize_gpu = myPhiGemmHdl.smem[0] * myPhiGemmEnv.numDevices;
 
 	if ( is_splitA )
 	{
 
 		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(cuComplex);
 
-		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
+		if ( mem_gpu * myPhiGemmEnv.numDevices > memsize_gpu )
 		{
 			splitting_steps++;
 			ground_level = 0;
@@ -160,7 +160,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(cuComplex);
 
-		if ( mem_gpu * phiGemmNumDevices > memsize_gpu )
+		if ( mem_gpu * myPhiGemmEnv.numDevices > memsize_gpu )
 		{
 			ground_level = 0;
 			splitting_steps++;
@@ -192,7 +192,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		}
 	}
 
-	if ( cudaSetDevice(deviceIds[0]) != cudaSuccess) {
+	if ( cudaSetDevice(myPhiGemmHdl.devId[0]) != cudaSuccess) {
 		printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
 		exit(EXIT_FAILURE);
 	}
@@ -205,7 +205,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		stop = phigemm_cclock() - start;
 		/* Comma-Separated Value (csv) format:
 		 * file, line, nGPU, nThreads, transA, transB, m, n, k, spliting_steps, split_factor, time, GFlops */
-		fprintf (phiProfileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, phiGemmNumDevices, phiGemmCPUThreads, *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
+		fprintf (myPhiGemmEnv.profileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, myPhiGemmEnv.numDevices, myPhiGemmEnv.cores, *transa, *transb, *m, *n, *k, splitting_steps, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 	}
 #endif
 
@@ -243,7 +243,7 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 	cudaError_t cudaErr;
 
 	/* timing using CUDA events */
-	cudaEvent_t events[phiGemmNumDevices * NSTREAMS][6];
+	cudaEvent_t events[myPhiGemmEnv.numDevices * NSTREAMS][6];
 
 	/* timing using CPU clocks */
 	double start_mkl, start_total, stop_mkl, stop_total;
@@ -271,10 +271,10 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		//if (*m > 128) tmp = floor(tmp/64.0)*64;
 		m_cpu = *m - tmp;
 
-		for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
+		for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-			step = (int) (tmp / ( phiGemmNumDevices * NSTREAMS ) );
-			residual =  tmp - phiGemmNumDevices * NSTREAMS *step;
+			step = (int) (tmp / ( myPhiGemmEnv.numDevices * NSTREAMS ) );
+			residual =  tmp - myPhiGemmEnv.numDevices * NSTREAMS *step;
 
 			n_h2d[iDev] = n_gpu[iDev] = n_cpu = *n;
 			k_h2d[iDev] = k_gpu[iDev] = k_cpu = *k;
@@ -303,10 +303,10 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		//if (*n > 128) tmp = floor(tmp/64.0)*64;
 		n_cpu = *n - tmp;
 
-		for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
+		for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-			step = tmp / phiGemmNumDevices * NSTREAMS;
-			residual =  tmp - phiGemmNumDevices * NSTREAMS * step;
+			step = tmp / myPhiGemmEnv.numDevices * NSTREAMS;
+			residual =  tmp - myPhiGemmEnv.numDevices * NSTREAMS * step;
 
 			k_h2d[iDev] = k_gpu[iDev] = k_cpu = *k;
 			m_h2d[iDev] = m_gpu[iDev] = m_cpu = *m;
@@ -334,53 +334,53 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 	shiftB = 0;
 	shiftC = 0;
 
-	for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
+	for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-		cudaSetDevice(deviceIds[iDev % phiGemmNumDevices]);
+		cudaSetDevice(myPhiGemmHdl.devId[iDev % myPhiGemmEnv.numDevices]);
 
 		for (j = 0; j < 6; j++)
-			cudaEventCreate(&(events[iDev % phiGemmNumDevices][j]));
+			cudaEventCreate(&(events[iDev % myPhiGemmEnv.numDevices][j]));
 
-		devPtrA[iDev]=(cuComplex *)(dev_scratch[iDev]);
+		devPtrA[iDev]=(cuComplex *)(myPhiGemmHdl.pmem[iDev]);
 
-		cudaEventRecord(events[iDev][0], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][0], myPhiGemmHdl.stream[iDev] );
 
 		if ( is_transa ) {
 			status = cublasSetMatrixAsync (k_h2d[iDev], m_h2d[iDev],
 					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
-					k_gpu[iDev], phiStreams[iDev]);
+					k_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftA += m_h2d[iDev] * (*lda);
 		} else {
 			status = cublasSetMatrixAsync (m_h2d[iDev], k_h2d[iDev],
 					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
-					m_gpu[iDev], phiStreams[iDev]);
+					m_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftA += m_h2d[iDev];
 		}
 
-		cudaEventRecord(events[iDev][1], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][1], myPhiGemmHdl.stream[iDev] );
 
 		devPtrB[iDev] = devPtrA[iDev] + m_gpu[iDev] * k_gpu[iDev];
 		if ( is_transb ) {
 			status = cublasSetMatrixAsync (n_h2d[iDev], k_h2d[iDev],
 					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
-					n_gpu[iDev], phiStreams[iDev]);
+					n_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftB += n_h2d[iDev];
 		} else {
 			status = cublasSetMatrixAsync (k_h2d[iDev], n_h2d[iDev],
 					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
-					k_gpu[iDev], phiStreams[iDev]);
+					k_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftB += n_h2d[iDev] * (*ldb);
 		}
 
-		cudaEventRecord(events[iDev][2], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][2], myPhiGemmHdl.stream[iDev] );
 
 		devPtrC[iDev] = devPtrB[iDev] + k_gpu[iDev] * n_gpu[iDev];
 		if ( beta->x != 0.0 || beta->y != 0.0 ){
 			status = cublasSetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
 					sizeof(cuComplex), C+shiftC, *ldc, devPtrC[iDev],
-					m_gpu[iDev], phiStreams[iDev]);
+					m_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 		}
-		cudaEventRecord(events[iDev][3], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][3], myPhiGemmHdl.stream[iDev] );
 
 		gpu_lda = m_gpu[iDev];
 		gpu_ldb = k_gpu[iDev];
@@ -388,22 +388,22 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		if ( is_transa ) gpu_lda = k_gpu[iDev];
 		if ( is_transb ) gpu_ldb = n_gpu[iDev];
 
-		cublasGemm (phiHandles[ iDev ], cu_transa, cu_transb,
+		cublasGemm (myPhiGemmHdl.handle[ iDev ], cu_transa, cu_transb,
 				m_gpu[iDev], n_gpu[iDev], k_gpu[iDev],
 				alpha, devPtrA[iDev], gpu_lda, devPtrB[iDev], gpu_ldb,
 				beta, devPtrC[iDev], m_gpu[iDev]);
 
-		cudaEventRecord(events[iDev][4], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][4], myPhiGemmHdl.stream[iDev] );
 
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
 				sizeof(cuComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
-				*ldc, phiStreams[iDev]);
+				*ldc, myPhiGemmHdl.stream[iDev]);
 
 		if (status != CUBLAS_STATUS_SUCCESS) {
 			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 
-		cudaEventRecord(events[iDev][5], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][5], myPhiGemmHdl.stream[iDev] );
 
 		if (is_splitA) {
 			shiftB = 0;
@@ -421,11 +421,11 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 
 	stop_mkl= phigemm_cclock();
 
-	for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
+	for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-		cudaSetDevice(deviceIds[iDev % phiGemmNumDevices]);
+		cudaSetDevice(myPhiGemmHdl.devId[iDev % myPhiGemmEnv.numDevices]);
 
-		cudaErr = (cudaError_t) cudaStreamSynchronize( phiStreams[ iDev ] );
+		cudaErr = (cudaError_t) cudaStreamSynchronize( myPhiGemmHdl.stream[ iDev ] );
 
 		if (cudaErr != cudaSuccess) {
 			printf ( "!!!! 4 - cudaDeviceSynchronize error (C) %d\n", cudaErr); fflush(stdout);
@@ -440,9 +440,9 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 	double time_mkl = stop_mkl - start_mkl;
 	double unbalance;
 
-	for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
+	for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-		cudaSetDevice(deviceIds[iDev % phiGemmNumDevices]);
+		cudaSetDevice(myPhiGemmHdl.devId[iDev % myPhiGemmEnv.numDevices]);
 
 		/* H2D */
 		time_mem_h2d = 0.0;
@@ -475,7 +475,7 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		if ( is_splitA ) {
 #if defined(__PHIGEMM_PROFILE)
 			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
-					file, line, iDev % phiGemmNumDevices,
+					file, line, iDev % myPhiGemmEnv.numDevices,
 					*m,
 					m_gpu[iDev],
 					m_cpu,
@@ -495,7 +495,7 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 #else
 			printf ("[PHIGEMM_DEBUG GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
-					iDev % phiGemmNumDevices,
+					iDev % myPhiGemmEnv.numDevices,
 					*m,
 					m_gpu[iDev],
 					m_cpu,
@@ -517,7 +517,7 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		} else {
 #if defined(__PHIGEMM_PROFILE)
 			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-					file, line, iDev % phiGemmNumDevices,
+					file, line, iDev % myPhiGemmEnv.numDevices,
 					*m,
 					*n,
 					n_gpu[iDev],
@@ -537,7 +537,7 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 #else
 			printf ("[PHIGEMM_DEBUG GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-					iDev % phiGemmNumDevices,
+					iDev % myPhiGemmEnv.numDevices,
 					*m,
 					*n,
 					n_gpu[iDev],
@@ -562,8 +562,8 @@ void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 #endif
 
 	/* Destroy CUDA events */
-	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
-		cudaSetDevice(deviceIds[i % phiGemmNumDevices]);
+	for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
+		cudaSetDevice(myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices]);
 		for (j = 0; j < 6; j++)
 			cudaEventDestroy(events[i][j]);
 	}
@@ -601,7 +601,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 	cudaError_t cudaErr;
 
 	/* timing using CUDA events */
-	cudaEvent_t events[phiGemmNumDevices * NSTREAMS][7];
+	cudaEvent_t events[myPhiGemmEnv.numDevices * NSTREAMS][7];
 
 	/* timing using CPU clocks */
 	double start_mkl, start_total, stop_mkl, stop_total;
@@ -628,10 +628,10 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		// if (*m > 128) tmp = floor(tmp/64.0)*64;
 		m_cpu = *m - tmp;
 
-		for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
+		for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-			step = (int) (tmp / ( phiGemmNumDevices * NSTREAMS ) );
-			residual =  tmp - phiGemmNumDevices * NSTREAMS * step;
+			step = (int) (tmp / ( myPhiGemmEnv.numDevices * NSTREAMS ) );
+			residual =  tmp - myPhiGemmEnv.numDevices * NSTREAMS * step;
 
 			n_h2d[iDev] = n_gpu[iDev] = n_cpu = *n;
 			k_h2d[iDev] = k_gpu[iDev] = k_cpu = *k;
@@ -660,10 +660,10 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		//if (*n > 128) tmp = floor(tmp/64.0)*64;
 		n_cpu = *n - tmp;
 
-		for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
+		for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-			step = tmp / phiGemmNumDevices * NSTREAMS;
-			residual =  tmp - phiGemmNumDevices * NSTREAMS * step;
+			step = tmp / myPhiGemmEnv.numDevices * NSTREAMS;
+			residual =  tmp - myPhiGemmEnv.numDevices * NSTREAMS * step;
 
 			k_h2d[iDev] = k_gpu[iDev] = k_cpu = *k;
 			m_h2d[iDev] = m_gpu[iDev] = m_cpu = *m;
@@ -691,60 +691,60 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 	shiftB = 0;
 	shiftC = 0;
 
-	for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
+	for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-		cudaSetDevice(deviceIds[iDev % phiGemmNumDevices]);
+		cudaSetDevice(myPhiGemmHdl.devId[iDev % myPhiGemmEnv.numDevices]);
 
 		for (j = 0; j < 7; j++)
-			cudaEventCreate(&(events[iDev % phiGemmNumDevices][j]));
+			cudaEventCreate(&(events[iDev % myPhiGemmEnv.numDevices][j]));
 
 		shift = 0;
-		devPtrA[iDev]=(char *) dev_scratch[iDev] + shift;
+		devPtrA[iDev]=(char *) myPhiGemmHdl.pmem[iDev] + shift;
 
-		cudaEventRecord(events[iDev][0], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][0], myPhiGemmHdl.stream[iDev] );
 
 		if ( is_transa ) {
 			status = cublasSetMatrixAsync (k_h2d[iDev], m_h2d[iDev],
 					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
-					k_gpu[iDev], phiStreams[iDev]);
+					k_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftA += m_h2d[iDev] * (*lda);
 		} else {
 			status = cublasSetMatrixAsync (m_h2d[iDev], k_h2d[iDev],
 					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
-					m_gpu[iDev], phiStreams[iDev]);
+					m_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftA += m_h2d[iDev];
 		}
 
-		cudaEventRecord(events[iDev][1], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][1], myPhiGemmHdl.stream[iDev] );
 
 		shift += (EVENIZE(m_gpu[iDev] * k_gpu[iDev])) *sizeof(cuComplex);
-		devPtrB[iDev] = (char *) dev_scratch[iDev] + shift;
+		devPtrB[iDev] = (char *) myPhiGemmHdl.pmem[iDev] + shift;
 
 		if ( is_transb ) {
 			status = cublasSetMatrixAsync (n_h2d[iDev], k_h2d[iDev],
 					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
-					n_gpu[iDev], phiStreams[iDev]);
+					n_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftB += n_h2d[iDev];
 		} else {
 			status = cublasSetMatrixAsync (k_h2d[iDev], n_h2d[iDev],
 					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
-					k_gpu[iDev], phiStreams[iDev]);
+					k_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftB += n_h2d[iDev] * (*ldb);
 		}
 
-		cudaEventRecord(events[iDev][2], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][2], myPhiGemmHdl.stream[iDev] );
 
 		/* set the matrix C to device */
 		shift += (EVENIZE(k_gpu[iDev] * n_gpu[iDev]) )*sizeof(cuComplex);
-		devPtrC[iDev] = (char *) dev_scratch[iDev] + shift;
+		devPtrC[iDev] = (char *) myPhiGemmHdl.pmem[iDev] + shift;
 
 		if ( beta->x != 0.0 || beta->y != 0.0 ){
 			status = cublasSetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
 					sizeof(cuComplex), C+shiftC, *ldc, devPtrC[iDev],
-					m_gpu[iDev], phiStreams[iDev]);
+					m_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 		}
 
-		cudaEventRecord(events[iDev][3], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][3], myPhiGemmHdl.stream[iDev] );
 
 
 		gpu_lda = m_gpu[iDev];
@@ -753,7 +753,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		if ( is_transa ) gpu_lda = k_gpu[iDev];
 		if ( is_transb ) gpu_ldb = n_gpu[iDev];
 
-		cublasGemm (phiHandles[ iDev ], cu_transa, cu_transb, m_gpu[iDev],
+		cublasGemm (myPhiGemmHdl.handle[ iDev ], cu_transa, cu_transb, m_gpu[iDev],
 				n_gpu[iDev], k_gpu[iDev], alpha, devPtrA[iDev],
 				gpu_lda, devPtrB[iDev], gpu_ldb, beta, devPtrC[iDev],
 				m_gpu[iDev]);
@@ -762,7 +762,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 
-		cudaEventRecord(events[iDev][4], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][4], myPhiGemmHdl.stream[iDev] );
 
 		if (is_splitA) {
 			shiftB = 0;
@@ -781,20 +781,20 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 	stop_mkl= phigemm_cclock();
 
 	shiftC = 0;
-	for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
-		cudaSetDevice(deviceIds[iDev % phiGemmNumDevices]);
+	for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
+		cudaSetDevice(myPhiGemmHdl.devId[iDev % myPhiGemmEnv.numDevices]);
 
-		cudaEventRecord(events[iDev][5], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][5], myPhiGemmHdl.stream[iDev] );
 
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
 				sizeof(cuComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
-				*ldc, phiStreams[iDev]);
+				*ldc, myPhiGemmHdl.stream[iDev]);
 
 		if (status != CUBLAS_STATUS_SUCCESS) {
 			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 
-		cudaEventRecord(events[iDev][6], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][6], myPhiGemmHdl.stream[iDev] );
 
 		if (is_splitA) {
 			shiftB = 0;
@@ -804,7 +804,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 			shiftC += n_h2d[iDev] * (*ldc);
 		}
 
-		cudaErr = (cudaError_t) cudaStreamSynchronize( phiStreams[ iDev ] );
+		cudaErr = (cudaError_t) cudaStreamSynchronize( myPhiGemmHdl.stream[ iDev ] );
 		if (cudaErr != cudaSuccess) {
 			printf ( "!!!! 4 - cudaDeviceSynchronize error (C) %d\n", cudaErr); fflush(stdout);
 		}
@@ -818,9 +818,9 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 	double time_mkl = stop_mkl - start_mkl;
 	double unbalance;
 
-	for (iDev = 0; iDev < phiGemmNumDevices * NSTREAMS; iDev++) {
+	for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-		cudaSetDevice(deviceIds[iDev % phiGemmNumDevices]);
+		cudaSetDevice(myPhiGemmHdl.devId[iDev % myPhiGemmEnv.numDevices]);
 
 		/* H2D */
 		time_mem_h2d = 0.0;
@@ -853,7 +853,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		if ( is_splitA ) {
 #if defined(__PHIGEMM_PROFILE)
 			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
-					file, line, iDev % phiGemmNumDevices,
+					file, line, iDev % myPhiGemmEnv.numDevices,
 					*m,
 					m_gpu[iDev],
 					m_cpu,
@@ -873,7 +873,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 #else
 			printf ("[PHIGEMM_DEBUG GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
-					iDev % phiGemmNumDevices,
+					iDev % myPhiGemmEnv.numDevices,
 					*m,
 					m_gpu[iDev],
 					m_cpu,
@@ -895,7 +895,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		} else {
 #if defined(__PHIGEMM_PROFILE)
 			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-					file, line, iDev % phiGemmNumDevices,
+					file, line, iDev % myPhiGemmEnv.numDevices,
 					*m,
 					*n,
 					n_gpu[iDev],
@@ -915,7 +915,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 					1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k))/(time_total*1000));
 #else
 	printf ("[PHIGEMM_DEBUG GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-			iDev % phiGemmNumDevices,
+			iDev % myPhiGemmEnv.numDevices,
 			*m,
 			*n,
 			n_gpu[iDev],
@@ -940,8 +940,8 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 #endif
 
 	/* Destroy CUDA events */
-	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
-		cudaSetDevice(deviceIds[i % phiGemmNumDevices]);
+	for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
+		cudaSetDevice(myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices]);
 		for (j = 0; j < 7; j++)
 			cudaEventDestroy(events[i][j]);
 	}

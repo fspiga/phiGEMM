@@ -90,9 +90,9 @@ void readEnv()
 		printf ("[PHIGEMM_DEBUG] SGEMM default split factor: %f \n", envar_split);
 #endif
 	}
-	phiGemmSplitFactor[0] = envar_split;
-	phiGemmPrevSplitFactor[0] = envar_split;
-	phiGemmLowerPositiveSplitFactor[0] = 0.995 ;
+	myPhiGemmTng.split[0] = envar_split;
+	myPhiGemmTng.prevSplit[0] = envar_split;
+	myPhiGemmTng.lpSplit[0] = 0.995 ;
 
 	/* DGEMM */
 	value = getenv("PHI_DGEMM_SPLIT");
@@ -109,9 +109,9 @@ void readEnv()
 		printf ("[PHIGEMM_DEBUG] DGEMM default split factor: %f \n", envar_split);
 #endif
 	}
-	phiGemmSplitFactor[1] = envar_split;
-	phiGemmPrevSplitFactor[1] = envar_split;
-	phiGemmLowerPositiveSplitFactor[1] = 0.995 ;
+	myPhiGemmTng.split[1] = envar_split;
+	myPhiGemmTng.prevSplit[1] = envar_split;
+	myPhiGemmTng.lpSplit[1] = 0.995 ;
 
 	/* CGEMM */
 	value = getenv("PHI_CGEMM_SPLIT");
@@ -129,9 +129,9 @@ void readEnv()
 		printf ("[PHIGEMM_DEBUG] CGEMM  default split factor: %f \n", envar_split);
 #endif
 	}
-	phiGemmSplitFactor[2] = envar_split;
-	phiGemmPrevSplitFactor[2] = envar_split;
-	phiGemmLowerPositiveSplitFactor[2] = 0.995 ;
+	myPhiGemmTng.split[2] = envar_split;
+	myPhiGemmTng.prevSplit[2] = envar_split;
+	myPhiGemmTng.lpSplit[2] = 0.995 ;
 
 	/* ZGEMM */
 	value = getenv("PHI_ZGEMM_SPLIT");
@@ -149,23 +149,23 @@ void readEnv()
 		printf ("[PHIGEMM_DEBUG] ZGEMM  default split factor: %f \n", envar_split);
 #endif
 	}
-	phiGemmSplitFactor[3] = envar_split;
-	phiGemmPrevSplitFactor[3] = envar_split;
-	phiGemmLowerPositiveSplitFactor[3] = 0.995 ;
+	myPhiGemmTng.split[3] = envar_split;
+	myPhiGemmTng.prevSplit[3] = envar_split;
+	myPhiGemmTng.lpSplit[3] = 0.995 ;
 
 	/* This is to avoid not-defined OMP_NUM_THREADS in the environment.
 	 * Default threads num = 1 */
 	value = getenv("OMP_NUM_THREADS");
 	if (value != NULL)
 	{
-		phiGemmCPUThreads = atoi(value);
+		myPhiGemmEnv.cores = atoi(value);
 	} else {
 
 		/* Default threads num = 1 */
-		phiGemmCPUThreads = 1;
+		myPhiGemmEnv.cores = 1;
 	}
 #if defined(__PHIGEMM_DEBUG)
-	printf ("[PHIGEMM_DEBUG] phiGemmCPUThreads: %d \n", phiGemmCPUThreads);
+	printf ("[PHIGEMM_DEBUG] phiGemmCPUThreads: %d \n", myPhiGemmEnv.cores);
 #endif
 
 }

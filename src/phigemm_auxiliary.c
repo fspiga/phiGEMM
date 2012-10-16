@@ -54,7 +54,7 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 		//		else
 		//			m_split = floor(tmp/64.0)*64;
 
-		return ( m_split*k_in/phiGemmNumDevices + k_in*n_in + m_split*n_in/phiGemmNumDevices );
+		return ( m_split*k_in/myPhiGemmEnv.numDevices + k_in*n_in + m_split*n_in/myPhiGemmEnv.numDevices );
 
 	} else {
 		tmp = (n_in) * split;
@@ -63,7 +63,7 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 		//		else
 		//			n_split = floor(tmp/64.0)*64;
 
-		return( m_in*k_in + k_in*n_split/phiGemmNumDevices + m_in*n_split/phiGemmNumDevices );
+		return( m_in*k_in + k_in*n_split/myPhiGemmEnv.numDevices + m_in*n_split/myPhiGemmEnv.numDevices );
 	}
 #else
 	return ( m_in*k_in + k_in*n_in + m_in*n_in );
@@ -73,7 +73,7 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 /* This routine computes the recursive split */
 void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2) {
 
-	size_t memsize_gpu = scratch_size[0] * phiGemmNumDevices;
+	size_t memsize_gpu = myPhiGemmHdl.smem[0] * myPhiGemmEnv.numDevices;
 	size_t mem_gpu = memOccupancy(is_splitA, split, m, n, k) * type_size;
 
 	int tmp_m = m;
@@ -240,7 +240,7 @@ void phigemmSetSplitFactor(float *x) {
 		/* 0:SGEMM, 1:DGEMM, 2: CGEMM, 3:ZGEMM */
 		tmp =  (100.0f * x[i])/( 1.0f - x[i]);
 		tmp2 = 100.0f;
-		phiGemmSplitFactor[i] = tmp / (tmp + tmp2);
+		myPhiGemmTng.split[i] = tmp / (tmp + tmp2);
 	}
 #endif
 	return;
@@ -255,9 +255,9 @@ void phigemmSetSplitFactor(float *x) {
  */
 float phigemmGetSplitFactor(int selection) {
 #if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
-	return phiGemmSplitFactor[selection];
+	return myPhiGemmTng.split[selection];
 #else
-	return phiGemmPrevSplitFactor[selection];
+	return myPhiGemmTng.prevSplit[selection];
 #endif
 }
 
@@ -277,9 +277,9 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 
 	// I do not even know how many memory is available on the device...
 
-	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+	for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
 
-		if (scratch_size[ i ] == 0)
+		if (myPhiGemmHdl.smem[ i ] == 0)
 		{
 			if(dev_memsize == NULL) {
 
@@ -289,13 +289,13 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 				is_internal_memory_probed = 1;
 
 				/* query the real free memory, taking into account the "stack" */
-				if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
-					printf("*** ERROR *** cudaSetDevice(%d) failed!", deviceIds[i % phiGemmNumDevices] ); fflush(stdout);
+				if ( cudaSetDevice( myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices]) != cudaSuccess) {
+					printf("*** ERROR *** cudaSetDevice(%d) failed!", myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices] ); fflush(stdout);
 					exit(EXIT_FAILURE);
 				}
 
 				/* Perform the allocation */
-				ierr = cudaMalloc ( (void**) &(dev_scratch[i]), (size_t) 0 );
+				ierr = cudaMalloc ( (void**) &(myPhiGemmHdl.pmem[i]), (size_t) 0 );
 				if ( ierr != cudaSuccess) {
 					fprintf( stderr, "\nError in (first zero) memory allocation , program will be terminated!!! Bye...\n\n");
 					exit(EXIT_FAILURE);
@@ -303,53 +303,53 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 
 				cudaMemGetInfo((size_t*)&free, (size_t*)&total);
 
-				scratch_size[i] = (size_t) (((free * __SCALING_MEM_FACTOR__ ) * 16.0) / 16.0);
+				myPhiGemmHdl.smem[i] = (size_t) (((free * __SCALING_MEM_FACTOR__ ) * 16.0) / 16.0);
 
 			} else {
 
-					scratch_size[ i ] = ( *dev_memsize )[ i ];
+				myPhiGemmHdl.smem[ i ] = ( *dev_memsize )[ i ];
 			}
 		}
 	}
 
 	// Allocate & Initialize
 
-	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+	for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
 		/* query the real free memory, taking into account the "stack" */
-		if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
-			printf("*** ERROR *** cudaSetDevice(%d) failed!",  deviceIds[i % phiGemmNumDevices] ); fflush(stdout);
+		if ( cudaSetDevice( myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices]) != cudaSuccess) {
+			printf("*** ERROR *** cudaSetDevice(%d) failed!",  myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices] ); fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
-		ierr = cudaMalloc ( (void**) &(dev_scratch[i % phiGemmNumDevices]), (size_t) scratch_size[ i ] );
+		ierr = cudaMalloc ( (void**) &(myPhiGemmHdl.pmem[i % myPhiGemmEnv.numDevices]), (size_t) myPhiGemmHdl.smem[ i ] );
 		if ( ierr != cudaSuccess) {
 			fprintf( stderr, "\nError in memory allocation, program will be terminated (%d)!!! Bye...\n\n", ierr );
 			exit(EXIT_FAILURE);
 		}
 
 #if defined(__PHIGEMM_DEBUG)
-		printf("\n\n[PHIGEMM_DEBUG] %lu Bytes of memory is allocated internally on GPU %d\n\n", (unsigned long)scratch_size[i], deviceIds[i]);
+		printf("\n\n[PHIGEMM_DEBUG] %lu Bytes of memory is allocated internally on GPU %d\n\n", (unsigned long)myPhiGemmHdl.smem[i], myPhiGemmHdl.devId[i]);
 		fflush(stdout);
 #endif
 
 		/* Attempt to initialize CUBLAS */
-		if ( cublasCreate( &phiHandles[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
+		if ( cublasCreate( &(myPhiGemmHdl.handle[ i ]) ) != CUBLAS_STATUS_SUCCESS ) {
 			printf("*** phiGEMM *** ERROR *** cublasInit() for device %d failed!\n",i);
 			fflush(stdout);
 			exit( EXIT_FAILURE );
 		}
 
-		if( cudaStreamCreate( &phiStreams[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
-			printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i % phiGemmNumDevices);
+		if( cudaStreamCreate( &(myPhiGemmHdl.stream[ i ]) ) != CUBLAS_STATUS_SUCCESS ) {
+			printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i % myPhiGemmEnv.numDevices);
 			fflush(stdout);
 			exit( EXIT_FAILURE );
 		}
-		cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
+		cublasSetStream( myPhiGemmHdl.handle[ i ], myPhiGemmHdl.stream[ i ] );
 	}
 
 #if defined(__PHIGEMM_PROFILE)
 	// printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
-	phiProfileFile = fopen (finalFileName, "a");
+	myPhiGemmEnv.profileFile = fopen (myPhiGemmEnv.filename, "a");
 #endif
 
 	is_internal_memory_alloc = 1;
@@ -384,14 +384,14 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 	if (tag < 0) {
 		if (value != NULL)
-			sprintf(finalFileName, "%s.%s.csv", base, value);
+			sprintf(myPhiGemmEnv.filename, "%s.%s.csv", base, value);
 		else
-			sprintf(finalFileName, "%s.csv", base);
+			sprintf(myPhiGemmEnv.filename, "%s.csv", base);
 	} else {
 		if (value != NULL)
-			sprintf(finalFileName, "%s.%d.%s.csv", base, tag, value);
+			sprintf(myPhiGemmEnv.filename, "%s.%d.%s.csv", base, tag, value);
 		else
-			sprintf(finalFileName, "%s.%d.csv", base, tag);
+			sprintf(myPhiGemmEnv.filename, "%s.%d.csv", base, tag);
 	}
 #endif
 
@@ -416,25 +416,25 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 		exit(EXIT_FAILURE);
 	}
 
-	phiGemmNumDevices = nGPU;
+	myPhiGemmEnv.numDevices = nGPU;
 
 	is_internal_memory_probed = 0;
 
 	/* Initialize internal phiGEMM data structures */
-	for( i = 0; i < phiGemmNumDevices * NSTREAMS; i++ )
+	for( i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++ )
 	{
-		dev_scratch[ i ] = NULL;
-		scratch_size[ i ] = 0;
-		phiHandles[ i ] = NULL;
-		phiStreams[ i ] = NULL;
+		myPhiGemmHdl.pmem[ i ] = NULL;
+		myPhiGemmHdl.smem[ i ] = 0;
+		myPhiGemmHdl.handle[ i ] = NULL;
+		myPhiGemmHdl.stream[ i ] = NULL;
 	}
 
 	/* Read environment PHI_* variables (this reading override the default */
 	readEnv();
 
 	/* Assign GPU devices to process(es) */
-	for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
-		deviceIds[i] = deviceToBond[i % phiGemmNumDevices];
+	for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
+		myPhiGemmHdl.devId[i] = deviceToBond[i % myPhiGemmEnv.numDevices];
 	}
 
 	/* No memory pointer is provided -> Initialize the memory */
@@ -442,16 +442,16 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 		// is_internal_memory_probed = 0;
 
-		for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+		for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
 
-			scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAMS;
+			myPhiGemmHdl.smem[ i ] = ( *dev_memsize )[ i % myPhiGemmEnv.numDevices ] / NSTREAMS;
 		}
 	}
 
 	/* No memory pointer is provided -> Initialize the memory */
 	if(dev_ptr != NULL) {
 
-		for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+		for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
 
 			// scratch_size[ i ] = ( *dev_memsize )[ i % phiGemmNumDevices ] / NSTREAMS;
 
@@ -459,43 +459,43 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 			 * directly dereferenced because 'void' is NOT a real type! */
 
 			/// THIS OPERATION IS WEIRD ///
-			size_t offset = ( i / phiGemmNumDevices ) * scratch_size[ i ];
-			char * tmp_ptr = (char*) ( ( *dev_ptr )[ i % phiGemmNumDevices ] );
-			dev_scratch[ i ] = (void*) (tmp_ptr + offset) ;
+			size_t offset = ( i / myPhiGemmEnv.numDevices ) * myPhiGemmHdl.smem[ i ];
+			char * tmp_ptr = (char*) ( ( *dev_ptr )[ i % myPhiGemmEnv.numDevices ] );
+			myPhiGemmHdl.pmem[ i ] = (void*) (tmp_ptr + offset) ;
 
 #if defined(__PHIGEMM_DEBUG)
-			printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long)scratch_size[i], deviceIds[i]);
+			printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long) myPhiGemmHdl.smem[i], myPhiGemmHdl.devId[i]);
 			fflush(stdout);
 #endif
 		}
 
-		for (i = 0; i < phiGemmNumDevices * NSTREAMS; i++) {
+		for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
 
 			/* Attempt to establish a runtime API context */
-			if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices]) != cudaSuccess) {
+			if ( cudaSetDevice( myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices]) != cudaSuccess) {
 				printf("*** phiGEMM *** ERROR *** cudaSetDevice(%d) failed!\n",i );
 				fflush(stdout);
 				exit( EXIT_FAILURE );
 			}
 
 			/* Attempt to initialize CUBLAS */
-			if ( cublasCreate( &phiHandles[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
+			if ( cublasCreate( &(myPhiGemmHdl.handle[ i ]) ) != CUBLAS_STATUS_SUCCESS ) {
 				printf("*** phiGEMM *** ERROR *** cublasInit() for device %d failed!\n",i);
 				fflush(stdout);
 				exit( EXIT_FAILURE );
 			}
 
-			if( cudaStreamCreate( &phiStreams[ i ] ) != CUBLAS_STATUS_SUCCESS ) {
-				printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i % phiGemmNumDevices);
+			if( cudaStreamCreate( &(myPhiGemmHdl.stream[ i ]) ) != CUBLAS_STATUS_SUCCESS ) {
+				printf("*** phiGEMM *** ERROR *** creating stream %d for device %d failed!\n", i, i % myPhiGemmEnv.numDevices);
 				fflush(stdout);
 				exit( EXIT_FAILURE );
 			}
-			cublasSetStream( phiHandles[ i ], phiStreams[ i ] );
+			cublasSetStream( myPhiGemmHdl.handle[ i ], myPhiGemmHdl.stream[ i ] );
 		}
 
 #if defined(__PHIGEMM_PROFILE)
 		// printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
-		phiProfileFile = fopen (finalFileName, "a");
+		myPhiGemmEnv.profileFile = fopen (myPhiGemmEnv.filename, "a");
 #endif
 		is_external_memory_alloc = 1;
 	}
@@ -509,7 +509,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 #if defined(__PHIGEMM_PROFILE)
 	printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
-	phiProfileFile = fopen (finalFileName, "a");
+	myPhiGemmEnv.profileFile = fopen (myPhiGemmEnv.filename, "a");
 #endif
 
 	return;
@@ -541,23 +541,23 @@ void phiGemmShutdown()
 
 	if ( phiGemmIsExternalMemAlloc() ){
 
-		for (i = 0; i < phiGemmNumDevices ; i++) {
+		for (i = 0; i < myPhiGemmEnv.numDevices ; i++) {
 
 			/* Attempt to establish a runtime API context */
-			if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices] ) != cudaSuccess) {
+			if ( cudaSetDevice( myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices] ) != cudaSuccess) {
 				printf("*** phiGEMM: *** ERROR *** cudaSetDevice(%d) failed!\n",i);
 				exit(EXIT_FAILURE);
 			}
 
-			cudaStreamDestroy( phiStreams[ i ] );
-			cublasDestroy( phiHandles[ i ]);
+			cudaStreamDestroy( myPhiGemmHdl.stream[ i ] );
+			cublasDestroy( myPhiGemmHdl.handle[ i ]);
 
 			is_external_memory_alloc = 0;
 			is_phigemm_init = 0;
 
 #if defined(__PHIGEMM_PROFILE)
 			// printf("\n\n*** phiGEMM *** close the file \n\n");fflush(stdout);
-			fclose (phiProfileFile);
+			fclose (myPhiGemmEnv.profileFile);
 #endif
 
 		}
@@ -565,28 +565,28 @@ void phiGemmShutdown()
 
 	if ( phiGemmIsInternalMemAlloc() ){
 
-		for ( i = 0; i < phiGemmNumDevices; i++ ){
+		for ( i = 0; i < myPhiGemmEnv.numDevices; i++ ){
 
 			/* Attempt to establish a runtime API context */
-			if ( cudaSetDevice( deviceIds[i % phiGemmNumDevices] ) != cudaSuccess) {
+			if ( cudaSetDevice( myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices] ) != cudaSuccess) {
 				printf("*** phiGEMM: *** ERROR *** cudaSetDevice(%d) failed!\n",i);
 				exit(EXIT_FAILURE);
 			}
 
-			if (  cudaFree(dev_scratch[i]) != cudaSuccess) {
+			if (  cudaFree(myPhiGemmHdl.pmem[i]) != cudaSuccess) {
 				printf("*** phiGEMM: *** ERROR *** cudaFree(%d) failed!\n",i);
 				// exit(EXIT_FAILURE);
 			}
 
-			cudaStreamDestroy( phiStreams[ i ] );
-			cublasDestroy( phiHandles[ i ]);
+			cudaStreamDestroy( myPhiGemmHdl.stream[ i ] );
+			cublasDestroy( myPhiGemmHdl.handle[ i ]);
 
-			dev_scratch[ i ] = NULL;
+			myPhiGemmHdl.pmem[ i ] = NULL;
 			if (is_internal_memory_probed) {
-				scratch_size[ i ] = 0;
+				myPhiGemmHdl.smem[ i ] = 0;
 			}
-			phiHandles[ i ] = NULL;
-			phiStreams[ i ] = NULL;
+			myPhiGemmHdl.handle[ i ] = NULL;
+			myPhiGemmHdl.stream[ i ] = NULL;
 		}
 
 		is_internal_memory_alloc = 0;
@@ -598,7 +598,7 @@ void phiGemmShutdown()
 
 #if defined(__PHIGEMM_PROFILE)
 	// printf("\n\n*** phiGEMM *** close the file \n\n");fflush(stdout);
-	fclose (phiProfileFile);
+	fclose (myPhiGemmEnv.profileFile);
 #endif
 
 	return;
@@ -607,10 +607,10 @@ void phiGemmShutdown()
 }
 
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
-	scratch_size[ deviceIds[gpu_id] ] = (size_t) new_dev_memsize;
+	myPhiGemmHdl.smem[ myPhiGemmHdl.devId[gpu_id] ] = (size_t) new_dev_memsize;
 
 #if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] %lu Bytes of GPU memory available %d\n", (unsigned long)scratch_size[gpu_id], deviceIds[gpu_id]);
+	printf("[PHIGEMM_DEBUG] %lu Bytes of GPU memory available %d\n", (unsigned long)myPhiGemmHdl.smem[gpu_id], myPhiGemmHdl.devId[gpu_id]);
 	fflush(stdout);
 #endif
 }
