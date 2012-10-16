@@ -41,10 +41,10 @@ struct phiGemmHandler myPhiGemmHdl;
 
 // C99-compatible initialization
 struct phiGemmTuning myPhiGemmTng = {
-		.SPLIT_FACTOR = __SPLITK_FACTOR,
-		.THRESHOLD          = __SPLITK_FACTOR*2,
-		.PHIGEMM_SPLITK_DGEMM = __PHIGEMM_SPLITK_DGEMM,
-		.PHIGEMM_SPLITK_ZGEMM = __PHIGEMM_SPLITK_ZGEMM,
+		.SPLITK_FACTOR = __SPLITK_FACTOR,
+		.THRESHOLD          = (int) __SPLITK_FACTOR*1.5,
+		.SPLITK_DGEMM = __SPLITK_DGEMM,
+		.SPLITK_ZGEMM = __SPLITK_ZGEMM,
 		.LOWER_LIMIT_NM       = __LOWER_LIMIT_NM,
 		.UPPER_LIMIT_NM       = __UPPER_LIMIT_NM,
 		.UPPER_LIMIT_K        = __UPPER_LIMIT_K,};

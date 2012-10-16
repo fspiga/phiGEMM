@@ -53,12 +53,12 @@
 #define __SPLITK_FACTOR 20
 #endif
 
-#ifndef __PHIGEMM_SPLITK_DGEMM
-#define __PHIGEMM_SPLITK_DGEMM 2048
+#ifndef __SPLITK_DGEMM
+#define __SPLITK_DGEMM 2048
 #endif
 
-#ifndef __PHIGEMM_SPLITK_ZGEMM
-#define __PHIGEMM_SPLITK_ZGEMM 2048
+#ifndef __SPLITK_ZGEMM
+#define __SPLITK_ZGEMM 2048
 #endif
 
 #ifndef __LOWER_LIMIT_NM
@@ -114,10 +114,10 @@ typedef struct phiGemmTuning
 	float split[4];
 	float prevSplit[4];
 	float lpSplit[4];
-	float SPLIT_FACTOR;
+	float SPLITK_FACTOR;
 	float THRESHOLD;
-	int PHIGEMM_SPLITK_DGEMM;
-	int PHIGEMM_SPLITK_ZGEMM;
+	int SPLITK_DGEMM;
+	int SPLITK_ZGEMM;
 	int LOWER_LIMIT_NM;
 	int UPPER_LIMIT_NM;
 	int UPPER_LIMIT_K;
