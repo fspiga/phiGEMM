@@ -76,7 +76,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	int size = (* m) * (* n), inc = 1;
 	double DA = 1.0;
 	double gpu_beta = 0.0;
-	int last_split = 0, local_split = PHIGEMM_SPLITK_DGEMM, splitted_size;
+	int last_split = 0, local_split = myPhiGemmTng.PHIGEMM_SPLITK_DGEMM, splitted_size;
 	size_t mem_buffer = 0L, memsize_gpu = myPhiGemmHdl.smem[iDev];
 
 	double start_axpy, start_total, stop_axpy, stop_total;

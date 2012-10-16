@@ -26,24 +26,114 @@
 #include <sys/times.h>
 #include <sys/time.h>
 
-#if defined (__PHIGEMM_MULTI_STREAMS)
+/* --------------------------- MAIN DEFAULF VALUES ------------------------- */
+
+#ifndef MAX_GPUS
 #define MAX_GPUS 8
+#endif
+
+// This feature is not tested/checked since long time...
+#if defined (__PHIGEMM_MULTI_STREAMS)
 #define NSTREAMS 2
 #else
-#define MAX_GPUS 8
 #define NSTREAMS 1
 #endif
 
-#define PHIGEMM_SPLITK_DGEMM 2048
-#define PHIGEMM_SPLITK_ZGEMM 2048
+#ifndef __SCALING_INIT_MEM
+#define __SCALING_INIT_MEM 0.95
+#endif
 
-#define SPLITK_FACTOR 20
+#if defined(__CUDA_GET_MEM_HACK)
+#ifndef __GPU_MEM_AMOUNT_HACK__
+#define __GPU_MEM_AMOUNT_HACK__ 2400000000
+#endif
+#endif
+
+#ifndef __SPLITK_FACTOR
+#define __SPLITK_FACTOR 20
+#endif
+
+#ifndef __PHIGEMM_SPLITK_DGEMM
+#define __PHIGEMM_SPLITK_DGEMM 2048
+#endif
+
+#ifndef __PHIGEMM_SPLITK_ZGEMM
+#define __PHIGEMM_SPLITK_ZGEMM 2048
+#endif
+
+#ifndef __LOWER_LIMIT_NM
+#define __LOWER_LIMIT_NM 64
+#endif
+
+#ifndef __UPPER_LIMIT_NM
+#define __UPPER_LIMIT_NM 256
+#endif
+
+#ifndef __UPPER_LIMIT_K
+#define __UPPER_LIMIT_K 1024
+#endif
+
+#if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
+#define __PHIGEMM_EVENTS 6
+#else
+#define __PHIGEMM_EVENTS 7
+#endif
+
+/* ------------------------------------------------------------------------- */
+
+
+/* -------------------------------- TYPEDEFS ------------------------------- */
 
 typedef void* phiGemmMemDevPtr[MAX_GPUS*NSTREAMS];
+
 typedef size_t phiGemmMemSizes[MAX_GPUS*NSTREAMS];
+
 typedef int phiGemmDeviceIds[MAX_GPUS*NSTREAMS];
+
+typedef struct phiGemmEnv
+{
+	int numDevices;
+	int cores;
+#if defined(__PHIGEMM_PROFILE)
+	FILE *profileFile;
+	char filename [ FILENAME_MAX ];
+#endif
+} phiGemmEnv_t;
+
+typedef struct phiGemmHandler
+{
+	phiGemmMemDevPtr pmem;
+	phiGemmMemSizes smem;
+	phiGemmDeviceIds devId;
+	cudaStream_t  stream[ NSTREAMS * MAX_GPUS ];
+	cublasHandle_t handle[ NSTREAMS * MAX_GPUS ];
+} phiGemmHandler_t;
+
+typedef struct phiGemmTuning
+{
+	float split[4];
+	float prevSplit[4];
+	float lpSplit[4];
+	float SPLIT_FACTOR;
+	float THRESHOLD;
+	int PHIGEMM_SPLITK_DGEMM;
+	int PHIGEMM_SPLITK_ZGEMM;
+	int LOWER_LIMIT_NM;
+	int UPPER_LIMIT_NM;
+	int UPPER_LIMIT_K;
+} phiGemmTuning_t;
+
+/* ------------------------------------------------------------------------- */
+
+
+/* ------------------------------ OTHER MACROS ----------------------------- */
+
+#define GEMM_ADD(m, n, k) ((m) * (n) * (k))
+#define GEMM_MUL(m, n, k) ((m) * (n) * (k))
 
 #define imin(a,b) (((a)<(b))?(a):(b))
 #define imax(a,b) (((a)<(b))?(b):(a))
+
+/* ------------------------------------------------------------------------- */
 
 #endif // __PHIGEMM_COMMON_H__

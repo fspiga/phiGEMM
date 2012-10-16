@@ -35,6 +35,23 @@ static int is_external_memory_alloc = 0;
 static int is_internal_memory_alloc = 0;
 static int is_internal_memory_probed = 0;
 
+struct phiGemmEnv myPhiGemmEnv;
+
+struct phiGemmHandler myPhiGemmHdl;
+
+// C99-compatible initialization
+struct phiGemmTuning myPhiGemmTng = {
+		.SPLIT_FACTOR = __SPLITK_FACTOR,
+		.THRESHOLD          = __SPLITK_FACTOR*2,
+		.PHIGEMM_SPLITK_DGEMM = __PHIGEMM_SPLITK_DGEMM,
+		.PHIGEMM_SPLITK_ZGEMM = __PHIGEMM_SPLITK_ZGEMM,
+		.LOWER_LIMIT_NM       = __LOWER_LIMIT_NM,
+		.UPPER_LIMIT_NM       = __UPPER_LIMIT_NM,
+		.UPPER_LIMIT_K        = __UPPER_LIMIT_K,};
+
+
+
+
 /* auxiliary */
 int stringCmp( const void *a, const void *b)
 {
@@ -127,44 +144,38 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 }
 
 /* This routine returns the selected strategy for CPU-GPU splitting */
-int cpuGPUheuristic(int m, int n, int k, char type) {
-
-	double ratio_km = (double) k/m;
-	double ratio_kn = (double) k/n;
-	double threshold = SPLITK_FACTOR*2; // default 20
-
-	double LOWER_LIMIT_NM = 64;
-	double UPPER_LIMIT_NM = 256;
-	double UPPER_LIMIT_K = 1025; // 1024 is a good dimension....
+int cpuGPUheuristic(int m, int n, int k, char type)
+{
 
 	/* 0: CPU-only
 	 * 1: special-K
 	 * 2: standard (split A or B)
 	 */
 
-	// Un-comment ONLY for debug/testing purposes...
-	// return 2;
-
 #if defined(__PHIGEMM_ENABLE_SPECIALK)
+
+	float RATIO_KM = (float) k/m;
+	float RATIO_KN = (float) k/n;
+
 	if (type == 'd' || type == 'z') {
 
 #if defined(__PHIGEMM_DEBUG_4)
-		printf("[PHIGEMM_DEBUG][4] ratio_km=%f, ratio_kn=%f, threshold=%f\n", ratio_km, ratio_kn, threshold); fflush(stdout);
+		printf("[PHIGEMM_DEBUG][4] ratio_km=%f, ratio_kn=%f, threshold=%f\n", RATIO_KM, RATIO_KN, myPhiGemmTng.THRESHOLD); fflush(stdout);
 #endif
 
 		// Matrices are small but not so small...
-		if ( (n >= LOWER_LIMIT_NM) && (m >= LOWER_LIMIT_NM) ){
+		if ( (n >= myPhiGemmTng.LOWER_LIMIT_NM) && (m >= myPhiGemmTng.LOWER_LIMIT_NM) ){
 			// over the UPPER limit, they have to be rectangular...
-			if ( ((n >= UPPER_LIMIT_K) && (m >= UPPER_LIMIT_K)) && ((ratio_km >= SPLITK_FACTOR) || (ratio_kn >= SPLITK_FACTOR)) )
+			if ( ((n >= myPhiGemmTng.UPPER_LIMIT_K) && (m >= myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.SPLITK_FACTOR) || (RATIO_KN >= myPhiGemmTng.SPLITK_FACTOR)) )
 				return 1;
 			// below the UPPER limit, they have to be very rectangular...
-			if ( ((n < UPPER_LIMIT_K) && (m < UPPER_LIMIT_K)) && ((ratio_km >= threshold) || (ratio_kn >= threshold)) )
+			if ( ((n < myPhiGemmTng.UPPER_LIMIT_K) && (m < myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.THRESHOLD) || (RATIO_KN >= myPhiGemmTng.THRESHOLD)) )
 				return 1;
 		}
 	}
 #endif
 
-	if ( (n < UPPER_LIMIT_NM) ||  (m < UPPER_LIMIT_NM) ) return 0;
+	if ( (n < myPhiGemmTng.UPPER_LIMIT_NM) ||  (m < myPhiGemmTng.UPPER_LIMIT_NM) ) return 0;
 
 	return 2;
 }
@@ -303,7 +314,7 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 
 				cudaMemGetInfo((size_t*)&free, (size_t*)&total);
 
-				myPhiGemmHdl.smem[i] = (size_t) (((free * __SCALING_MEM_FACTOR__ ) * 16.0) / 16.0);
+				myPhiGemmHdl.smem[i] = (size_t) (((free * __SCALING_INIT_MEM ) * 16.0) / 16.0);
 
 			} else {
 

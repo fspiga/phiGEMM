@@ -22,31 +22,6 @@
 
 #include "phigemm_common.h"
 
-/* ---------------------------------- MACROS ------------------------------- */
-
-#define __SCALING_MEM_FACTOR__ 0.95
-
-#if defined(__CUDA_GET_MEM_HACK)
-#define __GPU_MEM_AMOUNT_HACK__ 2400000000
-#endif
-
-#define GEMM_ADD(m, n, k) ((m) * (n) * (k))
-#define GEMM_MUL(m, n, k) ((m) * (n) * (k))
-
-//#if defined(PRECISION_D) || defined(PRECISION_S)
-//#define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
-//#else
-//#define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
-//#endif
-
-#if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
-#define PHIGEMM_EVENTS 6
-#else
-#define PHIGEMM_EVENTS 7
-#endif
-
-/* ------------------------------------------------------------------------- */
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -54,54 +29,14 @@ extern "C"
 
 /* ------------------------- SHARED DATA STRUCTURES ------------------------ */
 
-typedef struct phiGemmEnv
-{
-	int numDevices;
-	int cores;
+extern phiGemmEnv_t myPhiGemmEnv;
 
-//	int gpuCapabilities[MAX_GPUS];
-//	int pinnedSuport[MAX_GPUS];
+extern phiGemmHandler_t myPhiGemmHdl;
 
-#if defined(__PHIGEMM_PROFILE)
-	FILE *profileFile;
-	char filename [ FILENAME_MAX ];
-#endif
-
-} phiGemmEnv_t;
-
-typedef struct phiGemmHandler
-{
-	phiGemmMemDevPtr pmem;
-	phiGemmMemSizes smem;
-	phiGemmDeviceIds devId;
-
-	cudaStream_t  stream[ NSTREAMS * MAX_GPUS ];
-	cublasHandle_t handle[ NSTREAMS * MAX_GPUS ];
-
-} phiGemmHandler_t;
-
-typedef struct phiGemmTuning
-{
-	float split[4];
-	float prevSplit[4];
-	float lpSplit[4];
-
-	/* Control variables (see 'readEnv' in phigemm_auxiliary.c)*/
-	float phiGemmAutoTune[4];
-	int phiGemmSpecialK[4];
-	int phiGemmKDimBlocks[4];
-	int phiGemmControl[4];
-
-} phiGemmTuning_t;
-
-
-phiGemmEnv_t myPhiGemmEnv;
-
-phiGemmHandler_t myPhiGemmHdl;
-
-phiGemmTuning_t myPhiGemmTng;
+extern phiGemmTuning_t myPhiGemmTng;
 
 /* ------------------------------------------------------------------------- */
+
 
 /* --------------------- INTERNAL FUNCTIONS PROTOTYPES --------------------- */
 

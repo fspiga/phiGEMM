@@ -13,7 +13,6 @@
 #include "phigemm_auxiliary.h"
 
 #define PRECISION_Z
-
 #if defined(PRECISION_D) || defined(PRECISION_S)
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
 #else
@@ -337,7 +336,7 @@ void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
 	cudaError_t cudaErr;
 
 	/* timing using CUDA events */
-	cudaEvent_t events[myPhiGemmEnv.numDevices * NSTREAMS][PHIGEMM_EVENTS];
+	cudaEvent_t events[myPhiGemmEnv.numDevices * NSTREAMS][__PHIGEMM_EVENTS];
 
 	/* timing using CPU clocks */
 	double start_mkl, start_total, stop_mkl, stop_total;
@@ -432,7 +431,7 @@ void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
 
 		cudaSetDevice(myPhiGemmHdl.devId[iDev % myPhiGemmEnv.numDevices]);
 
-		for (j = 0; j < PHIGEMM_EVENTS; j++)
+		for (j = 0; j < __PHIGEMM_EVENTS; j++)
 			cudaEventCreate(&(events[iDev % myPhiGemmEnv.numDevices][j]));
 
 		devPtrA[iDev]=(cuDoubleComplex *)(myPhiGemmHdl.pmem[iDev]);
@@ -775,7 +774,7 @@ for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 /* Destroy CUDA events */
 for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
 	cudaSetDevice(myPhiGemmHdl.devId[i % myPhiGemmEnv.numDevices]);
-	for (j = 0; j < PHIGEMM_EVENTS; j++)
+	for (j = 0; j < __PHIGEMM_EVENTS; j++)
 		cudaEventDestroy(events[i][j]);
 }
 }

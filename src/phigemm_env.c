@@ -21,7 +21,6 @@
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
-
 /*
  * Name			: readEnv
  * Description	: the method read from the environment some special variables
@@ -72,6 +71,15 @@ void readEnv()
 
 	float envar_split;
 	char *value = NULL;
+
+	// defaults -- HORRIBLE, to CHANGE --
+	myPhiGemmTng.SPLIT_FACTOR       = __SPLITK_FACTOR;
+	myPhiGemmTng.THRESHOLD          = __SPLITK_FACTOR*2;
+	myPhiGemmTng.PHIGEMM_SPLITK_DGEMM = __PHIGEMM_SPLITK_DGEMM;
+//	myPhiGemmTng.PHIGEMM_SPLITK_ZGEMM = __PHIGEMM_SPLITK_ZGEMM;
+	myPhiGemmTng.LOWER_LIMIT_NM       = __LOWER_LIMIT_NM;
+	myPhiGemmTng.UPPER_LIMIT_NM       = __UPPER_LIMIT_NM;
+	myPhiGemmTng.UPPER_LIMIT_K        = __UPPER_LIMIT_K;
 
 	/* split factor may vary between S/D/Z GEMMs */
 
