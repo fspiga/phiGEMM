@@ -62,11 +62,11 @@
 #endif
 
 #ifndef __LOWER_LIMIT_NM
-#define __LOWER_LIMIT_NM 64
+#define __LOWER_LIMIT_NM 15
 #endif
 
 #ifndef __UPPER_LIMIT_NM
-#define __UPPER_LIMIT_NM 256
+#define __UPPER_LIMIT_NM 255
 #endif
 
 #ifndef __UPPER_LIMIT_K

@@ -175,7 +175,7 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 	}
 #endif
 
-	if ( (n < myPhiGemmTng.UPPER_LIMIT_NM) ||  (m < myPhiGemmTng.UPPER_LIMIT_NM) ) return 0;
+	if ( (n < myPhiGemmTng.LOWER_LIMIT_NM) ||  (m < myPhiGemmTng.LOWER_LIMIT_NM) ) return 0;
 
 	return 2;
 }
