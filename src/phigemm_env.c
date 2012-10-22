@@ -220,8 +220,8 @@ void readEnv()
 	myPhiGemmTng.LOWER_LIMIT_NM = envar;
 
 
-	/* UPPER_LIMIT_K */
-	value = getenv("PHI_UPPER_LIMIT_K");
+	/* UPPER_LIMIT_NM */
+	value = getenv("PHI_UPPER_LIMIT_NM");
 	if (value != NULL)
 	{
 		envar = atoi(value);
@@ -230,12 +230,12 @@ void readEnv()
 #endif
 	} else {
 		/* Default if no env variable is specified */
-		envar = __UPPER_LIMIT_K;
+		envar = __UPPER_LIMIT_NM;
 #if defined(__PHIGEMM_DEBUG)
 		printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K default: %f \n", envar);
 #endif
 	}
-	myPhiGemmTng.UPPER_LIMIT_K = envar;
+	myPhiGemmTng.UPPER_LIMIT_NM = envar;
 
 
 	/* UPPER_LIMIT_K */
