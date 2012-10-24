@@ -44,7 +44,7 @@ void readEnv()
 	 * myPhiGemmTng.THRESHOLD                 --> PHI_THRESHOLD
 	 * myPhiGemmTng.SPLITK_DGEMM              --> PHI_SPLITK_DGEMM
 	 * myPhiGemmTng.SPLITK_ZGEMM              --> PHI_SPLITK_ZGEMM
-	 * myPhiGemmTng.LOWER_LIMIT_NM            --> PHI_LOWER_LIMIT_NM
+	 * myPhiGemmTng.LOWER_LIMIT               --> PHI_LOWER_LIMIT
 	 * myPhiGemmTng.UPPER_LIMIT_NM            --> PHI_UPPER_LIMIT_NM
 	 * myPhiGemmTng.UPPER_LIMIT_K             --> PHI_UPPER_LIMIT_K
 	 *
@@ -202,22 +202,22 @@ void readEnv()
 	myPhiGemmTng.SPLITK_ZGEMM = envar;
 
 
-	/* LOWER_LIMIT_NM */
-	value = getenv("PHI_LOWER_LIMIT_NM");
+	/* LOWER_LIMIT */
+	value = getenv("PHI_LOWER_LIMIT");
 	if (value != NULL)
 	{
 		envar = atoi(value);
 #if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] LOWER_LIMIT_NM from environment variable: %f \n", envar);
+		printf ("[PHIGEMM_DEBUG] LOWER_LIMIT from environment variable: %f \n", envar);
 #endif
 	} else {
 		/* Default if no env variable is specified */
-		envar = __LOWER_LIMIT_NM;
+		envar = __LOWER_LIMIT;
 #if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] LOWER_LIMIT_NM default: %f \n", envar);
+		printf ("[PHIGEMM_DEBUG] LOWER_LIMIT default: %f \n", envar);
 #endif
 	}
-	myPhiGemmTng.LOWER_LIMIT_NM = envar;
+	myPhiGemmTng.LOWER_LIMIT = envar;
 
 
 	/* UPPER_LIMIT_NM */

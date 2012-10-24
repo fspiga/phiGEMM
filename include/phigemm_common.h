@@ -61,8 +61,8 @@
 #define __SPLITK_ZGEMM 2048
 #endif
 
-#ifndef __LOWER_LIMIT_NM
-#define __LOWER_LIMIT_NM 15
+#ifndef __LOWER_LIMIT
+#define __LOWER_LIMIT 63
 #endif
 
 #ifndef __UPPER_LIMIT_NM
@@ -118,7 +118,7 @@ typedef struct phiGemmTuning
 	float THRESHOLD;
 	int SPLITK_DGEMM;
 	int SPLITK_ZGEMM;
-	int LOWER_LIMIT_NM;
+	int LOWER_LIMIT;
 	int UPPER_LIMIT_NM;
 	int UPPER_LIMIT_K;
 } phiGemmTuning_t;

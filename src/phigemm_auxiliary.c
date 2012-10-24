@@ -41,15 +41,13 @@ struct phiGemmHandler myPhiGemmHdl;
 
 // C99-compatible initialization
 struct phiGemmTuning myPhiGemmTng = {
-		.SPLITK_FACTOR = __SPLITK_FACTOR,
-		.THRESHOLD          = (int) __SPLITK_FACTOR*1.5,
-		.SPLITK_DGEMM = __SPLITK_DGEMM,
-		.SPLITK_ZGEMM = __SPLITK_ZGEMM,
-		.LOWER_LIMIT_NM       = __LOWER_LIMIT_NM,
-		.UPPER_LIMIT_NM       = __UPPER_LIMIT_NM,
-		.UPPER_LIMIT_K        = __UPPER_LIMIT_K,};
-
-
+		.SPLITK_FACTOR  = __SPLITK_FACTOR,
+		.THRESHOLD      = (int) __SPLITK_FACTOR*1.5,
+		.SPLITK_DGEMM   = __SPLITK_DGEMM,
+		.SPLITK_ZGEMM   = __SPLITK_ZGEMM,
+		.LOWER_LIMIT    = __LOWER_LIMIT,
+		.UPPER_LIMIT_NM = __UPPER_LIMIT_NM,
+		.UPPER_LIMIT_K  = __UPPER_LIMIT_K,};
 
 
 /* auxiliary */
@@ -164,7 +162,7 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 #endif
 
 		// Matrices are small but not so small...
-		if ( (n >= myPhiGemmTng.LOWER_LIMIT_NM) && (m >= myPhiGemmTng.LOWER_LIMIT_NM) ){
+		if ( (n >= myPhiGemmTng.LOWER_LIMIT) && (m >= myPhiGemmTng.LOWER_LIMIT) ){
 			// over the UPPER limit, they have to be rectangular...
 			if ( ((n >= myPhiGemmTng.UPPER_LIMIT_K) && (m >= myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.SPLITK_FACTOR) || (RATIO_KN >= myPhiGemmTng.SPLITK_FACTOR)) )
 				return 1;
@@ -175,7 +173,7 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 	}
 #endif
 
-	if ( (n < myPhiGemmTng.LOWER_LIMIT_NM) ||  (m < myPhiGemmTng.LOWER_LIMIT_NM) ) return 0;
+	if ( (n < myPhiGemmTng.LOWER_LIMIT) ||  (m < myPhiGemmTng.LOWER_LIMIT) || (k < myPhiGemmTng.LOWER_LIMIT)) return 0;
 
 	return 2;
 }
