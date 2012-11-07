@@ -424,7 +424,7 @@ do
             for dir in $try_libdirs
             do
                 GEMM_LIB="$dir/libacml.a"
-                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB $dir/libifcoremt_pic.a -lrt",)
+                AC_CHECK_FILE($GEMM_LIB, try_phigemm_opts="$try_phigemm_opts -D__ACML" have_gemm=1 blas_libs="$GEMM_LIB $dir/libifcoremt_pic.a -lrt",)
                 
                 if test "$have_gemm" -eq 1
                 then break ; fi
@@ -433,7 +433,7 @@ do
             for dir in $try_libdirs
             do
                 GEMM_LIB="$dir/libacml_mp.a"
-                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB $dir/libifcoremt_pic.a -lrt -liomp5 -lpthread",)
+                AC_CHECK_FILE($GEMM_LIB, try_phigemm_opts="$try_phigemm_opts -D__ACML -D__OMP" have_gemm=1 blas_libs="$GEMM_LIB $dir/libifcoremt_pic.a -lrt -liomp5 -lpthread",)
                 
                 if test "$have_gemm" -eq 1
                 then break ; fi
@@ -444,13 +444,13 @@ do
         
         # Testing for MKL...
         if test "$use_multithread" -eq 0; then
-            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, try_phigemm_opts="$try_phigemm_opts -D__MKL" have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread"
                ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_sequential -lmkl_core)
         else
             LDFLAGS="$try_loption -openmp"
-            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, try_phigemm_opts="$try_phigemm_opts -D__MKL -D__OMP" have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_intel_thread -lmkl_core -liomp5 -lpthread"
                ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_intel_thread -lmkl_core)
@@ -466,7 +466,7 @@ do
             for dir in $try_libdirs
             do
                 GEMM_LIB="$dir/libacml.a"
-                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB -lrt",)
+                AC_CHECK_FILE($GEMM_LIB, try_phigemm_opts="$try_phigemm_opts -D__ACML" have_gemm=1 blas_libs="$GEMM_LIB -lrt",)
                 
                 if test "$have_gemm" -eq 1
                 then break ; fi
@@ -475,7 +475,7 @@ do
             for dir in $try_libdirs
             do
                 GEMM_LIB="$dir/libacml_mp.a"
-                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB -lrt",)
+                AC_CHECK_FILE($GEMM_LIB, try_phigemm_opts="$try_phigemm_opts -D__ACML -D__OMP" have_gemm=1 blas_libs="$GEMM_LIB -lrt",)
                 
                 if test "$have_gemm" -eq 1
                 then break ; fi
@@ -486,13 +486,13 @@ do
         
         # Testing for MKL...
         if test "$use_multithread" -eq 0; then
-            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, try_phigemm_opts="$try_phigemm_opts -D__MKL" have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread"
                ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_sequential -lmkl_core -lpthread -lm)
         else
             LDFLAGS="$try_loption -mp"
-            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, try_phigemm_opts="$try_phigemm_opts -D__MKL -D__OMP" have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_pgi_thread -lmkl_core -lpthread -lm -pgf90libs"
                ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_pgi_thread -lmkl_core -lpthread -lm -pgf90libs)
@@ -507,7 +507,7 @@ do
             for dir in $try_libdirs
             do
                 GEMM_LIB="$dir/libacml.a"
-                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB -lgfortran -lm -lrt",)
+                AC_CHECK_FILE($GEMM_LIB, try_phigemm_opts="$try_phigemm_opts -D__ACML" have_gemm=1 blas_libs="$GEMM_LIB -lgfortran -lm -lrt",)
                 
                 if test "$have_gemm" -eq 1
                 then break ; fi
@@ -516,7 +516,7 @@ do
             for dir in $try_libdirs
             do
                 GEMM_LIB="$dir/libacml_mp.a"
-                AC_CHECK_FILE($GEMM_LIB, have_gemm=1 blas_libs="$GEMM_LIB -lgfortran -lgomp -lm -lrt",)
+                AC_CHECK_FILE($GEMM_LIB, try_phigemm_opts="$try_phigemm_opts -D__ACML -D__OMP" have_gemm=1 blas_libs="$GEMM_LIB -lgfortran -lgomp -lm -lrt",)
                 
                 if test "$have_gemm" -eq 1
                 then break ; fi
@@ -527,13 +527,13 @@ do
         
         # Testing for MKL...
         if test "$use_multithread" -eq 0; then
-            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, try_phigemm_opts="$try_phigemm_opts -D__MKL" have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_sequential -lmkl_core -lpthread -lm"
                ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_sequential -lmkl_core -lpthread -lm)
         else
             LDFLAGS="$try_loption -fopenmp"
-            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, have_gemm=1
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, try_phigemm_opts="$try_phigemm_opts -D__MKL -D__OMP" have_gemm=1
                blas_libs="$try_loption $LIBS -lmkl_gnu_thread -lmkl_core -fopenmp -lpthread -lm"
                ldflags="$GEMM_LIB $ldflags", echo "MKL not found",
                -lmkl_gnu_thread -lmkl_core -fopenmp -lpthread -lm)
@@ -541,9 +541,18 @@ do
         if test "$have_gemm" -eq 1
         then break ; fi
 		;;
-	crayxt*:pgf* )
+	crayxt* )
 	    # Technically the cc/ftn wrappers should take care of everything...
 	    have_gemm=1
+		
+	    # Note: __CRAY -> __ACML_MP or __ACML or __LIBSCI
+	    #       but there might MKL active! let's detect it...
+	    if test "$use_multithread" -eq 0; then
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, try_phigemm_opts="$try_phigemm_opts -D__MKL", echo "MKL not found")
+        else
+            LDFLAGS="$try_loption -openmp"
+            AC_SEARCH_LIBS(dgemm, mkl_intel_lp64, try_phigemm_opts="$try_phigemm_opts -D__MKL -D__OMP", echo "MKL not found")
+        fi
 	    ;;
 	* )
 		# ABORT
@@ -555,8 +564,8 @@ do
 done
 
 if test "$have_gemm" -eq 0  ; then
-    AC_MSG_WARN([Please check if MKL or ACML libraries are correctly installed, *GEMM symbols were not automatically detected.])
-    #AC_MSG_ERROR([Please check if MKL or ACML libraries are correctly installed, *GEMM symbols are missing.])
+    #AC_MSG_WARN([Please check if a valid BLAS library is correctly installed, *GEMM symbols were not automatically detected.])
+    AC_MSG_ERROR([Please check if a valid BLAS library is correctly installed, *GEMM symbols were not automatically detected.])
 fi
 
 # Search for libraries
@@ -650,71 +659,97 @@ AC_LANG_POP(C)
 if test "$use_magmablas" -eq 1 && test "$have_magma" -eq 0 ; then
     AC_MSG_WARN([MAGMA has not been detected, CUBLAS will be used instead.])
 fi
-		
-# GPU architecture
-if  test "$cuda_arch" == "20" ; then
-    nvccflags="-O3 --ptxas-options=-v -arch sm_20 -gencode arch=compute_20,code=compute_20"
+	
+if test "$use_multithread" -eq 1; then
+	nvccflags="-O3 -ccbin gcc --compiler-options '-fPIC -fopenmp'"
+else
+	nvccflags="-O3 -ccbin gcc --compiler-options '-fPIC'"
 fi
-if test "$cuda_arch" == "13" ; then
-    nvccflags="-O3 --ptxas-options=-v -arch sm_13 -gencode arch=compute_13,code=compute_13"
-fi   
+		
+# *THIS SECTION CAN BE GENERALIZED*
+# GPU architecture (default is 20)
+case "$cuda_arch" in
+35 )
+	# This is for TESLA K20 cards (GK110)
+    nvccflags="$nvccflags -m64 -arch=sm_35 --ptxas-options=-v --fmad=false"
+    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_30"
+    ;;
+30 )
+	# This is for GeForce GTX6xx and TESLA K10 cards (GK104)
+    nvccflags="$nvccflags -m64 -arch=sm_30 --ptxas-options=-v --fmad=false"
+    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_30"
+    ;;
+25 )
+    nvccflags="$nvccflags -m64 -arch=sm_25 --ptxas-options=-v --fmad=false"
+    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_20"
+    ;;
+20 )
+    nvccflags="$nvccflags -m64 -arch=sm_20 --ptxas-options=-v --fmad=false"
+    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_20"
+    ;;
+13 )
+    nvccflags="$nvccflags -m64 -arch=sm_13 --ptxas-options=-v"
+    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_13"
+    ;;        
+esac
 
-nvccflags="-ccbin gcc -O3 --compiler-options '-fPIC -fopenmp'"
-
-# Starting from empty flags....
-phigemm_opts=$try_phigemm_opts
 
 if test "$use_debug" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_DEBUG"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_DEBUG"
 fi
 
 if test "$use_multigpu" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_PINNED"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_PINNED"
 else
 	if test "$use_pinned" == 1 ; then
-    	phigemm_opts="$phigemm_opts -D__PHIGEMM_PINNED"
+    	try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PINNED"
 	fi
 fi
 
 if test "$use_profile" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_PROFILE"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PROFILE"
 fi
 
 if test "$use_parallel" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_PARA"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PARA"
 fi
 
 if test "$use_explicit_factor" == 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
 fi
 	
 if test "$use_selftune" -eq 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_SELFTUNE"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_SELFTUNE"
 fi	
 
 if test "$use_magmablas" -eq 1 && test "$have_magma" -eq 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_MAGMABLAS"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_MAGMABLAS"
 else
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_CUBLAS"	
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_CUBLAS"	
 fi
 
 if test "$use_cpu_only" -eq 1 ; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_CPUONLY"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_CPUONLY"
 fi
 
 if test "$use_gpu_only" -eq 1; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_GPUONLY"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_GPUONLY"
 fi
 
 if test "$use_special_k" -eq 1; then
-    phigemm_opts="$phigemm_opts -D__PHIGEMM_ENABLE_SPECIALK"
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_ENABLE_SPECIALK"
 fi
+
+phigemm_opts=$try_phigemm_opts
+
 cuda_include="-I$cuda_path/include -I$topdir/include"
 # blas_libs="$topdir/lib/libphigemm.a $blas_libs"   
 
 echo setting CUDA_LIBS... $cuda_libs
-	
+
+# ?	
 try_iflags="$try_iflags $cuda_include"
+
 ld_libs="$topdir/lib/libphigemm.a $cuda_libs $blas_libs"
 
 if test "$have_cuda" -eq 1; then
