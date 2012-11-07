@@ -62,7 +62,11 @@
 #endif
 
 #ifndef __LOWER_LIMIT
+#if defined(__PHIGEMM_ENABLE_SPECIALK)
 #define __LOWER_LIMIT 63
+#else
+#define __LOWER_LIMIT 127
+#endif
 #endif
 
 #ifndef __UPPER_LIMIT_NM
@@ -70,7 +74,7 @@
 #endif
 
 #ifndef __UPPER_LIMIT_K
-#define __UPPER_LIMIT_K 1024
+#define __UPPER_LIMIT_K 1023
 #endif
 
 #if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
