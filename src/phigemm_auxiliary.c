@@ -541,7 +541,7 @@ void phiGemmShutdown()
 #if !defined(__PHIGEMM_CPUONLY)
 
 #if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] *** shutdown *** is_phigemm_init:%d, is_external_memory_alloc:%d, is_internal_memory_alloc:%d, devices: %d\n",is_phigemm_init, is_external_memory_alloc, is_internal_memory_alloc, phiGemmNumDevices);
+	printf("[PHIGEMM_DEBUG] *** shutdown *** is_phigemm_init:%d, is_external_memory_alloc:%d, is_internal_memory_alloc:%d, devices: %d\n",is_phigemm_init, is_external_memory_alloc, is_internal_memory_alloc, myPhiGemmEnv.numDevices);
 	fflush(stdout);
 #endif
 
