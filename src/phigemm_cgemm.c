@@ -100,7 +100,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	is_splitA = (*n > *m) ? 0:1;
 
-	/* Assign the split factor for phidgemm (2: CGEMM) */
+	/* Assign the split factor for phiCgemm (2: CGEMM) */
 	split = myPhiGemmTng.split[2];
 
 	/* recursive splitting */

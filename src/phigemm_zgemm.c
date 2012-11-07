@@ -161,7 +161,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		// cpuGPUheuristic(...) = 0 >> CPU+GPU
 		is_splitA = (*n > *m) ? 0:1;
 
-		/* Assign the split factor for phidgemm (3: ZGEMM) */
+		/* Assign the split factor for phiZgemm (3: ZGEMM) */
 #if !defined(__PHIGEMM_GPUONLY)
 		split = myPhiGemmTng.split[3];
 #else
