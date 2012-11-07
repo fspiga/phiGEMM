@@ -79,10 +79,12 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	int last_split = 0, local_split = myPhiGemmTng.SPLITK_DGEMM, splitted_size;
 	size_t mem_buffer = 0L, memsize_gpu = myPhiGemmHdl.smem[iDev];
 
+#if defined(__PHIGEMM_DEBUG)
 	double start_axpy, start_gemm_total, stop_axpy, stop_gemm_total;
 	double time_axpy = 0;
 
 	start_gemm_total = phigemm_cclock();
+#endif
 
 	do{
 
@@ -158,7 +160,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		status = cublasGetMatrixAsync ( (* m), (* n), sizeof(double), devPtrC[stream], (* m), C_buf[stream], *ldc, streamPtr[stream] );
 
+#if defined(__PHIGEMM_DEBUG)
 		start_axpy = phigemm_cclock();
+#endif
 
 		if( count != 0 ) {
 			cudaStreamSynchronize( streamPtr[(stream+1)%MAX_N_STREAM] );
@@ -176,8 +180,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		}
 
+#if defined(__PHIGEMM_DEBUG)
 		stop_axpy = phigemm_cclock();
 		time_axpy += stop_axpy - start_axpy;
+#endif
 
 		if( is_transa) offsetA += splitted_size;
 		else offsetA += (* m) * splitted_size;
@@ -186,7 +192,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		else offsetB += splitted_size;
 	}
 
+#if defined(__PHIGEMM_DEBUG)
 	start_axpy = phigemm_cclock();
+#endif
 
 	cudaStreamSynchronize( streamPtr[stream] );
 	for(i=0, offsetC=0; i<(*n); i++){
@@ -194,8 +202,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		offsetC += (* ldc);
 	}
 
+#if defined(__PHIGEMM_DEBUG)
 	stop_axpy = phigemm_cclock();
 	time_axpy += stop_axpy - start_axpy;
+#endif
 
 	cudaStreamDestroy( streamPtr[0] );
 	cudaStreamDestroy( streamPtr[1] );
@@ -207,9 +217,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		cudaFreeHost( C_buf[i] );
 	}
 
-	stop_gemm_total = phigemm_cclock();
-
 #if defined(__PHIGEMM_DEBUG)
+
+	stop_gemm_total = phigemm_cclock();
 
 	double time_total = stop_gemm_total - start_gemm_total;
 
@@ -222,6 +232,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 #endif
 
-	// cudaMemset( myPhiGemmHdl.pmem[iDev], 0, mem_buffer );
+#if defined(__PHIGEMM_MEMSET)
+	cudaMemset( myPhiGemmHdl.pmem[iDev], 0, mem_buffer );
+#endif
 }
 
