@@ -13,6 +13,10 @@
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
+#if defined(__INTEL) && defined(__MKL) && defined(__OMP) && defined (__EXPERIMENTAL)
+#include "mkl.h"
+#endif
+
 #define PRECISION_D
 #if defined(PRECISION_D) || defined(PRECISION_S)
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
@@ -24,10 +28,6 @@
 #define gemm_mkl dgemm_
 #define PHIGEMM_M phidgemm_specialK
 #define PHIGEMM_GEMM_MF phigemm_specialK
-
-#if defined(__PHIGEMM_PROFILE)
-extern FILE *phiProfileFile;
-#endif
 
 #define MAX_N_STREAM 2
 
@@ -166,13 +166,33 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		if( count != 0 ) {
 			cudaStreamSynchronize( streamPtr[(stream+1)%MAX_N_STREAM] );
-			// mkl_domain_set_num_threads ( 1, MKL_BLAS );
+
+#if defined(__INTEL) && defined(__MKL) && defined(__OMP) && defined (__EXPERIMENTAL)
+			/* >>> Alternative way to handle multiple DAXPY:
+			 * - OpenMP threads for BLAS are set to 0
+			 * - each thread perform a group of single-threaded DAXPY
+			 * - mkl_domain_set_num_threads is restored to the default
+			 */
+
+			mkl_domain_set_num_threads ( 1, MKL_BLAS );
+
+#pragma omp for private(offsetC)
+			for(i=0; i<(*n); i++){
+				offsetC = (* ldc) * i;
+				daxpy_( m, &DA, C_buf[(stream+1)% MAX_N_STREAM]+offsetC, &inc, C+offsetC, &inc);
+			}
+
+			mkl_domain_set_num_threads ( myPhiGemmEnv.cores, MKL_BLAS );
+#else
+
 			for(i=0, offsetC=0; i<(*n); i++){
 				daxpy_( m, &DA, C_buf[(stream+1)%MAX_N_STREAM]+offsetC, &inc, C+offsetC, &inc);
 				offsetC += (* ldc);
 			}
-		}
-		else{
+#endif
+
+		} else {
+
 			for(i=0, offsetC=0; i<(*n); i++){
 				dscal_( m, beta, C+offsetC, &inc );
 				offsetC += (* ldc);
