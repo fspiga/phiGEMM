@@ -38,6 +38,7 @@ prereq:
 test:
 	rm -rf $(PHIGEMM)/bin/*.x
 	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(PHIGEMM)/bin/single_test.x $(CSCRPATH)/single_test.c $(EXT_INC) $(LD_LIB)
+	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(PHIGEMM)/bin/single_test_2.x $(CSCRPATH)/single_test_2.c $(EXT_INC) $(LD_LIB)
 	gcc $(GEMM_OPT) -c $(CSCRPATH)/cptimer.c -o .objs/cptimer.o
 	gcc $(GEMM_OPT) -c $(CUDA_PATH)/src/fortran_thunking.c -I$(CUDA_PATH)/src $(EXT_INC) -o .objs/fortran_thunking.o
 	gcc $(GEMM_OPT) -c $(CSCRPATH)/cuda_env.c -I$(CSCRPATH) $(EXT_INC) -o .objs/cuda_env.o

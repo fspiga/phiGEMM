@@ -497,7 +497,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 
 		cudaEventRecord(events[iDev][3], myPhiGemmHdl.stream[iDev] );
 
-#if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
+#if defined(__PHIGEMM_MULTI_GPU) || defined(__PHIGEMM_MULTI_GPU)
 
 		gpu_lda = m_gpu[iDev];
 		gpu_ldb = k_gpu[iDev];

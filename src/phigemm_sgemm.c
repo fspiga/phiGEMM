@@ -344,7 +344,7 @@ void PHIGEMM_SGEMM_MF(const char *transa, const char *transb, const int *m,
 			shiftA += m_h2d[iDev];
 		}
 
-		cudaEventRecord(events[iDev][1], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][1], myPhiGemmHdl.stream[iDev] );
 
 		devPtrB[iDev] = devPtrA[iDev] + m_gpu[iDev] * k_gpu[iDev];
 		if ( is_transb ) {
@@ -384,7 +384,7 @@ void PHIGEMM_SGEMM_MF(const char *transa, const char *transb, const int *m,
 
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
 				sizeof(float), devPtrC[iDev], m_gpu[iDev], C+shiftC,
-				*ldc, phiStreams[iDev]);
+				*ldc, myPhiGemmHdl.stream[iDev]);
 		if (status != CUBLAS_STATUS_SUCCESS) {
 			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}

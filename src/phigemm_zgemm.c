@@ -496,7 +496,7 @@ void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
 				alpha, devPtrA[iDev], gpu_lda, devPtrB[iDev], gpu_ldb,
 				beta, devPtrC[iDev], m_gpu[iDev]);
 
-		cudaEventRecord(events[iDev][4], phiStreams[iDev] );
+		cudaEventRecord(events[iDev][4], myPhiGemmHdl.stream[iDev] );
 
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
 				sizeof(cuDoubleComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
