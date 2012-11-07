@@ -1,4 +1,4 @@
-Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+Copyright (C) 2011-2013 Quantum ESPRESSO Foundation
 Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
 
 All the material included in this distribution is free software;
@@ -358,7 +358,7 @@ These script are still in "beta". Please report any error or misfunction.
  
 8. >>> Releases
 
-v2.0   - December XX, 2012    [ EXPECTED ]
+v2.0.0 - December 15, 2012  [ EXPECTED ]
 v1.9.9 - October 1, 2012    ( various fixes at several levels )
 v1.9   - May 23, 2012       ( fixes + compatibility CUDA 5.x )
 v1.8   - April 1, 2012      ( ACML and PGI supported - internal tests work )
