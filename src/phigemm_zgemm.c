@@ -340,9 +340,9 @@ void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
 	cudaEvent_t events[myPhiGemmEnv.numDevices * NSTREAMS][__PHIGEMM_EVENTS];
 
 	/* timing using CPU clocks */
-	double start_mkl, start_total, stop_mkl, stop_total;
+	double start_gemm_cpu, start_gemm_total, stop_gemm_cpu, stop_gemm_total;
 
-	start_total = phigemm_cclock();
+	start_gemm_total = phigemm_cclock();
 #endif
 
 	/* check if the matrices are transposed */
@@ -532,14 +532,14 @@ void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
 	}
 
 #if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
-	start_mkl = phigemm_cclock();
+	start_gemm_cpu = phigemm_cclock();
 #endif
 
 	gemm_mkl(transa, transb, &m_cpu, &n_cpu, &k_cpu, alpha, A+a_offset,
 			lda, B+b_offset, ldb, beta, C+c_offset, ldc);
 
 #if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
-	stop_mkl= phigemm_cclock();
+	stop_gemm_cpu= phigemm_cclock();
 #endif
 
 	// Sync stream by stream.... we can do better
@@ -581,14 +581,14 @@ void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
 	}
 
 #if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
-	start_mkl = phigemm_cclock();
+	start_gemm_cpu = phigemm_cclock();
 #endif
 
 	gemm_mkl(transa, transb, &m_cpu, &n_cpu, &k_cpu, alpha, A+a_offset,
 			lda, B+b_offset, ldb, beta, C+c_offset, ldc);
 
 #if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
-	stop_mkl= phigemm_cclock();
+	stop_gemm_cpu= phigemm_cclock();
 #endif
 
 	shiftC = 0;
@@ -628,13 +628,13 @@ void PHIGEMM_ZGEMM_MF(const char *transa, const char *transb, const int *m,
 #endif
 
 #if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
-	stop_total = phigemm_cclock();
+	stop_gemm_total = phigemm_cclock();
 #endif
 
 #if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
 	float time_temp, time_mem_h2d, time_gemm_cuda, time_mem_d2h;
-	double time_total = stop_total - start_total;
-	double time_mkl = stop_mkl - start_mkl;
+	double time_total = stop_gemm_total - start_gemm_total;
+	double time_mkl = stop_gemm_cpu - start_gemm_cpu;
 	double unbalance;
 	float new_split;
 

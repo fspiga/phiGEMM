@@ -79,10 +79,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	int last_split = 0, local_split = myPhiGemmTng.SPLITK_DGEMM, splitted_size;
 	size_t mem_buffer = 0L, memsize_gpu = myPhiGemmHdl.smem[iDev];
 
-	double start_axpy, start_total, stop_axpy, stop_total;
+	double start_axpy, start_gemm_total, stop_axpy, stop_gemm_total;
 	double time_axpy = 0;
 
-	start_total = phigemm_cclock();
+	start_gemm_total = phigemm_cclock();
 
 	do{
 
@@ -207,11 +207,11 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		cudaFreeHost( C_buf[i] );
 	}
 
-	stop_total = phigemm_cclock();
+	stop_gemm_total = phigemm_cclock();
 
 #if defined(__PHIGEMM_DEBUG)
 
-	double time_total = stop_total - start_total;
+	double time_total = stop_gemm_total - start_gemm_total;
 
 #if defined(__PHIGEMM_PROFILE)
 	printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d %d %d ~ Special K ~ local_split:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
