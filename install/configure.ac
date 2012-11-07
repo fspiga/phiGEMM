@@ -129,7 +129,7 @@ AC_ARG_WITH(gpu_only,
    [use_gpu_only=0])
    
 AC_ARG_WITH(pinned, 
-   [AS_HELP_STRING([--with-mem-pinned],
+   [AS_HELP_STRING([--with-pinned],
        [assume host memory is PINNED (default: no)])],
    [if  test "$enableval" = "yes" ; then
       use_pinned=1

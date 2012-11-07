@@ -1302,7 +1302,7 @@ Optional Packages:
                           call-by-call profiling (default: no)
   --with-gpu-only         everything is performed only by the GPU, useful for
                           call-by-call profiling (default: no)
-  --with-mem-pinned       assume host memory is PINNED (default: no)
+  --with-pinned           assume host memory is PINNED (default: no)
   --with-split-by-hand    the split factor has to be specified in the code
                           instead of using env variables (default: no)
   --with-special-k        enable SPECIAL-K for bad-shaped rectangular matrices
