@@ -59,7 +59,9 @@ int stringCmp( const void *a, const void *b)
 /* This routine computes the memory required to store the considered matrices */
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
-#if !defined(__PHIGEMM_GPUONLY)
+#if defined(__PHIGEMM_GPUONLY)
+	return ( m_in*k_in + k_in*n_in + m_in*n_in );
+#else
 	int m_split, n_split, tmp;
 
 	if (is_splitA) {
@@ -80,8 +82,6 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
 		return( m_in*k_in + k_in*n_split/myPhiGemmEnv.numDevices + m_in*n_split/myPhiGemmEnv.numDevices );
 	}
-#else
-	return ( m_in*k_in + k_in*n_in + m_in*n_in );
 #endif
 }
 
@@ -91,13 +91,13 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 	size_t memsize_gpu = myPhiGemmHdl.smem[0] * myPhiGemmEnv.numDevices;
 	size_t mem_gpu = memOccupancy(is_splitA, split, m, n, k) * type_size;
 
+#if 0
 	int tmp_m = m;
 	int tmp_n = n;
 
 	// This is ok, much better if we consider  padded matrices...
 	const int step = 64;
 
-#if 0
 	/* repeat until the "new" matrices fit the GPU memory */
 	while (mem_gpu > memsize_gpu) {
 		if (is_splitA) {
@@ -145,9 +145,9 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 int cpuGPUheuristic(int m, int n, int k, char type)
 {
 
-	/* 0: CPU-only
-	 * 1: special-K
-	 * 2: standard (split A or B)
+	/* 0  : CPU-only
+	 * 1  : special-K
+	 * 2  : standard (split A or B)
 	 */
 
 #if defined(__PHIGEMM_ENABLE_SPECIALK)
