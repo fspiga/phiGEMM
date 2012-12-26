@@ -532,7 +532,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 #else
 
 #if defined(__PHIGEMM_PROFILE)
-	printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
+	//printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
 	myPhiGemmEnv.profileFile = fopen (myPhiGemmEnv.filename, "a");
 #endif
 
