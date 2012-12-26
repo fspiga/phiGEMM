@@ -32,15 +32,21 @@
 #if !defined(__PHIGEMM_CPUONLY)
 typedef cuComplex phiComplex;
 typedef cuDoubleComplex phiDoubleComplex;
-#define phigemm_real_part(data) data.x
-#define phigemm_img_part(data) data.y
+
+#define phigemm_get_real_part(data) data.x
+#define phigemm_get_img_part(data) data.y
+#define phigemm_set_real_part(data, value) data.x = value
+#define phigemm_set_img_part(data, value) data.y = value
 
 #else
 // Replacements if CUDA is not available
 typedef float phiComplex[2];
 typedef double phiDoubleComplex[2];
-#define phigemm_real_part(data) data[0]
-#define phigemm_img_part(data) data[1]
+
+#define phigemm_get_real_part(data) data[0]
+#define phigemm_get_img_part(data) data[1]
+#define phigemm_set_real_part(data, value) data[0] = value
+#define phigemm_set_img_part(data, value) data[1] = value
 
 #endif
 
