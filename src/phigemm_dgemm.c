@@ -126,6 +126,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		break;
 
+#if !defined(__PHIGEMM_CPUONLY)
+
 	case 1:
 		ground_level = 0;
 
@@ -253,6 +255,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			}
 		}
 		break;
+
+#endif
+
 	}
 
 	if ( first_call) {
@@ -260,10 +265,12 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		first_call = 0;
 		splitting_level = 0;
 
+#if !defined(__PHIGEMM_CPUONLY)
 		if ( cudaSetDevice(myPhiGemmHdl.devId[0]) != cudaSuccess) {
 			printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
 			exit(EXIT_FAILURE);
 		}
+#endif
 
 #if defined(__PHIGEMM_PROFILE)
 		stop = phigemm_cclock() - start;
@@ -308,6 +315,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	}
 	return;
 }
+
+#if !defined(__PHIGEMM_CPUONLY)
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
@@ -865,3 +874,5 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 	}
 #endif
 }
+
+#endif

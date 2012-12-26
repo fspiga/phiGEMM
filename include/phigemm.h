@@ -25,6 +25,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 void phiGemmShutdown();
 
+#if !defined(__PHIGEMM_CPUONLY)
 int phiGemmIsInit();
 
 void phigemmSetSplitFactor(float *x);
@@ -32,9 +33,9 @@ void phigemmSetSplitFactor(float *x);
 float phigemmGetSplitFactor(int selection);
 
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize);
+#endif
 
-
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 void phiSgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const float *alpha,
 		const float *A, const int *lda, const float *B,
@@ -54,21 +55,21 @@ void phidgemm_specialK(const char *transa, const char *transb, const int *m,
 		const char *file, const char * line );
 
 void phiCgemm (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuComplex *alpha,
-		const cuComplex *A, const int *lda, const cuComplex *B,
-		const int *ldb, const cuComplex *beta, cuComplex *C,
+		const int *n, const int *k, const phiComplex *alpha,
+		const phiComplex *A, const int *lda, const phiComplex *B,
+		const int *ldb, const phiComplex *beta, phiComplex *C,
 		const int *ldc, const char *file, const char * line );
 
 void phiZgemm (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
 		const int *ldc, const char *file, const char * line );
 
 void phizgemm_specialK (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
 		const int *ldc, const char *file, const char * line );
 #else
 	void phiSgemm (const char *transa, const char *transb, const int *m,
@@ -87,21 +88,21 @@ void phizgemm_specialK (const char *transa, const char *transb, const int *m,
 			const int *ldb, const double *beta, double *C, const int *ldc);
 
 	void phiCgemm (const char *transa, const char *transb, const int *m,
-			const int *n, const int *k, const cuComplex *alpha,
-			const cuComplex *A, const int *lda, const cuComplex *B,
-			const int *ldb, const cuComplex *beta, cuComplex *C,
+			const int *n, const int *k, const phiComplex *alpha,
+			const phiComplex *A, const int *lda, const phiComplex *B,
+			const int *ldb, const phiComplex *beta, phiComplex *C,
 			const int *ldc);
 
 	void phiZgemm (const char *transa, const char *transb, const int *m,
-			const int *n, const int *k, const cuDoubleComplex *alpha,
-			const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-			const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
+			const int *n, const int *k, const phiDoubleComplex *alpha,
+			const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+			const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
 			const int *ldc);
 
 	void phizgemm_specialK (const char *transa, const char *transb, const int *m,
-			const int *n, const int *k, const cuDoubleComplex *alpha,
-			const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-			const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
+			const int *n, const int *k, const phiDoubleComplex *alpha,
+			const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+			const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
 			const int *ldc);
 #endif
 
@@ -111,13 +112,15 @@ void phigemminit_(int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 void phigemmshutdown_();
 
+#if !defined(__PHIGEMM_CPUONLY)
 int phigemmisinit_();
 
 void phigemmsetsplitfactor_(float *x);
 
 void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize);
+#endif
 
-#if defined __PHIGEMM_PROFILE
+#if defined(__PHIGEMM_PROFILE)
 void phisgemm_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const float *alpha,
 		const float *A, const int *lda, const float *B,
@@ -137,21 +140,21 @@ void phidgemm_specialk_ (const char *transa, const char *transb, const int *m,
 		const char *file, const char * line );
 
 void phicgemm_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuComplex *alpha,
-		const cuComplex *A, const int *lda, const cuComplex *B,
-		const int *ldb, const cuComplex *beta, cuComplex *C,
+		const int *n, const int *k, const phiComplex *alpha,
+		const phiComplex *A, const int *lda, const phiComplex *B,
+		const int *ldb, const phiComplex *beta, phiComplex *C,
 		const int *ldc, const char *file, const char * line );
 
 void phizgemm_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
 		const int *ldc, const char *file, const char * line );
 
 void phizgemm_specialk_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
 		const int *ldc, const char *file, const char * line );
 #else
 void phisgemm_ (const char *transa, const char *transb, const int *m,
@@ -170,21 +173,21 @@ void phidgemm_specialk_ (const char *transa, const char *transb, const int *m,
 		const int *ldb, const double *beta, double *C, const int *ldc);
 
 void phicgemm_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuComplex *alpha,
-		const cuComplex *A, const int *lda, const cuComplex *B,
-		const int *ldb, const cuComplex *beta, cuComplex *C,
+		const int *n, const int *k, const phiComplex *alpha,
+		const phiComplex *A, const int *lda, const phiComplex *B,
+		const int *ldb, const phiComplex *beta, phiComplex *C,
 		const int *ldc);
 
 void phizgemm_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
 		const int *ldc);
 
 void phizgemm_specialk_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C,
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
 		const int *ldc);
 #endif
 

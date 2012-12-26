@@ -19,12 +19,24 @@
 #include <dlfcn.h>
 #include <ctype.h>
 
+#if !defined(__PHIGEMM_CPUONLY)
 #include "cublas_v2.h"
+#endif
 
 #include <time.h>
 #include <sys/types.h>
 #include <sys/times.h>
 #include <sys/time.h>
+
+// phiGEMM data-type <--> CUDA data-type
+#if !defined(__PHIGEMM_CPUONLY)
+typedef cuComplex phiComplex;
+typedef cuDoubleComplex phiDoubleComplex;
+#else
+// Replacements if CUDA is not available
+typedef float phiComplex[2];
+typedef double phiDoubleComplex[2];
+#endif
 
 /* --------------------------- MAIN DEFAULF VALUES ------------------------- */
 
@@ -104,6 +116,7 @@ typedef struct phiGemmEnv
 #endif
 } phiGemmEnv_t;
 
+#if !defined(__PHIGEMM_CPUONLY)
 typedef struct phiGemmHandler
 {
 	phiGemmMemDevPtr pmem;
@@ -112,6 +125,8 @@ typedef struct phiGemmHandler
 	cudaStream_t  stream[ NSTREAMS * MAX_GPUS ];
 	cublasHandle_t handle[ NSTREAMS * MAX_GPUS ];
 } phiGemmHandler_t;
+
+#endif
 
 typedef struct phiGemmTuning
 {

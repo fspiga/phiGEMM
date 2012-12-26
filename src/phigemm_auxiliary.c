@@ -37,7 +37,9 @@ static int is_internal_memory_probed = 0;
 
 struct phiGemmEnv myPhiGemmEnv;
 
+#if !defined(__PHIGEMM_CPUONLY)
 struct phiGemmHandler myPhiGemmHdl;
+#endif
 
 // C99-compatible initialization
 struct phiGemmTuning myPhiGemmTng = {
@@ -47,7 +49,8 @@ struct phiGemmTuning myPhiGemmTng = {
 		.SPLITK_ZGEMM   = __SPLITK_ZGEMM,
 		.LOWER_LIMIT    = __LOWER_LIMIT,
 		.UPPER_LIMIT_NM = __UPPER_LIMIT_NM,
-		.UPPER_LIMIT_K  = __UPPER_LIMIT_K,};
+		.UPPER_LIMIT_K  = __UPPER_LIMIT_K
+};
 
 
 /* auxiliary */
@@ -56,6 +59,7 @@ int stringCmp( const void *a, const void *b)
 	return strcmp((const char*)a,(const char*)b);
 }
 
+#if !defined(__PHIGEMM_CPUONLY)
 /* This routine computes the memory required to store the considered matrices */
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
@@ -84,7 +88,9 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 	}
 #endif
 }
+#endif
 
+#if !defined(__PHIGEMM_CPUONLY)
 /* This routine computes the recursive split */
 void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2) {
 
@@ -140,7 +146,9 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 
 	return;
 }
+#endif
 
+#if !defined(__PHIGEMM_CPUONLY)
 /* This routine returns the selected strategy for CPU-GPU splitting */
 int cpuGPUheuristic(int m, int n, int k, char type)
 {
@@ -177,10 +185,12 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 
 	return 2;
 }
+#endif
 
 // ----
 
 
+#if !defined(__PHIGEMM_CPUONLY)
 /*
  * Name			: phiGemmIsInit
  * Description	: return if phiGEMM is initialized or not
@@ -190,8 +200,9 @@ int phiGemmIsInit()
 {
 	return is_phigemm_init;
 }
+#endif
 
-
+#if !defined(__PHIGEMM_CPUONLY)
 /*
  * Name			: phiGemmIsInternalMemAlloc
  * Description	: return if memory has been allocated internally by phiGEMM
@@ -201,8 +212,9 @@ int phiGemmIsInternalMemAlloc()
 {
 	return is_internal_memory_alloc;
 }
+#endif
 
-
+#if !defined(__PHIGEMM_CPUONLY)
 /*
  * Name			: phiGemmIsExternalMemAlloc
  * Description	: return if memory has been allocated externally by the caller
@@ -212,7 +224,7 @@ int phiGemmIsExternalMemAlloc()
 {
 	return is_external_memory_alloc;
 }
-
+#endif
 
 /*
  * Name			: phigemm_cclock
@@ -234,6 +246,7 @@ double phigemm_cclock(void)
 }
 
 
+#if !defined(__PHIGEMM_CPUONLY)
 /*
  * Name			: phigemmSetSplitFactor
  * Description	: the method set the current value of a specified
@@ -254,8 +267,9 @@ void phigemmSetSplitFactor(float *x) {
 #endif
 	return;
 }
+#endif
 
-
+#if !defined(__PHIGEMM_CPUONLY)
 /*
  * Name			: phigemmGetSplitFactor
  * Description	: the method returns the current value of a specified
@@ -269,8 +283,9 @@ float phigemmGetSplitFactor(int selection) {
 	return myPhiGemmTng.prevSplit[selection];
 #endif
 }
+#endif
 
-
+#if !defined(__PHIGEMM_CPUONLY)
 /*
  * Name			: phiGemmInitMemory
  * Description	: the method performs the phiGEMM memory allocation and initialization
@@ -364,7 +379,7 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 	is_internal_memory_alloc = 1;
 	return;
 }
-
+#endif
 
 /*
  * Name			: phiGemmInit
@@ -404,6 +419,9 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	}
 #endif
 
+	/* Read environment PHI_* variables (this reading override the default */
+	readEnv();
+
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
 #if !defined(__PHIGEMM_CPUONLY)
@@ -437,9 +455,6 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 		myPhiGemmHdl.handle[ i ] = NULL;
 		myPhiGemmHdl.stream[ i ] = NULL;
 	}
-
-	/* Read environment PHI_* variables (this reading override the default */
-	readEnv();
 
 	/* Assign GPU devices to process(es) */
 	for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++) {
@@ -615,6 +630,7 @@ void phiGemmShutdown()
 
 }
 
+#if !defined(__PHIGEMM_CPUONLY)
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
 	myPhiGemmHdl.smem[ myPhiGemmHdl.devId[gpu_id] ] = (size_t) new_dev_memsize;
 
@@ -623,18 +639,20 @@ void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
 	fflush(stdout);
 #endif
 }
+#endif
 
 /* ------------ FORTRAN INTERFACES FOR PHIGEMM PUBLIC METHODS -------------- */
 void phigemminit_(int nGPU, phiGemmMemDevPtr* ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag ){ phiGemmInit( nGPU, ptr, dev_memsize, deviceToBond, tag); }
 
 void phigemmshutdown_(){ phiGemmShutdown(); }
 
+#if !defined(__PHIGEMM_CPUONLY)
 int phigemmisinit_(){return phiGemmIsInit();}
 
 void phigemmsetsplitfactor_(float *x) { phigemmSetSplitFactor(x); }
 
 void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize) { phiGemmSetAvaiableScratchSpace(gpu_id, new_dev_memsize); }
-
+#endif
 /* ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus

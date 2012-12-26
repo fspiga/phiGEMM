@@ -29,30 +29,30 @@
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuComplex *alpha,
-		const cuComplex *A, const int *lda, const cuComplex *B,
-		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
+		const int *n, const int *k, const phiComplex *alpha,
+		const phiComplex *A, const int *lda, const phiComplex *B,
+		const int *ldb, const phiComplex *beta, phiComplex *C, const int *ldc,
 		int is_splitA, float split,
 		const char *file, const char * line);
 #else
 void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuComplex *alpha,
-		const cuComplex *A, const int *lda, const cuComplex *B,
-		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
+		const int *n, const int *k, const phiComplex *alpha,
+		const phiComplex *A, const int *lda, const phiComplex *B,
+		const int *ldb, const phiComplex *beta, phiComplex *C, const int *ldc,
 		int is_splitA, float split);
 #endif
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_M (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuComplex *alpha,
-		const cuComplex *A, const int *lda, const cuComplex *B,
-		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
+		const int *n, const int *k, const phiComplex *alpha,
+		const phiComplex *A, const int *lda, const phiComplex *B,
+		const int *ldb, const phiComplex *beta, phiComplex *C, const int *ldc,
 		const char *file, const char * line)
 #else
 void PHIGEMM_M (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuComplex *alpha,
-		const cuComplex *A, const int *lda, const cuComplex *B,
-		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc)
+		const int *n, const int *k, const phiComplex *alpha,
+		const phiComplex *A, const int *lda, const phiComplex *B,
+		const int *ldb, const phiComplex *beta, phiComplex *C, const int *ldc)
 #endif
 {
 	double time_call;
@@ -111,7 +111,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	if ( is_splitA )
 	{
 
-		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(cuComplex);
+		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(phiComplex);
 
 		if ( mem_gpu * myPhiGemmEnv.numDevices > memsize_gpu )
 		{
@@ -123,7 +123,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 					*m, *n, *k, (unsigned long)mem_gpu, (unsigned long)memsize_gpu, *m, *n);  fflush(stdout);
 #endif
 
-			bestFit(is_splitA, split, *m, *n, *k, sizeof(cuComplex), &p1, &p2);
+			bestFit(is_splitA, split, *m, *n, *k, sizeof(phiComplex), &p1, &p2);
 
 			a_offset = ( *transa == 'n' || *transa == 'N' )? p1 : ((*lda)*p1);
 			c_offset = p1;
@@ -146,7 +146,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 	} else {
 
-		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(cuComplex);
+		mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(phiComplex);
 
 		if ( mem_gpu * myPhiGemmEnv.numDevices > memsize_gpu )
 		{
@@ -158,7 +158,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 					*m, *n, *k, (unsigned long)mem_gpu, (unsigned long)memsize_gpu, *k, *n); fflush(stdout);
 #endif
 
-			bestFit(is_splitA, split, *m, *n, *k, sizeof(cuComplex), &p1, &p2);
+			bestFit(is_splitA, split, *m, *n, *k, sizeof(phiComplex), &p1, &p2);
 
 			b_offset = ( *transb == 'n' || *transb == 'N' )? ((*ldb)*p1) : p1;
 			c_offset = (*ldc)*p1;
@@ -202,16 +202,16 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuComplex *alpha,
-		const cuComplex *A, const int *lda, const cuComplex *B,
-		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
+		const int *n, const int *k, const phiComplex *alpha,
+		const phiComplex *A, const int *lda, const phiComplex *B,
+		const int *ldb, const phiComplex *beta, phiComplex *C, const int *ldc,
 		int is_splitA, float split,
 		const char *file, const char * line)
 #else
 void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuComplex *alpha,
-		const cuComplex *A, const int *lda, const cuComplex *B,
-		const int *ldb, const cuComplex *beta, cuComplex *C, const int *ldc,
+		const int *n, const int *k, const phiComplex *alpha,
+		const phiComplex *A, const int *lda, const phiComplex *B,
+		const int *ldb, const phiComplex *beta, phiComplex *C, const int *ldc,
 		int is_splitA, float split)
 #endif
 {
@@ -338,12 +338,12 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 
 		if ( is_transa ) {
 			status = cublasSetMatrixAsync (k_h2d[iDev], m_h2d[iDev],
-					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
+					sizeof(phiComplex), A+shiftA, *lda, devPtrA[iDev],
 					k_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftA += m_h2d[iDev] * (*lda);
 		} else {
 			status = cublasSetMatrixAsync (m_h2d[iDev], k_h2d[iDev],
-					sizeof(cuComplex), A+shiftA, *lda, devPtrA[iDev],
+					sizeof(phiComplex), A+shiftA, *lda, devPtrA[iDev],
 					m_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftA += m_h2d[iDev];
 		}
@@ -352,17 +352,17 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		cudaEventRecord(events[iDev][1], myPhiGemmHdl.stream[iDev] );
 #endif
 
-		shift += (EVENIZE(m_gpu[iDev] * k_gpu[iDev])) *sizeof(cuComplex);
+		shift += (EVENIZE(m_gpu[iDev] * k_gpu[iDev])) *sizeof(phiComplex);
 		devPtrB[iDev] = (char *) myPhiGemmHdl.pmem[iDev] + shift;
 
 		if ( is_transb ) {
 			status = cublasSetMatrixAsync (n_h2d[iDev], k_h2d[iDev],
-					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
+					sizeof(phiComplex), B+shiftB, *ldb, devPtrB[iDev],
 					n_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftB += n_h2d[iDev];
 		} else {
 			status = cublasSetMatrixAsync (k_h2d[iDev], n_h2d[iDev],
-					sizeof(cuComplex), B+shiftB, *ldb, devPtrB[iDev],
+					sizeof(phiComplex), B+shiftB, *ldb, devPtrB[iDev],
 					k_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 			shiftB += n_h2d[iDev] * (*ldb);
 		}
@@ -372,12 +372,12 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 #endif
 
 		/* set the matrix C to device */
-		shift += (EVENIZE(k_gpu[iDev] * n_gpu[iDev]) )*sizeof(cuComplex);
+		shift += (EVENIZE(k_gpu[iDev] * n_gpu[iDev]) )*sizeof(phiComplex);
 		devPtrC[iDev] = (char *) myPhiGemmHdl.pmem[iDev] + shift;
 
 		if ( beta->x != 0.0 || beta->y != 0.0 ){
 			status = cublasSetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
-					sizeof(cuComplex), C+shiftC, *ldc, devPtrC[iDev],
+					sizeof(phiComplex), C+shiftC, *ldc, devPtrC[iDev],
 					m_gpu[iDev], myPhiGemmHdl.stream[iDev]);
 		}
 
@@ -403,7 +403,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 #endif
 
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
-				sizeof(cuComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
+				sizeof(phiComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
 				*ldc, myPhiGemmHdl.stream[iDev]);
 
 		if (status != CUBLAS_STATUS_SUCCESS) {
@@ -473,7 +473,7 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 #endif
 
 		status = cublasGetMatrixAsync (m_h2d[iDev], n_h2d[iDev],
-				sizeof(cuComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
+				sizeof(phiComplex), devPtrC[iDev], m_gpu[iDev], C+shiftC,
 				*ldc, myPhiGemmHdl.stream[iDev]);
 
 		if (status != CUBLAS_STATUS_SUCCESS) {
@@ -560,13 +560,13 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 				*n,
 				*k,
 				time_mem_h2d,
-				(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuComplex)),
+				(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(phiComplex)),
 				time_mkl,
 				1.e-6 * PHIGEMM_FLOPS( (double)m_cpu, (double)(*n), (double)(*k) )/(time_mkl*1000),
 				time_gemm_cuda,
 				1.e-6 * PHIGEMM_FLOPS( (double)m_gpu[iDev], (double)(*n), (double)(*k) )/(time_gemm_cuda*1000),
 				time_mem_d2h,
-				m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(cuComplex)),
+				m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(phiComplex)),
 				unbalance,
 				time_total,
 				1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
@@ -580,13 +580,13 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 				*n,
 				*k,
 				time_mem_h2d,
-				(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuComplex)),
+				(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(phiComplex)),
 				time_mkl,
 				1.e-6 * PHIGEMM_FLOPS( (double)m_cpu, (double)(*n), (double)(*k) )/(time_mkl*1000),
 				time_gemm_cuda,
 				1.e-6 * PHIGEMM_FLOPS( (double)m_gpu[iDev], (double)(*n), (double)(*k) )/(time_gemm_cuda*1000),
 				time_mem_d2h,
-				m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(cuComplex)),
+				m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(phiComplex)),
 				unbalance,
 				time_total,
 				1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
@@ -602,13 +602,13 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 				split,
 				*k,
 				time_mem_h2d,
-				(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuComplex)),
+				(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(phiComplex)),
 				time_mkl,
 				1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_cpu, (double)(*k) )/(time_mkl*1000),
 				time_gemm_cuda,
 				1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_gpu[iDev], (double)(*k) )/(time_gemm_cuda*1000),
 				time_mem_d2h,
-				m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(cuComplex)),
+				m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(phiComplex)),
 				unbalance,
 				time_total,
 				1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k))/(time_total*1000));
@@ -622,13 +622,13 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 				split,
 				*k,
 				time_mem_h2d,
-				(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(cuComplex)),
+				(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(phiComplex)),
 				time_mkl,
 				1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_cpu, (double)(*k) )/(time_mkl*1000),
 				time_gemm_cuda,
 				1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)n_gpu[iDev], (double)(*k) )/(time_gemm_cuda*1000),
 				time_mem_d2h,
-				m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(cuComplex)),
+				m_gpu[iDev]*n_gpu[iDev]/time_mem_d2h/(1024*1024*1024/sizeof(phiComplex)),
 				unbalance,
 				time_total,
 				1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));

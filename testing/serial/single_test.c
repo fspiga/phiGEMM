@@ -602,6 +602,7 @@ int main(int argc, char **argv)
 			}
 
 
+#if !defined(__PHIGEMM_CPUONLY)
 			/* Optimal.... but probably not optimal anymore! */
 			//			currentSplitFactor = (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU / ((( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU + (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / cpu_time) );
 			float splits[4];
@@ -610,6 +611,7 @@ int main(int argc, char **argv)
 			splits[2] = currentSplitFactor;
 			splits[3] = currentSplitFactor;
 			phigemmSetSplitFactor((float *)&splits);
+#endif
 
 			t1 = seconds();
 #if defined(__PHIGEMM_PROFILE)
@@ -693,7 +695,8 @@ int main(int argc, char **argv)
 #elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			id = 3;
 #endif
-			fprintf( stdout, "[%c%c]  phiGEMM ( %d CPU / %d GPUs ) phiGEMM (split: %5.4f): Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\t errors: %c\n", transa[ count ], transb[ count ], atoi( getenv( "OMP_NUM_THREADS" ) ), nGPU, phigemmGetSplitFactor(id), hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor, (errors > 0 ? 'Y' : (errors == 0 ? 'N' : 'X')) );
+
+			fprintf( stdout, "[%c%c]  phiGEMM ( %d CPU / %d GPUs ) phiGEMM (split: %5.4f): Elapsed time = %10.6f s - RPeak = %10.4f GFlop/s\t(Split = %.3f)\t errors: %c\n", transa[ count ], transb[ count ], atoi( getenv( "OMP_NUM_THREADS" ) ), nGPU, currentSplitFactor, hybrid_time, ( 1.e-6 ) * PHIGEMM_FLOPS(( double ) m, ( double ) n, ( double ) k) / (hybrid_time*1000), currentSplitFactor, (errors > 0 ? 'Y' : (errors == 0 ? 'N' : 'X')) );
 			fflush( stdout );
 //			fprintf( stdout, "[%c%c] MKL (%2d) RPeak = %10.4f\t\tCUBLAS RPeak = %10.4f (kernel RPeak = %g)\t\tphiGEMM (GPU: %d, split: %.3f) RPeak = %10.4f [errors %c]\n\n",
 //					transa[ count ], transb[ count ], atoi( getenv( "MKL_NUM_THREADS" ) ),

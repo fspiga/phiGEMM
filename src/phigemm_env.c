@@ -21,6 +21,7 @@
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
+
 /*
  * Name			: readEnv
  * Description	: the method read from the environment some special variables
@@ -54,6 +55,7 @@ void readEnv()
 	float envar;
 	char *value = NULL;
 
+#if !defined(__PHIGEMM_CPUONLY)
 	/* SGEMM */
 	value = getenv("PHI_SGEMM_SPLIT");
 	if (value != NULL)
@@ -255,6 +257,7 @@ void readEnv()
 	}
 	myPhiGemmTng.UPPER_LIMIT_K = envar;
 
+#endif
 
 	/* This is to avoid not-defined OMP_NUM_THREADS in the environment.
 	 * Default threads num = 1 */

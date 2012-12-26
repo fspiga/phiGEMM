@@ -15,14 +15,16 @@ default: all
 all: static shared fortran
 
 PHIGEMM_OBJS= \
-phigemm_dgemm.o \
-phigemm_zgemm.o \
-phigemm_sgemm.o \
-phigemm_cgemm.o \
-phigemm_dgemm_specialK.o \
-phigemm_zgemm_specialK.o \
 phigemm_auxiliary.o \
-phigemm_env.o
+phigemm_env.o \
+phigemm_dgemm.o \
+phigemm_zgemm.o 
+#\
+#phigemm_sgemm.o \
+#phigemm_cgemm.o \
+#phigemm_dgemm_specialK.o \
+#phigemm_zgemm_specialK.o
+
 
 static: $(PHIGEMM_OBJS)
 	mkdir -p ../bin ../lib

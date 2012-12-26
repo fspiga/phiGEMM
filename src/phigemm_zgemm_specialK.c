@@ -29,35 +29,35 @@
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C, const int *ldc,
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C, const int *ldc,
 		int is_splitA, float split,
 		const char *file, const char * line);
 #else
 void PHIGEMM_GEMM_MF(const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C, const int *ldc,
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C, const int *ldc,
 		int is_splitA, float split);
 #endif
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_M (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C, const int *ldc,
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C, const int *ldc,
 		const char *file, const char * line)
 #else
 void PHIGEMM_M (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const cuDoubleComplex *alpha,
-		const cuDoubleComplex *A, const int *lda, const cuDoubleComplex *B,
-		const int *ldb, const cuDoubleComplex *beta, cuDoubleComplex *C, const int *ldc)
+		const int *n, const int *k, const phiDoubleComplex *alpha,
+		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
+		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C, const int *ldc)
 #endif
 {
 
-	cuDoubleComplex * C_buf[MAX_N_STREAM];
-	cuDoubleComplex *devPtrA[MAX_N_STREAM], *devPtrB[MAX_N_STREAM], *devPtrC[MAX_N_STREAM];
+	phiDoubleComplex * C_buf[MAX_N_STREAM];
+	phiDoubleComplex *devPtrA[MAX_N_STREAM], *devPtrB[MAX_N_STREAM], *devPtrC[MAX_N_STREAM];
 	int iDev = 0, i = 0, count = 0, stream = 0;
 	int offsetA = 0, offsetB = 0, offsetC = 0;
 	int is_transa = 0, is_transb = 0;
@@ -70,8 +70,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	int loop_times = 0;
 
 	int size = (* m) * (* n), inc = 1;
-	cuDoubleComplex DA = {1.0, 0.0};
-	cuDoubleComplex gpu_beta = {0.0, 0.0};
+	phiDoubleComplex DA = {1.0, 0.0};
+	phiDoubleComplex gpu_beta = {0.0, 0.0};
 
 	int last_split = 0, local_split = myPhiGemmTng.SPLITK_ZGEMM, splitted_size;
 	size_t mem_buffer = 0L, memsize_gpu = myPhiGemmHdl.smem[iDev];
@@ -90,7 +90,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			last_split = local_split + ( (* k) % local_split );
 		}
 
-		mem_buffer = ( (*m ) * (last_split != 0 ? last_split : local_split) + (* n) * (last_split != 0 ? last_split : local_split) + (* n) * (* m) ) * 2 * sizeof(cuDoubleComplex) ;
+		mem_buffer = ( (*m ) * (last_split != 0 ? last_split : local_split) + (* n) * (last_split != 0 ? last_split : local_split) + (* n) * (* m) ) * 2 * sizeof(phiDoubleComplex) ;
 
 	}while( (mem_buffer > memsize_gpu) && (local_split/=2) );
 
@@ -103,7 +103,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	cu_transb = ((*transb == 't')||(*transb == 'T')) ? CUBLAS_OP_T : cu_transb;
 	cu_transb = ((*transb == 'n')||(*transb == 'N')) ? CUBLAS_OP_N : cu_transb;
 
-	devPtrA[0] = (cuDoubleComplex *)(myPhiGemmHdl.pmem[iDev]);
+	devPtrA[0] = (phiDoubleComplex *)(myPhiGemmHdl.pmem[iDev]);
 	devPtrA[1] = devPtrA[0] + (* m) * (last_split != 0 ? last_split : local_split);
 	devPtrB[0] = devPtrA[1] + (* m) * (last_split != 0 ? last_split : local_split);
 	devPtrB[1] = devPtrB[0] + (* n) * (last_split != 0 ? last_split : local_split);
@@ -111,7 +111,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	devPtrC[1] = devPtrC[0] + (* m) * (* n);
 
 	for( i = 0; i < MAX_N_STREAM; i++){
-		if( cudaHostAlloc( (void **) &C_buf[i], (* n) * (* ldc) * sizeof(cuDoubleComplex), cudaHostAllocPortable) != cudaSuccess )
+		if( cudaHostAlloc( (void **) &C_buf[i], (* n) * (* ldc) * sizeof(phiDoubleComplex), cudaHostAllocPortable) != cudaSuccess )
 		{
 			printf( "*** ERROR allocating PINNED MEMORY on CPU\n" );
 			exit( EXIT_FAILURE );
@@ -142,20 +142,20 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		cublasSetStream( myPhiGemmHdl.handle[ iDev ], streamPtr[stream] );
 
 		if( is_transa ){
-			status = cublasSetMatrixAsync ( splitted_size, (* m), sizeof(cuDoubleComplex), A + offsetA, (* lda), devPtrA[stream], gpu_lda, streamPtr[stream] );
+			status = cublasSetMatrixAsync ( splitted_size, (* m), sizeof(phiDoubleComplex), A + offsetA, (* lda), devPtrA[stream], gpu_lda, streamPtr[stream] );
 		} else {
-			status = cublasSetMatrixAsync ( (* m), splitted_size, sizeof(cuDoubleComplex), A + offsetA, (* lda), devPtrA[stream], gpu_lda, streamPtr[stream] );
+			status = cublasSetMatrixAsync ( (* m), splitted_size, sizeof(phiDoubleComplex), A + offsetA, (* lda), devPtrA[stream], gpu_lda, streamPtr[stream] );
 		}
 
 		if(is_transb ){
-			status = cublasSetMatrixAsync ( (* n), splitted_size, sizeof(cuDoubleComplex), B + offsetB, (* ldb), devPtrB[stream], gpu_ldb, streamPtr[stream] );
+			status = cublasSetMatrixAsync ( (* n), splitted_size, sizeof(phiDoubleComplex), B + offsetB, (* ldb), devPtrB[stream], gpu_ldb, streamPtr[stream] );
 		} else {
-			status = cublasSetMatrixAsync ( splitted_size, (* n), sizeof(cuDoubleComplex), B + offsetB, (* ldb), devPtrB[stream], gpu_ldb, streamPtr[stream] );
+			status = cublasSetMatrixAsync ( splitted_size, (* n), sizeof(phiDoubleComplex), B + offsetB, (* ldb), devPtrB[stream], gpu_ldb, streamPtr[stream] );
 		}
 
 		status = cublasGemm ( myPhiGemmHdl.handle[ iDev ], cu_transa, cu_transb, (* m), (* n), splitted_size, alpha, devPtrA[stream], gpu_lda, devPtrB[stream], gpu_ldb, &gpu_beta, devPtrC[stream], (* m) );
 
-		status = cublasGetMatrixAsync ( (* m), (* n), sizeof(cuDoubleComplex), devPtrC[stream], (* m), C_buf[stream], *ldc, streamPtr[stream] );
+		status = cublasGetMatrixAsync ( (* m), (* n), sizeof(phiDoubleComplex), devPtrC[stream], (* m), C_buf[stream], *ldc, streamPtr[stream] );
 
 #if defined(__PHIGEMM_DEBUG)
 		start_axpy = phigemm_cclock();
