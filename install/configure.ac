@@ -573,179 +573,189 @@ fi
 have_cuda=0
 have_magma=0
 
-# Warning
-#if test "$use_magmablas" -eq 1; then
-#    AC_MSG_WARN([MAGMA support has not yet fully implemented, stay tuned for the next version.])
-#    use_magmablas=0
-#fi
-
-# check for CUDA headers
-have_valid_cuda_header=0
-if test -e "$cuda_path/include/cuda.h"; then
-    have_valid_cuda_header=1
-fi
-
-# check for CUDA libs
-if test "$have_valid_cuda_header" == 1  && test "$have_valid_cuda_compiler" == 1 
-then 
-	nvcc=$NVCC
-	
-	try_libdirs="$cuda_path/lib64 /usr/lib64/nvidia"
-    try_libdirs="$try_libdirs $libdirs $ld_library_path"
-    for dir in $try_libdirs
-    do
-        unset ac_cv_search_cudaGetDeviceCount # clear cached value
-        unset ac_cv_search_cublasInit
-        unset ac_cv_search_cudaMemGetInfo
-        
-        if test "$dir" = "none"
-        then
-                try_loption=
-        else                  
-                try_loption="-L$dir"
-        fi	
-		
-        if test "$have_cuda" -eq 0 ; then
-			CFLAGS="$test_cflags"
-			LDFLAGS="$try_loption"
-	        LIBS=""    
-	        echo $ECHO_N "in $dir: " $ECHO_C				
-			AC_SEARCH_LIBS(cudaGetDeviceCount,cudart, 
-			      cuda_libs="$cuda_libs $LIBS",,)
-			LIBS=""
-			
-			echo $ECHO_N "in $dir: " $ECHO_C	
-			AC_SEARCH_LIBS(cublasInit,cublas, 
-				cuda_libs="$cuda_libs $LIBS",,)			  
-	 	 			  
-	 		cuda_libs="$try_loption $cuda_libs"
-	 	
-			if test "$ac_cv_search_cudaGetDeviceCount" != "no" && 
-				test "$ac_cv_search_cublasInit" != "no"
-			then			
-				have_cuda=1
-			fi
-		fi
-		
-		if test "$have_cuda" -eq 1
-		then break ; fi
-		
-	done   	
-else
-    AC_MSG_ERROR([Please check if CUDA is correctly installed.]) 
-fi
-
-# check for MAGMABLAS 
-# ATTENTION: MAGMA requires CUBLAS ** ALWAYS **	 
-if test "$have_cuda" -eq 1  && test "$use_magmablas" -eq 1 
-then 
-
-    try_libdirs="$magma_path $libdirs $ld_library_path"
-	
-    for dir in $try_libdirs
-    do        
-        MAGMA_LIB="$dir/libmagmablas.a"
-        AC_CHECK_FILE($MAGMA_LIB, have_magma=1 cuda_libs="$MAGMA_LIB $cuda_libs",)
-		
-		if test "$have_magma" -eq 1
-		then break ; fi
-	done   	
-fi
-
-#?
-AC_LANG_POP(C)  	
-
-# Warning message ...
-if test "$use_magmablas" -eq 1 && test "$have_magma" -eq 0 ; then
-    AC_MSG_WARN([MAGMA has not been detected, CUBLAS will be used instead.])
-fi
-	
-if test "$use_multithread" -eq 1; then
-	nvccflags="-O3 -ccbin gcc --compiler-options '-fPIC -fopenmp'"
-else
-	nvccflags="-O3 -ccbin gcc --compiler-options '-fPIC'"
-fi
-		
-# *THIS SECTION CAN BE GENERALIZED*
-# GPU architecture (default is 20)
-case "$cuda_arch" in
-35 )
-	# This is for TESLA K20 cards (GK110)
-    nvccflags="$nvccflags -m64 -arch=sm_35 --ptxas-options=-v --fmad=false"
-    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_30"
-    ;;
-30 )
-	# This is for GeForce GTX6xx and TESLA K10 cards (GK104)
-    nvccflags="$nvccflags -m64 -arch=sm_30 --ptxas-options=-v --fmad=false"
-    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_30"
-    ;;
-25 )
-    nvccflags="$nvccflags -m64 -arch=sm_25 --ptxas-options=-v --fmad=false"
-    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_20"
-    ;;
-20 )
-    nvccflags="$nvccflags -m64 -arch=sm_20 --ptxas-options=-v --fmad=false"
-    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_20"
-    ;;
-13 )
-    nvccflags="$nvccflags -m64 -arch=sm_13 --ptxas-options=-v"
-    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_13"
-    ;;        
-esac
-
-
-if test "$use_debug" == 1 ; then
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_DEBUG"
-fi
-
-if test "$use_multigpu" == 1 ; then
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_PINNED"
-else
-	if test "$use_pinned" == 1 ; then
-    	try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PINNED"
-	fi
-fi
-
-if test "$use_profile" == 1 ; then
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PROFILE"
-fi
-
-if test "$use_parallel" == 1 ; then
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PARA"
-fi
-
-if test "$use_explicit_factor" == 1 ; then
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
-fi
-	
-if test "$use_selftune" -eq 1 ; then
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_SELFTUNE"
-fi	
-
-if test "$use_magmablas" -eq 1 && test "$have_magma" -eq 1 ; then
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_MAGMABLAS"
-else
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_CUBLAS"	
-fi
-
 if test "$use_cpu_only" -eq 1 ; then
+
     try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_CPUONLY"
-fi
+    
+    nvcc=$cc
+    nvccflags=$ccflags
+    
+    cuda_include="-I$topdir/include"
+    cuda_libs=""
+    
+else
 
-if test "$use_gpu_only" -eq 1; then
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_GPUONLY"
-fi
+	# Warning
+	#if test "$use_magmablas" -eq 1; then
+	#    AC_MSG_WARN([MAGMA support has not yet fully implemented, stay tuned for the next version.])
+	#    use_magmablas=0
+	#fi
+	
+	# check for CUDA headers
+	have_valid_cuda_header=0
+	if test -e "$cuda_path/include/cuda.h"; then
+	    have_valid_cuda_header=1
+	fi
+	
+	# check for CUDA libs
+	if test "$have_valid_cuda_header" == 1  && test "$have_valid_cuda_compiler" == 1 
+	then 
+		nvcc=$NVCC
+		
+		try_libdirs="$cuda_path/lib64 /usr/lib64/nvidia"
+	    try_libdirs="$try_libdirs $libdirs $ld_library_path"
+	    for dir in $try_libdirs
+	    do
+	        unset ac_cv_search_cudaGetDeviceCount # clear cached value
+	        unset ac_cv_search_cublasInit
+	        unset ac_cv_search_cudaMemGetInfo
+	        
+	        if test "$dir" = "none"
+	        then
+	                try_loption=
+	        else                  
+	                try_loption="-L$dir"
+	        fi	
+			
+	        if test "$have_cuda" -eq 0 ; then
+				CFLAGS="$test_cflags"
+				LDFLAGS="$try_loption"
+		        LIBS=""    
+		        echo $ECHO_N "in $dir: " $ECHO_C				
+				AC_SEARCH_LIBS(cudaGetDeviceCount,cudart, 
+				      cuda_libs="$cuda_libs $LIBS",,)
+				LIBS=""
+				
+				echo $ECHO_N "in $dir: " $ECHO_C	
+				AC_SEARCH_LIBS(cublasInit,cublas, 
+					cuda_libs="$cuda_libs $LIBS",,)			  
+		 	 			  
+		 		cuda_libs="$try_loption $cuda_libs"
+		 	
+				if test "$ac_cv_search_cudaGetDeviceCount" != "no" && 
+					test "$ac_cv_search_cublasInit" != "no"
+				then			
+					have_cuda=1
+				fi
+			fi
+			
+			if test "$have_cuda" -eq 1
+			then break ; fi
+			
+		done   	
+	else
+	    AC_MSG_ERROR([Please check if CUDA is correctly installed.]) 
+	fi
+	
+	# check for MAGMABLAS 
+	# ATTENTION: MAGMA requires CUBLAS ** ALWAYS **	 
+	if test "$have_cuda" -eq 1  && test "$use_magmablas" -eq 1 
+	then 
+	
+	    try_libdirs="$magma_path $libdirs $ld_library_path"
+		
+	    for dir in $try_libdirs
+	    do        
+	        MAGMA_LIB="$dir/libmagmablas.a"
+	        AC_CHECK_FILE($MAGMA_LIB, have_magma=1 cuda_libs="$MAGMA_LIB $cuda_libs",)
+			
+			if test "$have_magma" -eq 1
+			then break ; fi
+		done   	
+	fi
+	
+	#?
+	AC_LANG_POP(C)  	
+	
+	# Warning message ...
+	if test "$use_magmablas" -eq 1 && test "$have_magma" -eq 0 ; then
+	    AC_MSG_WARN([MAGMA has not been detected, CUBLAS will be used instead.])
+	fi
+		
+	if test "$use_multithread" -eq 1; then
+		nvccflags="-O3 -ccbin gcc --compiler-options '-fPIC -fopenmp'"
+	else
+		nvccflags="-O3 -ccbin gcc --compiler-options '-fPIC'"
+	fi
+			
+	# *THIS SECTION CAN BE GENERALIZED*
+	# GPU architecture (default is 20)
+	case "$cuda_arch" in
+	35 )
+		# This is for TESLA K20 cards (GK110)
+	    nvccflags="$nvccflags -m64 -arch=sm_35 --ptxas-options=-v --fmad=false"
+	    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_30"
+	    ;;
+	30 )
+		# This is for GeForce GTX6xx and TESLA K10 cards (GK104)
+	    nvccflags="$nvccflags -m64 -arch=sm_30 --ptxas-options=-v --fmad=false"
+	    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_30"
+	    ;;
+	25 )
+	    nvccflags="$nvccflags -m64 -arch=sm_25 --ptxas-options=-v --fmad=false"
+	    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_20"
+	    ;;
+	20 )
+	    nvccflags="$nvccflags -m64 -arch=sm_20 --ptxas-options=-v --fmad=false"
+	    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_20"
+	    ;;
+	13 )
+	    nvccflags="$nvccflags -m64 -arch=sm_13 --ptxas-options=-v"
+	    #try_phigemm_opts="$try_phigemm_opts -D__GPU_NVIDIA_13"
+	    ;;        
+	esac
+	
+	
+	if test "$use_debug" == 1 ; then
+	    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_DEBUG"
+	fi
+	
+	if test "$use_multigpu" == 1 ; then
+	    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_MULTI_GPU -D__PHIGEMM_PINNED"
+	else
+		if test "$use_pinned" == 1 ; then
+	    	try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PINNED"
+		fi
+	fi
+	
+	if test "$use_parallel" == 1 ; then
+	    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PARA"
+	fi
+	
+	if test "$use_explicit_factor" == 1 ; then
+	    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_EXPLICIT_SPLITFACTOR"
+	fi
+		
+	if test "$use_selftune" -eq 1 ; then
+	    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_SELFTUNE"
+	fi	
+	
+	if test "$use_magmablas" -eq 1 && test "$have_magma" -eq 1 ; then
+	    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_MAGMABLAS"
+	else
+	    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_CUBLAS"	
+	fi
+	
+	if test "$use_gpu_only" -eq 1; then
+	    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_GPUONLY"
+	fi
+	
+	if test "$use_special_k" -eq 1; then
+	    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_ENABLE_SPECIALK"
+	fi
+	
+	cuda_include="-I$cuda_path/include -I$topdir/include"
+	# blas_libs="$topdir/lib/libphigemm.a $blas_libs"   
 
-if test "$use_special_k" -eq 1; then
-    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_ENABLE_SPECIALK"
 fi
 
 phigemm_opts=$try_phigemm_opts
 
-cuda_include="-I$cuda_path/include -I$topdir/include"
-# blas_libs="$topdir/lib/libphigemm.a $blas_libs"   
-
 echo setting CUDA_LIBS... $cuda_libs
+
+if test "$use_profile" == 1 ; then
+    try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PROFILE"
+fi
 
 # ?	
 try_iflags="$try_iflags $cuda_include"
