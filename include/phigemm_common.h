@@ -159,6 +159,8 @@ typedef struct phiGemmTuning
 
 /* ------------------------------ OTHER MACROS ----------------------------- */
 
+#define EVENIZE(x) ( ((x)%2==0) ? (x) : (x)+1 )
+
 #define GEMM_ADD(m, n, k) ((m) * (n) * (k))
 #define GEMM_MUL(m, n, k) ((m) * (n) * (k))
 

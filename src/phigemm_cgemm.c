@@ -19,8 +19,6 @@
 #define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
 #endif
 
-#define EVENIZE(x) ( ((x)%2==0) ? (x) : (x)+1 )
-
 #define cublasGemm cublasCgemm
 #define gemm_mkl cgemm_
 #define PHIGEMM_M phicgemm_
