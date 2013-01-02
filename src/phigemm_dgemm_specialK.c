@@ -59,6 +59,8 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		const int *ldb, const double *beta, double *C, const int *ldc)
 #endif
 {
+	// The method is empty if defined(__PHIGEMM_CPUONLY) *BUT* it is never called by phgemm_dgemm
+#if !defined(__PHIGEMM_CPUONLY)
 
 	double * C_buf[MAX_N_STREAM];
 	double *devPtrA[MAX_N_STREAM], *devPtrB[MAX_N_STREAM], *devPtrC[MAX_N_STREAM];
@@ -255,5 +257,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #if defined(__PHIGEMM_MEMSET)
 	cudaMemset( myPhiGemmHdl.pmem[iDev], 0, mem_buffer );
 #endif
+
+#endif
+
+	return;
 }
 
