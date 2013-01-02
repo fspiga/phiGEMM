@@ -682,7 +682,7 @@ void PHIGEMM_SGEMM_MF (const char *transa, const char *transb, const int *m,
 		time_mem_h2d += (time_temp / 1000);
 		cudaEventElapsedTime( &time_temp, events[iDev][1], events[iDev][2] );
 		time_mem_h2d += (time_temp / 1000);
-		if ( beta->x != 0.0 || beta->y != 0.0 ){
+		if ( (* beta) != (float)0.0 ){
 			cudaEventElapsedTime( &time_temp, events[iDev][2], events[iDev][3] );
 			time_mem_h2d += (time_temp / 1000);
 		}

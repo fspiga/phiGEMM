@@ -24,7 +24,6 @@
 #define PHIGEMM_M phicgemm_
 #define phiCgemm PHIGEMM_M
 
-
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_CGEMM_MF(const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const phiComplex *alpha,
@@ -141,9 +140,9 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		// cpuGPUheuristic(...) = 0 >> SPECIAL-K
 #if defined(__PHIGEMM_PROFILE)
-		phidgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
+		phiXgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line);
 #else
-		phidgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+		phiXgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 #endif
 
 #if defined(__PHIGEMM_DEBUG_3)
@@ -363,14 +362,12 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 	if ( (*transa != 'n') && (*transa != 'N') )	is_transa = 1;
 	if ( (*transb != 'n') && (*transb != 'N') ) is_transb = 1;
 
-#if !defined(__PHIGEMM_MAGMABLAS)
 	cu_transa = ((*transa == 'c')||(*transa == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transa = ((*transa == 't')||(*transa == 'T')) ? CUBLAS_OP_T : cu_transa;
 	cu_transa = ((*transa == 'n')||(*transa == 'N')) ? CUBLAS_OP_N : cu_transa;
 	cu_transb = ((*transb == 'c')||(*transb == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transb = ((*transb == 't')||(*transb == 'T')) ? CUBLAS_OP_T : cu_transb;
 	cu_transb = ((*transb == 'n')||(*transb == 'N')) ? CUBLAS_OP_N : cu_transb;
-#endif
 
 	// if split == 1 --> all GPU (is it working?)
 
@@ -667,11 +664,11 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 	
 	double time_total = stop_gemm_total - start_gemm_total;
 
-	#if !defined(__PHIGEMM_GPUONLY)
+#if !defined(__PHIGEMM_GPUONLY)
 	double time_mkl = stop_gemm_cpu - start_gemm_cpu;
-	#else
+#else
 	double time_mkl = 0;
-	#endif
+#endif
 
 	double unbalance;
 	float new_split;
@@ -710,11 +707,11 @@ void PHIGEMM_CGEMM_MF (const char *transa, const char *transb, const int *m,
 		 * 		 if (unbalance < 0) the GPU has too less work to do (and the CPU too much) -> increase the split
 		 * */
 #if defined(__PHIGEMM_PINNED) && defined(__PHIGEMM_MULTI_GPU)
-		unbalance = (time_mem_h2d + time_dgemm_cuda + time_mem_d2h) - time_mkl;
+		unbalance = (time_mem_h2d + time_cgemm_cuda + time_mem_d2h) - time_mkl;
 #elif defined(__PHIGEMM_PINNED)
-		unbalance = (time_mem_h2d + time_dgemm_cuda) - time_mkl;
+		unbalance = (time_mem_h2d + time_cgemm_cuda) - time_mkl;
 #else
-		unbalance = time_dgemm_cuda - time_mkl;
+		unbalance = time_cgemm_cuda - time_mkl;
 #endif
 
 #if defined(__PHIGEMM_SELFTUNE)&& !defined(__PHIGEMM_GPUONLY)
