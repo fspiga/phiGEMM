@@ -749,15 +749,14 @@ else
 
 fi
 
-phigemm_opts=$try_phigemm_opts
-
 echo setting CUDA_LIBS... $cuda_libs
 
 if test "$use_profile" == 1 ; then
     try_phigemm_opts="$try_phigemm_opts -D__PHIGEMM_PROFILE"
 fi
 
-# ?	
+phigemm_opts=$try_phigemm_opts
+
 try_iflags="$try_iflags $cuda_include"
 
 ld_libs="$topdir/lib/libphigemm.a $cuda_libs $blas_libs"
