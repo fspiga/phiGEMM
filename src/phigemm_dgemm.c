@@ -74,8 +74,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	double start, stop;
 #endif
 
-	// printf("\n\n*** phiGEMM *** phiGemmIsInternalMemAlloc() = %d, phiGemmIsExternalMemAlloc() = %d [BEGIN] ***\n",phiGemmIsInternalMemAlloc(), phiGemmIsExternalMemAlloc());
-
 	if ( ground_level) {
 		first_call = 1;
 		splitting_level = 0;
@@ -364,14 +362,12 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 	if ( (*transa != 'n') && (*transa != 'N') )	is_transa = 1;
 	if ( (*transb != 'n') && (*transb != 'N') ) is_transb = 1;
 
-#if !defined(__PHIGEMM_MAGMABLAS)
 	cu_transa = ((*transa == 'c')||(*transa == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transa = ((*transa == 't')||(*transa == 'T')) ? CUBLAS_OP_T : cu_transa;
 	cu_transa = ((*transa == 'n')||(*transa == 'N')) ? CUBLAS_OP_N : cu_transa;
 	cu_transb = ((*transb == 'c')||(*transb == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
 	cu_transb = ((*transb == 't')||(*transb == 'T')) ? CUBLAS_OP_T : cu_transb;
 	cu_transb = ((*transb == 'n')||(*transb == 'N')) ? CUBLAS_OP_N : cu_transb;
-#endif
 
 	// if split == 1 --> all GPU (is it working?)
 
