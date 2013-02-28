@@ -20,11 +20,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 >>> phiGEMM: CPU-GPU hybrid matrix-matrix multiplication library <<<
 
 Authors & Maintainers:
-  Filippo Spiga, spiga.filippo@gmail.com
-  Ivan Girotto, ivan.girotto@ictp.it
+  Filippo Spiga, spiga [-DOT-] filippo [-AT-] gmail [-DOT-] com
+  Ivan Girotto, ivan [-DOT-] girotto [-AT-] ictp [-DOT-] it
   
 Past contributors:  
-  Philip Yang, phi@cs.umd.edu
+  Philip Yang, phi [-AT-] cs [-DOT-] umd [-DOT-] edu
 
 
 Starting from a previous NVIDIA project*, ICHEC has developed a library
