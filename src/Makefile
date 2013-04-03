@@ -39,8 +39,7 @@ shared: $(PHIGEMM_OBJS)
 fortran:
 	$(CPP) $(CPPFLAGS) $(GEMM_OPT) phigemm.f90 phigemm.F90
 	$(FC) $(FFLAGS) -c phigemm.F90 -o phigemm.o
-
-	chmod 755 ../include/phigemm.mod
+	chmod 755 ../include/*.mod
 
 clean:
 	rm -rf *.o *.F90
