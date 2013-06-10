@@ -1,6 +1,7 @@
-phiGEMM
-==============
+# phiGEMM
 
+## License
+ 
 All the material included in this distribution is free software;
 you can redistribute it and/or modify it under the terms of the GNU
 General Public License as published by the Free Software Foundation;
@@ -15,21 +16,18 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 675 Mass Ave, Cambridge, MA 02139, USA.
 
-Authors & Maintainers
---------------
+## Authors & Maintainers
 
 Copyright (C) 2011-2013 Quantum ESPRESSO Foundation
 Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
 
-Principal investigators:
 - Filippo Spiga, spiga [-DOT-] filippo [-AT-] gmail [-DOT-] com
 - Ivan Girotto, ivan [-DOT-] girotto [-AT-] ictp [-DOT-] it
 
 Past contributors:  
 -  Philip Yang, phi [-AT-] cs [-DOT-] umd [-DOT-] edu
 
-References
---------------
+## References
 
 - F. Spiga and I. Girotto, "phiGEMM: a CPU-GPU library for porting Quantum ESPRESSO on hybrid systems", Proceeding of 20th Euromicro International Conference on Parallel, Distributed and Network-Based Computing (PDP2012), Special Session on GPU Computing and Hybrid Computing, IEEE Computer Society, (ISBN 978-0-7695-4633-9), pp. 368-375 (2012)
 
