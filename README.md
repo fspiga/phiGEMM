@@ -1,10 +1,5 @@
-phiGEMM: CPU-GPU hybrid matrix-matrix multiplication library
+phiGEMM
 ==============
-
-License
-
-Copyright (C) 2011-2013 Quantum ESPRESSO Foundation
-Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
 
 All the material included in this distribution is free software;
 you can redistribute it and/or modify it under the terms of the GNU
@@ -20,16 +15,18 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 675 Mass Ave, Cambridge, MA 02139, USA.
 
-
 Authors & Maintainers
 --------------
-  
-Filippo Spiga, spiga [-DOT-] filippo [-AT-] gmail [-DOT-] com
-Ivan Girotto, ivan [-DOT-] girotto [-AT-] ictp [-DOT-] it
-  
-Past contributors:  
-  Philip Yang, phi [-AT-] cs [-DOT-] umd [-DOT-] edu
 
+Copyright (C) 2011-2013 Quantum ESPRESSO Foundation
+Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
+
+Principal investigators:
+- Filippo Spiga, spiga [-DOT-] filippo [-AT-] gmail [-DOT-] com
+- Ivan Girotto, ivan [-DOT-] girotto [-AT-] ictp [-DOT-] it
+
+Past contributors:  
+-  Philip Yang, phi [-AT-] cs [-DOT-] umd [-DOT-] edu
 
 References
 --------------
