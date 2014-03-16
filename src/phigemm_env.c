@@ -35,14 +35,10 @@ void readEnv()
 	/*
 	 * <phiGEMM data structure>.<field>       --> env variable
 	 *
-	 * myPhiGemmTng.split[0] = prevSplit[0]   --> PHI_SGEMM_SPLIT -- DEPRECATED
+	 * myPhiGemmTng.split[0] = prevSplit[0]   --> PHI_DGEMM_SPLIT
 	 * myPhiGemmTng.lpSplit[0]                --> 0.995
-	 * myPhiGemmTng.split[1] = prevSplit[1]   --> PHI_DGEMM_SPLIT
+	 * myPhiGemmTng.split[1] = prevSplit[1]   --> PHI_ZGEMM_SPLIT
 	 * myPhiGemmTng.lpSplit[1]                --> 0.995
-	 * myPhiGemmTng.split[2] = prevSplit[2]   --> PHI_CGEMM_SPLIT -- DEPRECATED
-	 * myPhiGemmTng.lpSplit[2]                --> 0.995
-	 * myPhiGemmTng.split[3] = prevSplit[3]   --> PHI_ZGEMM_SPLIT
-	 * myPhiGemmTng.lpSplit[3]                --> 0.995
 	 * myPhiGemmTng.SPLITK_FACTOR             --> PHI_SPLITK_FACTOR
 	 * myPhiGemmTng.THRESHOLD                 --> PHI_THRESHOLD
 	 * myPhiGemmTng.SPLITK_DGEMM              --> PHI_SPLITK_DGEMM
@@ -58,11 +54,6 @@ void readEnv()
 	char *value = NULL;
 
 #if !defined(__PHIGEMM_CPUONLY)
-	/* SGEMM -- DEPRECATED */
-	myPhiGemmTng.split[0] = 1.0;
-	myPhiGemmTng.prevSplit[0] = 1.0;
-	myPhiGemmTng.lpSplit[0] = 1.0 ;
-
 	/* DGEMM */
 	value = getenv("PHI_DGEMM_SPLIT");
 	if (value != NULL)
@@ -78,14 +69,9 @@ void readEnv()
 		printf ("[PHIGEMM_DEBUG] DGEMM default split factor: %f \n", envar);
 #endif
 	}
-	myPhiGemmTng.split[1] = envar;
-	myPhiGemmTng.prevSplit[1] = envar;
-	myPhiGemmTng.lpSplit[1] = 0.995 ;
-
-	/* CGEMM -- DEPRECATED */
-	myPhiGemmTng.split[2] = 1.0;
-	myPhiGemmTng.prevSplit[2] = 1.0;
-	myPhiGemmTng.lpSplit[2] = 1.0 ;
+	myPhiGemmTng.split[0] = envar;
+	myPhiGemmTng.prevSplit[0] = envar;
+	myPhiGemmTng.lpSplit[0] = 0.995 ;
 
 	/* ZGEMM */
 	value = getenv("PHI_ZGEMM_SPLIT");
@@ -102,9 +88,9 @@ void readEnv()
 		printf ("[PHIGEMM_DEBUG] ZGEMM  default split factor: %f \n", envar);
 #endif
 	}
-	myPhiGemmTng.split[3] = envar;
-	myPhiGemmTng.prevSplit[3] = envar;
-	myPhiGemmTng.lpSplit[3] = 0.995 ;
+	myPhiGemmTng.split[1] = envar;
+	myPhiGemmTng.prevSplit13] = envar;
+	myPhiGemmTng.lpSplit[1] = 0.995 ;
 
 	/* SPLITK_FACTOR */
 	value = getenv("PHI_SPLITK_FACTOR");

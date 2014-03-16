@@ -30,7 +30,7 @@ void phiGemmShutdown();
 #if !defined(__PHIGEMM_CPUONLY)
 int phiGemmIsInit();
 
-void phigemmSetSplitFactor(float *x);
+void phigemmSetSplitFactor(float split_dgemm, float split_zgemm);
 
 float phigemmGetSplitFactor(int selection);
 
@@ -94,7 +94,7 @@ void phigemmshutdown_();
 #if !defined(__PHIGEMM_CPUONLY)
 int phigemmisinit_();
 
-void phigemmsetsplitfactor_(float *x);
+void phigemmsetsplitfactor_(float split_dgemm, float split_zgemm);
 
 void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize);
 #endif

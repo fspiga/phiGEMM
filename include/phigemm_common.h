@@ -41,7 +41,8 @@ typedef cuDoubleComplex phiDoubleComplex;
 #define phigemm_set_img_part(data, value) data.y = value
 
 #else
-// Replacements if CUDA is not available
+
+// Replacements if CUDA native data-types are not available
 typedef float phiComplex[2];
 typedef double phiDoubleComplex[2];
 
@@ -144,9 +145,9 @@ typedef struct phiGemmHandler
 
 typedef struct phiGemmTuning
 {
-	float split[4];
-	float prevSplit[4];
-	float lpSplit[4];
+	float split[2];
+	float prevSplit[2];
+	float lpSplit[2];
 	float SPLITK_FACTOR;
 	float THRESHOLD;
 	int SPLITK_DGEMM;

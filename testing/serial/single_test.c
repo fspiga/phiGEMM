@@ -38,16 +38,16 @@
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
 #endif
 
+// Macros for call-by-call profiling
 #define _STRING_LINE_(s) #s
 #define _STRING_LINE2_(s) _STRING_LINE_(s)
 #define __LINESTR__ _STRING_LINE2_(__LINE__)
 
 #define MAX_ERROR 0.0000000001
 
-/**
- * DGEMM definitions
- */
-#elif defined(__CUDA_TYPE_DOUBLE)
+// Symbols definition
+#if defined(__CUDA_TYPE_DOUBLE)
+
 #define XTYPE double
 #define MKL_CALL dgemm_
 #define PHIGEMM_CALL phidgemm_
@@ -55,11 +55,8 @@
 #define CUBLAS_GEMM cublasDgemm
 #endif
 
-
-/**
- * ZGEMM definitions
- */
 #elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+
 #define XTYPE phiDoubleComplex
 #define SUBXTYPE double
 #define MKL_CALL zgemm_
@@ -68,8 +65,10 @@
 #define CUBLAS_GEMM cublasZgemm
 #endif
 
-#else // default
-#error a type must be defined
+#else
+
+#error A type must be defined
+
 #endif
 
 #if !defined(__PHIGEMM_CPUONLY)
@@ -91,13 +90,6 @@ typedef struct timestruct
 	unsigned int sec;
 	unsigned int usec;
 } TimeStruct;
-
-void swap( int a, int b){
-
-	int tmp = a;
-	a = b;
-	b = tmp;
-}
 
 double seconds(){
 
@@ -529,9 +521,7 @@ int main(int argc, char **argv)
 			float splits[4];
 			splits[0] = currentSplitFactor;
 			splits[1] = currentSplitFactor;
-			splits[2] = currentSplitFactor;
-			splits[3] = currentSplitFactor;
-			phigemmSetSplitFactor((float *)&splits);
+			phigemmSetSplitFactor(splits[0], splits[1]);
 #endif
 
 			t1 = seconds();
@@ -587,12 +577,8 @@ int main(int argc, char **argv)
 #endif
 
 			int id;
-#if defined(__CUDA_TYPE_FLOAT)
-			id = 0;
-#elif defined(__CUDA_TYPE_DOUBLE)
+#if defined(__CUDA_TYPE_DOUBLE)
 			id = 1;
-#elif defined(__CUDA_TYPE_COMPLEX)
-			id = 2;
 #elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			id = 3;
 #endif

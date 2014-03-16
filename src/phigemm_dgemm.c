@@ -169,7 +169,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		/* Assign the split factor for phiDgemm (1: DGEMM) */
 #if !defined(__PHIGEMM_GPUONLY)
-		split = myPhiGemmTng.split[1];
+		split = myPhiGemmTng.split[0];
 #else
 		split = 1.0;
 #endif
@@ -740,9 +740,9 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			else
 				new_split = split - 0.001;
 
-			myPhiGemmTng.lpSplit[1] = split;
-			myPhiGemmTng.prevSplit[1] = split;
-			myPhiGemmTng.split[1] = new_split;
+			myPhiGemmTng.lpSplit[0] = split;
+			myPhiGemmTng.prevSplit[0] = split;
+			myPhiGemmTng.split[0] = new_split;
 
 #if defined(__PHIGEMM_DEBUG_2)
 #if defined(__PHIGEMM_PROFILE)
@@ -761,10 +761,10 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			//			if (fabs(unbalance) > 0.05)
 			//					new_split = split + 0.0025;
 			//			else
-			new_split = (myPhiGemmTng.lpSplit[1] + 2*split) / 3;
+			new_split = (myPhiGemmTng.lpSplit[0] + 2*split) / 3;
 
-			myPhiGemmTng.prevSplit[1] = split;
-			myPhiGemmTng.split[1] = new_split;
+			myPhiGemmTng.prevSplit[0] = split;
+			myPhiGemmTng.split[0] = new_split;
 
 #if defined(__PHIGEMM_DEBUG_2)
 #if defined(__PHIGEMM_PROFILE)
@@ -801,7 +801,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			m_gpu[iDev],
 			m_cpu,
 #if defined(__PHIGEMM_SELFTUNE)
-			myPhiGemmTng.prevSplit[1],
+			myPhiGemmTng.prevSplit[0],
 #else                                   
 			split,
 #endif  
@@ -843,7 +843,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			n_gpu[iDev],
 			n_cpu,
 #if defined(__PHIGEMM_SELFTUNE)
-			myPhiGemmTng.prevSplit[1],
+			myPhiGemmTng.prevSplit[0],
 #else                                   
 			split,
 #endif  

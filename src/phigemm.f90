@@ -21,8 +21,9 @@ module phigemm
   !---- Fortran interfaces to phiGEMM subroutines ----
   interface
 
-    subroutine phigemmsetsplitfactor (x)
-       real               :: x(*)
+    subroutine phigemmsetsplitfactor (split_dgemm, split_zgemm)
+       real               :: split_dgemm
+       real               :: split_zgemm
     end subroutine phigemmsetsplitfactor
 
 #if defined(__PHIGEMM_PROFILE)

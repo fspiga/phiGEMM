@@ -255,16 +255,18 @@ double phigemm_cclock(void)
  * 				  split factor {S, C, D, Z}
  * Visibility	: public
  */
-void phigemmSetSplitFactor(float *x) {
+void phigemmSetSplitFactor(float split_dgemm, float split_zgemm) {
 #if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
-	float tmp,tmp2;
-	int i;
+	/* 0:DGEMM, 1:ZGEMM */
+	float tmp_split_dgemm, tmp_split_zgemm;
 
-	for ( i = 0 ; i < 4 ; i++ ) {
-		/* 0:SGEMM, 1:DGEMM, 2: CGEMM, 3:ZGEMM */
-		tmp =  (100.0f * x[i])/( 1.0f - x[i]);
-		tmp2 = 100.0f;
-		myPhiGemmTng.split[i] = tmp / (tmp + tmp2);
+	tmp_split_dgemm =  (100.0f * split_dgemm)/( 1.0f - split_dgemm);
+	tmp_split_zgemm =  (100.0f * split_zgemm)/( 1.0f - split_zgemm);
+
+	myPhiGemmTng.split[0] = tmp_split_dgemm / (tmp_split_dgemm + 100.0f);
+	myPhiGemmTng.split[1] = tmp_split_zgemm / (tmp_split_zgemm + 100.0f);
+
+
 	}
 #endif
 	return;
@@ -275,7 +277,7 @@ void phigemmSetSplitFactor(float *x) {
 /*
  * Name			: phigemmGetSplitFactor
  * Description	: the method returns the current value of a specified
- * 				  split factor {S, C, D, Z}
+ * 				  split factor {D, Z}
  * Visibility	: public
  */
 float phigemmGetSplitFactor(int selection) {
@@ -651,7 +653,7 @@ void phigemmshutdown_(){ phiGemmShutdown(); }
 #if !defined(__PHIGEMM_CPUONLY)
 int phigemmisinit_(){return phiGemmIsInit();}
 
-void phigemmsetsplitfactor_(float *x) { phigemmSetSplitFactor(x); }
+void phigemmsetsplitfactor_(float split_dgemm, float split_zgemm) { phigemmSetSplitFactor(split_dgemm, split_zgemm); }
 
 void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize) { phiGemmSetAvaiableScratchSpace(gpu_id, new_dev_memsize); }
 #endif
