@@ -2,8 +2,6 @@
 #
 # This script is a simple wrapper calling the autoconf configuration
 # script (configure) in install/
-# 
-# Courtesy of
 #
 #================================================================
 #
