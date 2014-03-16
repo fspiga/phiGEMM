@@ -73,7 +73,7 @@ void readEnv()
 #endif
 	} else {
 		/* Default if no env variable is specified */
-		envar = 0.875;
+		envar = 0.95;
 #if defined(__PHIGEMM_DEBUG)
 		printf ("[PHIGEMM_DEBUG] DGEMM default split factor: %f \n", envar);
 #endif
@@ -97,7 +97,7 @@ void readEnv()
 #endif
 	} else {
 		/* Default if no env variable is specified */
-		envar = 0.925;
+		envar = 0.95;
 #if defined(__PHIGEMM_DEBUG)
 		printf ("[PHIGEMM_DEBUG] ZGEMM  default split factor: %f \n", envar);
 #endif
