@@ -20,8 +20,8 @@
 
 #define __PHIGEMM_CUDA_TEST_H
 
-#define __SCALING_MEM_FACTOR__ 0.9
-#define MAX_GPUS 8
+#define __SCALING_MEM_FACTOR__ 0.95
+#define MAX_GPUS 4
 
 typedef void* phiTestCudaMemDevPtr[MAX_GPUS];
 typedef size_t phiTestCudaMemSizes[MAX_GPUS];

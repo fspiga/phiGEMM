@@ -56,7 +56,7 @@ typedef double phiDoubleComplex[2];
 /* --------------------------- MAIN DEFAULF VALUES ------------------------- */
 
 #ifndef MAX_GPUS
-#define MAX_GPUS 8
+#define MAX_GPUS 4
 #endif
 
 // This feature is not tested/checked since long time...
