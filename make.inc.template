@@ -1,0 +1,41 @@
+#
+# Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+# Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
+#
+# This file is distributed under the terms of the
+# GNU General Public License. See the file `License'
+# in the root directory of the present package,
+# or http://www.gnu.org/copyleft/gpl.txt .
+#
+# Author: Filippo Spiga (spiga.filippo@gmail.com)
+
+# This is a template. Edit it.
+
+TOPDIR		= /home/fs395/scratch/QE-SOURCES/devel/phiGEMM
+CUDA_PATH   = /usr/local/Cluster-Users/fs395/cuda/6.0-RC
+
+AR          = ar
+ARFLAGS     = ruv
+
+CC          = icc
+CFLAGS      = -O3 -fPIC -openmp
+
+FC          = ifort
+FFLAGS      = -module ../include/ -openmp
+
+CPP         = cpp
+CPPFLAGS    = -P -traditional
+
+LD              = icc
+LD_FLAGS        =  -O3 -fPIC -openmp
+LD_SHARED_FLAGS = --shared
+FC_PREPROC_FLAG = -fpp
+
+NVCC        = $(CUDA_PATH)/bin/nvcc
+NVCC_FLAGS  = -O3 -ccbin gcc --compiler-options '-fPIC -fopenmp'
+
+EXT_INC     = -I$(CUDA_PATH) -I$(TOPDIR)/include
+CUDA_LIB    = -L$(CUDA_PATH) -lcublas -lcudart
+LD_LIB      = $(TOPDIR)/lib/libphigemm.a $(CUDA_LIB) -lmkl_intel_lp64  -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+
+GEMM_OPT    = -D__INTEL -D__MKL -D__OMP -D__PHIGEMM_CUBLAS

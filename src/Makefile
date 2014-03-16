@@ -8,6 +8,11 @@
 #
 # Filippo Spiga (filippo.spiga@quantum-espresso.org)
 
+.SUFFIXES :
+.SUFFIXES : .o .c
+.c.o:
+	$(NVCC) $(NVCC_FLAGS) $(GEMM_OPT) $(EXT_INC) -I../include/ -c $< -o $*.o 
+
 include ../make.inc
  
 default: all

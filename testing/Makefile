@@ -8,9 +8,13 @@
 #
 # Filippo Spiga (filippo.spiga@quantum-espresso.org)
 
+.SUFFIXES :
+.SUFFIXES : .o .c
+.c.o:
+	$(NVCC) $(NVCC_FLAGS) $(GEMM_OPT) $(EXT_INC) -I../include/ -c $< -o $*.o 
+
 include ../make.inc
 
-PHIGEMM = ..
 CSCRPATH = ./serial
 
 #OBJ = $(SRC:.f90=.o)
@@ -36,12 +40,12 @@ prereq:
 	mkdir -p .objs
 
 test:
-	rm -rf $(PHIGEMM)/bin/*.x
-	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(PHIGEMM)/bin/single_test.x $(CSCRPATH)/single_test.c $(EXT_INC) $(LD_LIB)
+	rm -rf $(TOPDIR)/bin/*.x
+	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(TOPDIR)/bin/single_test.x $(CSCRPATH)/single_test.c $(EXT_INC) $(LD_LIB)
 	
 run:
 	./testsuite.sh
 
 clean:
 	rm -rf .objs *.o
-	rm -f $(PHIGEMM)/bin/*
+	rm -f $(TOPDIR)/bin/*
