@@ -15,10 +15,6 @@
 
 include ../make.inc
 
-CSCRPATH = ./serial
-
-#OBJ = $(SRC:.f90=.o)
-#EXE = $(OBJ:.o=)
 
 # supported TEST_DATATYPE_FLAGS flags = __CUDA_TYPE_DOUBLE, __CUDA_TYPE_DOUBLE_COMPLEX (one is mandatory)
 TEST_DATATYPE_FLAGS = -D__CUDA_TYPE_DOUBLE
@@ -30,8 +26,6 @@ TEST_DATATYPE_FLAGS = -D__CUDA_TYPE_DOUBLE
 # NOTE3: pinned memory options are -D__PHITEST_MEM_PINNED (native), -D__PHITEST_FORCE_PINNED (by API call)
 TEST_FLAGS = -D__PERFORM_PHIGEMM_INIT -D__PHIGEMM_TESTCASE_DEBUG
 
-EXTRA_TEST_FLAGS = 
-
 TESTFLAGS = $(TEST_DATATYPE_FLAGS) $(TEST_FLAGS) $(GEMM_OPT) $(EXTRA_TEST_FLAGS)
 
 all: prereq test
@@ -41,7 +35,7 @@ prereq:
 
 test:
 	rm -rf $(TOPDIR)/bin/*.x
-	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(TOPDIR)/bin/single_test.x $(CSCRPATH)/single_test.c $(EXT_INC) $(LD_LIB)
+	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(TOPDIR)/bin/single_test.x single_test.c $(EXT_INC) $(LD_LIB)
 	
 run:
 	./testsuite.sh
