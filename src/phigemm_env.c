@@ -88,7 +88,7 @@ void readEnv(int tag)
 #endif
 	}
 	myPhiGemmTng.split[1] = envar;
-	myPhiGemmTng.prevSplit13] = envar;
+	myPhiGemmTng.prevSplit[1] = envar;
 	myPhiGemmTng.lpSplit[1] = 0.995 ;
 
 	/* SPLITK_FACTOR */
