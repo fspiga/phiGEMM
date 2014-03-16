@@ -18,8 +18,8 @@ PHIGEMM_OBJS= \
 phigemm_auxiliary.o \
 phigemm_env.o \
 phigemm_dgemm.o \
-phigemm_zgemm.o \
 phigemm_dgemm_specialK.o \
+phigemm_zgemm.o \
 phigemm_zgemm_specialK.o
 
 static: $(PHIGEMM_OBJS)
@@ -42,3 +42,6 @@ fortran:
 clean:
 	rm -rf *.o *.F90
 	rm -f ../include/*.mod
+
+include make.depend
+	
