@@ -6,7 +6,7 @@
 # in the root directory of the present distribution,
 # or http://www.gnu.org/copyleft/gpl.txt .
 #
-# Filippo Spiga (spiga.filippo@gmail.com)
+# Filippo Spiga (filippo.spiga@quantum-espresso.org)
 
 include ../make.inc
  
@@ -20,9 +20,7 @@ phigemm_env.o \
 phigemm_dgemm.o \
 phigemm_zgemm.o \
 phigemm_dgemm_specialK.o \
-phigemm_zgemm_specialK.o \
-phigemm_cgemm.o \
-phigemm_sgemm.o
+phigemm_zgemm_specialK.o
 
 static: $(PHIGEMM_OBJS)
 	mkdir -p ../bin ../lib

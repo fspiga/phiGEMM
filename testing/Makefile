@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+# Copyright (C) 2011-2014 Quantum ESPRESSO Foundation
 # Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
 #
 # This file is distributed under the terms of the
@@ -6,7 +6,7 @@
 # in the root directory of the present distribution,
 # or http://www.gnu.org/copyleft/gpl.txt .
 #
-# Filippo Spiga (spiga.filippo@gmail.com)
+# Filippo Spiga (filippo.spiga@quantum-espresso.org)
 
 include ../make.inc
 
