@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+ * Copyright (C) 2011-2014 Quantum ESPRESSO Foundation
  * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
  * This file is distributed under the terms of the
  * GNU General Public License. See the file `License'
  * in the root directory of the present distribution,
  * or http://www.gnu.org/copyleft/gpl.txt .
+ *
+ * Filippo Spiga (filippo.spiga@quantum-espresso.org)
  *
  */
 
@@ -30,7 +32,7 @@
 // Flops formula
 #define GEMM_ADD(m, n, k) ((m) * (n) * (k))
 #define GEMM_MUL(m, n, k) ((m) * (n) * (k))
-#if defined(__CUDA_TYPE_DOUBLE_COMPLEX) || defined(__CUDA_TYPE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 #define PHIGEMM_FLOPS(m, n, k) ( 6. * GEMM_MUL(m, n, k) + 2. * GEMM_ADD(m, n, k))
 #else
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
@@ -40,24 +42,7 @@
 #define _STRING_LINE2_(s) _STRING_LINE_(s)
 #define __LINESTR__ _STRING_LINE2_(__LINE__)
 
-#if defined(__CUDA_TYPE_DOUBLE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE)
-// FOR DOUBLE  and DOUBLE COMPLEX
 #define MAX_ERROR 0.0000000001
-#else
-// FOR FLOAT and COMPLEX
-#define MAX_ERROR 0.001
-#endif
-
-/**
- * SGEMM definitions
- */
-#if defined(__CUDA_TYPE_FLOAT)
-#define XTYPE float
-#define MKL_CALL sgemm_
-#define PHIGEMM_CALL phisgemm_
-#if !defined(__PHIGEMM_CPUONLY)
-#define CUBLAS_GEMM cublasSgemm
-#endif
 
 /**
  * DGEMM definitions
@@ -70,17 +55,6 @@
 #define CUBLAS_GEMM cublasDgemm
 #endif
 
-/*
- * CGEMM definitions
- */
-#elif defined(__CUDA_TYPE_COMPLEX)
-#define XTYPE phiComplex
-#define SUBXTYPE float
-#define MKL_CALL cgemm
-#define PHIGEMM_CALL phicgemm_
-#if !defined(__PHIGEMM_CPUONLY)
-#define CUBLAS_GEMM cublasCgemm
-#endif
 
 /**
  * ZGEMM definitions
@@ -313,17 +287,9 @@ int main(int argc, char **argv)
 
 	memset( C, 0, m * n * sizeof( XTYPE ) );
 
-#if defined(__CUDA_TYPE_FLOAT)
-	float alpha=0.5, beta=0.15;
-#elif defined(__CUDA_TYPE_DOUBLE)
+#if defined(__CUDA_TYPE_DOUBLE)
 	double alpha=0.33, beta=-0.25;
-#elif defined(__CUDA_TYPE_COMPLEX)
-	phiComplex alpha, beta;
-	phigemm_set_real_part(alpha, (float) 0.29 );
-	phigemm_set_img_part(alpha, (float) -0.86 );
-	phigemm_set_real_part(beta, (float) -0.48 );
-	phigemm_set_img_part(beta, (float) 0.38 );
-#elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#else defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	phiDoubleComplex alpha, beta;
 	phigemm_set_real_part(alpha, (double) 2.0 );
 	phigemm_set_img_part(alpha,  (double) 1.0 );
@@ -335,7 +301,7 @@ int main(int argc, char **argv)
 		srand ( time(NULL) );
 		for ( i = 0; i < k; i++ ) {
 			int index = i * m + j;
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			phigemm_set_real_part( A[ index ], ( SUBXTYPE ) rand()/(RAND_MAX+1.0) );
 			phigemm_set_img_part( A[ index ], ( SUBXTYPE ) rand()/(RAND_MAX+1.0) );
 #else
@@ -348,7 +314,7 @@ int main(int argc, char **argv)
 		srand ( time(NULL) );
 		for ( i = 0; i < n; i++ ) {
 			int index = i * k + j;
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			phigemm_set_real_part( B[ index ], ( SUBXTYPE ) rand()/(RAND_MAX+1.0) );
 			phigemm_set_img_part( B[ index ], ( SUBXTYPE ) rand()/(RAND_MAX+1.0) );
 #else
@@ -362,7 +328,7 @@ int main(int argc, char **argv)
 		srand ( time(NULL) );
 		for ( i = 0; i < n; i++ ) {
 			int index = i * m + j;
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			phigemm_set_real_part( C[ index ], ( SUBXTYPE ) rand()/(RAND_MAX+1.0) );
 			phigemm_set_img_part( C[ index ], ( SUBXTYPE ) rand()/(RAND_MAX+1.0) );
 #else
@@ -374,7 +340,7 @@ int main(int argc, char **argv)
 
 	transa[0] = 'n'; transb[0] = 'n';
 
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	transa[1] = 'c';
 #else
 	transa[1] = 't';
@@ -382,13 +348,13 @@ int main(int argc, char **argv)
 	transb[1] = 'n';
 
 	transa[2] = 'n';
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	transb[2] = 'c';
 #else
 	transb[2] = 't';
 #endif
 
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	transa[3] = 'c'; transb[3] = 'c';
 #else
 	transa[3] = 't'; transb[3] = 't';
@@ -419,7 +385,7 @@ int main(int argc, char **argv)
 		for ( j = 0; j < m; j++ ) {
 			for ( i = 0; i < n; i++ ) {
 				int index = i * m + j;
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			phigemm_set_real_part( C_mkl[ index ], phigemm_get_real_part(C[ index ]) );
 			phigemm_set_img_part( C_mkl[ index ], phigemm_get_img_part(C[ index ]) );
 #else
@@ -468,7 +434,7 @@ int main(int argc, char **argv)
 			for ( j = 0; j < m; j++ ) {
 				for ( i = 0; i < n; i++ ) {
 					int index = i * m + j;
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 					phigemm_set_real_part( C_cuda[ index ], phigemm_get_real_part(C[ index ]) );
 					phigemm_set_img_part( C_cuda[ index ], phigemm_get_img_part(C[ index ]) );
 #else
@@ -548,7 +514,7 @@ int main(int argc, char **argv)
 			for ( j = 0; j < m; j++ ) {
 				for ( i = 0; i < n; i++ ) {
 					int index = i * m + j;
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 					phigemm_set_real_part( C_phigemm[ index ], phigemm_get_real_part(C[ index ]) );
 					phigemm_set_img_part( C_phigemm[ index ], phigemm_get_img_part(C[ index ]) );
 #else
@@ -584,7 +550,7 @@ int main(int argc, char **argv)
 
 			int errors = 0;
 #if defined(__CHECK_ERROR)
-#if defined(__CUDA_TYPE_COMPLEX) || defined(__CUDA_TYPE_DOUBLE_COMPLEX)
+#if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 			SUBXTYPE tmp_error;
 #pragma omp parallel for reduction (+ : errors)
 			for( i = 0; i < m * n ; i++ ) {

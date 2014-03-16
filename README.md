@@ -1,5 +1,8 @@
 # phiGEMM
 
+Copyright (C) 2011-2014 Quantum ESPRESSO Foundation
+Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
+
 ## License
  
 All the material included in this distribution is free software;
@@ -18,12 +21,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 ## Authors & Maintainers
 
-Copyright (C) 2011-2013 Quantum ESPRESSO Foundation
-
-Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
-
-
 - Filippo Spiga, spiga [-DOT-] filippo [-AT-] gmail [-DOT-] com
+                 filippo [-DOT-] spiga [-AT] quantum-espresso [-DOT-] org
+
 - Ivan Girotto, ivan [-DOT-] girotto [-AT-] ictp [-DOT-] it
 
 Past contributors:  

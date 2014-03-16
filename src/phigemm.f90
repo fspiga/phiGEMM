@@ -15,8 +15,6 @@ module phigemm
 #if defined(__PHIGEMM_WEAK_INTERFACES)
     EXTERNAL phisgemm
     EXTERNAL phidgemm
-    EXTERNAL phicgemm
-    EXTERNAL phizgemm
     EXTERNAL phigemmsetsplitfactor
 #else
 
@@ -26,80 +24,6 @@ module phigemm
     subroutine phigemmsetsplitfactor (x)
        real               :: x(*)
     end subroutine phigemmsetsplitfactor
-
-#if defined(__PHIGEMM_PROFILE)
-     subroutine phiSgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line)
-       character          :: transa
-       character          :: transb
-       integer            :: m
-       integer            :: n
-       integer            :: k
-       real               :: alpha
-       real               :: A(*)
-       integer            :: lda
-       real               :: B(*)
-       integer            :: ldb
-       real               :: beta
-       real               :: C(*)
-       integer            :: ldc
-       character(len = *) :: file
-       character(len = *) :: line
-     end subroutine phiSgemm
-#else
-     subroutine phiSgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc)
-       character       :: transa
-       character       :: transb
-       integer         :: m
-       integer         :: n
-       integer         :: k
-       real            :: alpha
-       real            :: A(*)
-       integer         :: lda
-       real            :: B(*)
-       integer         :: ldb
-       real            :: beta
-       real            :: C(*)
-       integer         :: ldc
-     end subroutine phiSgemm
-#endif
-
-
-#if defined(__PHIGEMM_PROFILE)
-     subroutine phiCgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line)
-       character       :: transa
-       character       :: transb
-       integer         :: m
-       integer         :: n
-       integer         :: k
-       complex         :: alpha
-       complex         :: A(*)
-       integer         :: lda
-       complex         :: B(*)
-       integer         :: ldb
-       complex         :: beta
-       complex         :: C(*)
-       integer         :: ldc
-       character(len = *) :: file
-       character(len = *) :: line
-     end subroutine phiCgemm
-#else
-     subroutine phiCgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc)
-       character       :: transa
-       character       :: transb
-       integer         :: m
-       integer         :: n
-       integer         :: k
-       complex         :: alpha
-       complex         :: A(*)
-       integer         :: lda
-       complex         :: B(*)
-       integer         :: ldb
-       complex         :: beta
-       complex         :: C(*)
-       integer         :: ldc
-     end subroutine phiCgemm
-#endif
-
 
 #if defined(__PHIGEMM_PROFILE)
      subroutine phiDgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, file, line)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+ * Copyright (C) 2011-2014 Quantum ESPRESSO Foundation
  * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
  * This file is distributed under the terms of the

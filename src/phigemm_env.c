@@ -35,11 +35,11 @@ void readEnv()
 	/*
 	 * <phiGEMM data structure>.<field>       --> env variable
 	 *
-	 * myPhiGemmTng.split[0] = prevSplit[0]   --> PHI_SGEMM_SPLIT
+	 * myPhiGemmTng.split[0] = prevSplit[0]   --> PHI_SGEMM_SPLIT -- DEPRECATED
 	 * myPhiGemmTng.lpSplit[0]                --> 0.995
 	 * myPhiGemmTng.split[1] = prevSplit[1]   --> PHI_DGEMM_SPLIT
 	 * myPhiGemmTng.lpSplit[1]                --> 0.995
-	 * myPhiGemmTng.split[2] = prevSplit[2]   --> PHI_CGEMM_SPLIT
+	 * myPhiGemmTng.split[2] = prevSplit[2]   --> PHI_CGEMM_SPLIT -- DEPRECATED
 	 * myPhiGemmTng.lpSplit[2]                --> 0.995
 	 * myPhiGemmTng.split[3] = prevSplit[3]   --> PHI_ZGEMM_SPLIT
 	 * myPhiGemmTng.lpSplit[3]                --> 0.995
@@ -58,24 +58,10 @@ void readEnv()
 	char *value = NULL;
 
 #if !defined(__PHIGEMM_CPUONLY)
-	/* SGEMM */
-	value = getenv("PHI_SGEMM_SPLIT");
-	if (value != NULL)
-	{
-		envar = atof(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SGEMM split factor from environment variable: %f \n", envar);
-#endif
-	} else {
-		/* Default if no env variable is specified */
-		envar = 0.85;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SGEMM default split factor: %f \n", envar);
-#endif
-	}
-	myPhiGemmTng.split[0] = envar;
-	myPhiGemmTng.prevSplit[0] = envar;
-	myPhiGemmTng.lpSplit[0] = 0.995 ;
+	/* SGEMM -- DEPRECATED */
+	myPhiGemmTng.split[0] = 1.0;
+	myPhiGemmTng.prevSplit[0] = 1.0;
+	myPhiGemmTng.lpSplit[0] = 1.0 ;
 
 	/* DGEMM */
 	value = getenv("PHI_DGEMM_SPLIT");
@@ -96,24 +82,10 @@ void readEnv()
 	myPhiGemmTng.prevSplit[1] = envar;
 	myPhiGemmTng.lpSplit[1] = 0.995 ;
 
-	/* CGEMM */
-	value = getenv("PHI_CGEMM_SPLIT");
-	if (value != NULL)
-	{
-		envar = atof(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] CGEMM split factor from environment variable: %f \n", envar);
-#endif
-	} else {
-		/* Default if no env variable is specified */
-		envar = 0.9;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] CGEMM  default split factor: %f \n", envar);
-#endif
-	}
-	myPhiGemmTng.split[2] = envar;
-	myPhiGemmTng.prevSplit[2] = envar;
-	myPhiGemmTng.lpSplit[2] = 0.995 ;
+	/* CGEMM -- DEPRECATED */
+	myPhiGemmTng.split[2] = 1.0;
+	myPhiGemmTng.prevSplit[2] = 1.0;
+	myPhiGemmTng.lpSplit[2] = 1.0 ;
 
 	/* ZGEMM */
 	value = getenv("PHI_ZGEMM_SPLIT");

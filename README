@@ -30,7 +30,7 @@ Past contributors:
 
 Starting from a previous NVIDIA project*, ICHEC has developed a library
 called phiGEMM within the PRACE project. This library allows the target 
-application to perform [S/D/C/Z]GEMM operations using both CPU and GPU 
+application to perform DGEMM and ZGEMM operations using both CPU and GPU 
 simultaneously. 
 
      C := alpha*op( A )*op( B ) + beta*C,
@@ -150,19 +150,12 @@ the CPU.
  
 Here an example:
  
-export PHI_SGEMM_SPLIT=0.85
 export PHI_DGEMM_SPLIT=0.85
-export PHI_CGEMM_SPLIT=0.9
 export PHI_ZGEMM_SPLIT=0.9
  
 The overall performances of the library, compared to the pure CUBLAS calls, are
 strongly dependent by this split factor.
- 
-Only the test-suit is able to calculate the optimal split factor comparing 
-the performance of the GPU and the CPU, varying the size and the type of the 
-data (FLOAT, DOUBLE, SINGLE COMPLEX and COMPLEX).
- 
- 
+  
 The SPECIAL-K feature allows to combine GPU/CPU operations in a way to maximize
 the GPU FLOP throughput performing all matrix-matrix operation on the GPU (the 
 alpha*op(A)*op(B)) and by adding the final term on the CPU ( beta*C). If the 
@@ -281,7 +274,7 @@ simply  add before the final exit:
 Let's assume that we want to use the phiGEMM library inside a file called 
 "pippo.f90" or "pippo.c". In order to have a fine-grain control of which *GEMM 
 operations will work using CPU+GPU, you can simply substitute the 
-"{S/D/C/Z}GEMM" names with the "{phiS, phiD, phiC, phiZ}gemm" routine names. 
+"{D, Z}GEMM" names with the "{phiD, phiZ}gemm" routine names. 
 
 So for example this DGEMM call in C language:
 
@@ -295,9 +288,7 @@ will become:
 If you want to use phiGEMM for all the DGEMM in your file or in your C program 
 you can easily add at the beginning of the files these lines:
 
-  #define SGEMM phisgemm
   #define DGEMM phidgemm
-  #define CGEMM phicgemm
   #define ZGEMM phizgemm
 
 and at compile-time all the substitutions will be automatic.
@@ -305,8 +296,7 @@ and at compile-time all the substitutions will be automatic.
 Otherwise there is a FORTRAN 90 module called 'phigemm' that can be used 
 in this way
 
-  USE phigemm, ONLY : DGEMM => phidgemm, SGEMM => phisgemm, 
-                      CGEMM => phicgemm, ZGEMM => phizgemm
+  USE phigemm, ONLY : DGEMM => phidgemm, ZGEMM => phizgemm
 
 IMPORTANT NOTE: the use the "profiling" advanced feature it is still necessary 
                 to add few define at the beginning of each file where phiGEMM 
@@ -316,8 +306,6 @@ IMPORTANT NOTE: the use the "profiling" advanced feature it is still necessary
 #define _STRING_LINE2_(s) _STRING_LINE_(s)
 #define __LINESTR__ _STRING_LINE2_(__LINE__)
 #define DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
-#define SGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) SGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
-#define CGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) CGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
 #define ZGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC) ZGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC,__FILE__,__LINESTR__)
 
                 These lines extend the prototype of each BLAS call in order to
@@ -359,7 +347,8 @@ These script are still in "beta". Please report any error or misfunction.
  
 8. >>> Releases
 
-v2.0.0 - December 15, 2012  [ EXPECTED ]
+v2.0.0 - March 23, 2014     [ FINAL ]
+v2.0.0 - December 15, 2012  [ RC1 ]
 v1.9.9 - October 1, 2012    ( various fixes at several levels )
 v1.9   - May 23, 2012       ( fixes + compatibility CUDA 5.x )
 v1.8   - April 1, 2012      ( ACML and PGI supported - internal tests work )
