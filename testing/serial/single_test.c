@@ -253,11 +253,7 @@ int main(int argc, char **argv)
 #endif
 
 	fprintf( stdout, "\nsizeof(XTYPE) = %lu ~ ", (size_t) sizeof(XTYPE) );
-#if defined(__CUDA_TYPE_FLOAT)
-	fprintf( stdout, "PERFORMING SGEMM operations\n");
-#elif defined(__CUDA_TYPE_COMPLEX)
-	fprintf( stdout, "PERFORMING CGEMM operations\n");
-#elif defined(__CUDA_TYPE_DOUBLE)
+#if defined(__CUDA_TYPE_DOUBLE)
 	fprintf( stdout, "PERFORMING DGEMM operations\n");
 #elif defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	fprintf( stdout, "PERFORMING ZGEMM operations\n");
