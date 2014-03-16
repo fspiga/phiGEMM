@@ -55,14 +55,12 @@ struct phiGemmTuning myPhiGemmTng = {
 };
 
 
-/* auxiliary */
 int stringCmp( const void *a, const void *b)
 {
 	return strcmp((const char*)a,(const char*)b);
 }
 
 #if !defined(__PHIGEMM_CPUONLY)
-/* This routine computes the memory required to store the considered matrices */
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
 #if defined(__PHIGEMM_GPUONLY)
@@ -93,7 +91,6 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 #endif
 
 #if !defined(__PHIGEMM_CPUONLY)
-/* This routine computes the recursive split */
 void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2) {
 
 	size_t memsize_gpu = myPhiGemmHdl.smem[0] * myPhiGemmEnv.numDevices;
@@ -151,7 +148,6 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 #endif
 
 #if !defined(__PHIGEMM_CPUONLY)
-/* This routine returns the selected strategy for CPU-GPU splitting */
 int cpuGPUheuristic(int m, int n, int k, char type)
 {
 
@@ -193,11 +189,6 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 
 
 #if !defined(__PHIGEMM_CPUONLY)
-/*
- * Name			: phiGemmIsInit
- * Description	: return if phiGEMM is initialized or not
- * Visibility	: public
- */
 int phiGemmIsInit()
 {
 	return is_phigemm_init;
@@ -205,11 +196,6 @@ int phiGemmIsInit()
 #endif
 
 #if !defined(__PHIGEMM_CPUONLY)
-/*
- * Name			: phiGemmIsInternalMemAlloc
- * Description	: return if memory has been allocated internally by phiGEMM
- * Visibility	: phiGEMM only
- */
 int phiGemmIsInternalMemAlloc()
 {
 	return is_internal_memory_alloc;
@@ -217,22 +203,12 @@ int phiGemmIsInternalMemAlloc()
 #endif
 
 #if !defined(__PHIGEMM_CPUONLY)
-/*
- * Name			: phiGemmIsExternalMemAlloc
- * Description	: return if memory has been allocated externally by the caller
- * Visibility	: phiGEMM only
- */
 int phiGemmIsExternalMemAlloc()
 {
 	return is_external_memory_alloc;
 }
 #endif
 
-/*
- * Name			: phigemm_cclock
- * Description	: return time in milliseconds
- * Visibility	: phiGEMM only
- */
 double phigemm_cclock(void)
 {
 	struct timeval tv;
@@ -249,12 +225,6 @@ double phigemm_cclock(void)
 
 
 #if !defined(__PHIGEMM_CPUONLY)
-/*
- * Name			: phigemmSetSplitFactor
- * Description	: the method set the current value of a specified
- * 				  split factor {S, C, D, Z}
- * Visibility	: public
- */
 void phigemmSetSplitFactor(float split_dgemm, float split_zgemm) {
 #if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
 	/* 0:DGEMM, 1:ZGEMM */
@@ -274,12 +244,6 @@ void phigemmSetSplitFactor(float split_dgemm, float split_zgemm) {
 #endif
 
 #if !defined(__PHIGEMM_CPUONLY)
-/*
- * Name			: phigemmGetSplitFactor
- * Description	: the method returns the current value of a specified
- * 				  split factor {D, Z}
- * Visibility	: public
- */
 float phigemmGetSplitFactor(int selection) {
 #if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
 	return myPhiGemmTng.split[selection];
@@ -290,13 +254,6 @@ float phigemmGetSplitFactor(int selection) {
 #endif
 
 #if !defined(__PHIGEMM_CPUONLY)
-/*
- * Name			: phiGemmInitMemory
- * Description	: the method performs the phiGEMM memory allocation and initialization
- * 				: based on the parameters
- * Visibility	: this file only
- *
- */
 void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 {
 	unsigned int i;
@@ -385,13 +342,6 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 }
 #endif
 
-/*
- * Name			: phiGemmInit
- * Description	: the method initialize the library, both GPU binding and
- * 				  memory allocation according to the parameters
- * 				  *** EXPECTED TO CALL ONLY ONCE ***
- * Visibility	: public
- */
 void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag )
 {
 	unsigned int i;
@@ -546,11 +496,6 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 }
 
 
-/*
- * Name			: phiGemmInitMemory
- * Description	: the method performs the memory allocation on the GPU card
- * Visibility	: public
- */
 void phiGemmShutdown()
 {
 	int i;

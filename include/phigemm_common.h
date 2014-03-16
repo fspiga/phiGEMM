@@ -110,9 +110,6 @@ typedef double phiDoubleComplex[2];
 #define __PHIGEMM_EVENTS 7
 #endif
 
-/* ------------------------------------------------------------------------- */
-
-
 /* -------------------------------- TYPEDEFS ------------------------------- */
 
 typedef void* phiGemmMemDevPtr[MAX_GPUS*NSTREAMS];
@@ -157,8 +154,6 @@ typedef struct phiGemmTuning
 	int UPPER_LIMIT_K;
 } phiGemmTuning_t;
 
-/* ------------------------------------------------------------------------- */
-
 
 /* ------------------------------ OTHER MACROS ----------------------------- */
 
@@ -169,7 +164,5 @@ typedef struct phiGemmTuning
 
 #define imin(a,b) (((a)<(b))?(a):(b))
 #define imax(a,b) (((a)<(b))?(b):(a))
-
-/* ------------------------------------------------------------------------- */
 
 #endif // __PHIGEMM_COMMON_H__

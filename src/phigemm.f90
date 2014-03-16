@@ -18,7 +18,6 @@ module phigemm
     EXTERNAL phigemmsetsplitfactor
 #else
 
-  !---- Fortran interfaces to phiGEMM subroutines ----
   interface
 
     subroutine phigemmsetsplitfactor (split_dgemm, split_zgemm)

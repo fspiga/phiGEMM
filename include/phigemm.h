@@ -21,7 +21,7 @@ extern "C"
 {
 #endif
 
-/* C interface - does it work? */
+/* C interface */
 
 void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag);
 

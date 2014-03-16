@@ -24,12 +24,6 @@
 #include "phigemm_auxiliary.h"
 
 
-/*
- * Name			: readEnv
- * Description	: the method read from the environment some special variables
- * 				  and eventually overwrite the defaults
- * Visibility	: this file only
- */
 void readEnv()
 {
 	/*
@@ -235,6 +229,4 @@ void readEnv()
 		printf ("[PHIGEMM_DEBUG] OMP_NUM_THREADS default (no-threading): %d \n", myPhiGemmEnv.cores);
 #endif
 	}
-
-
 }

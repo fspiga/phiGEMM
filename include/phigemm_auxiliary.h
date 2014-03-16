@@ -41,8 +41,6 @@ extern phiGemmHandler_t myPhiGemmHdl;
 
 extern phiGemmTuning_t myPhiGemmTng;
 
-/* ------------------------------------------------------------------------- */
-
 
 /* --------------------- INTERNAL FUNCTIONS PROTOTYPES --------------------- */
 
@@ -63,8 +61,6 @@ void phiGemmInitScratchMemory( );
 #endif
 
 double phigemm_cclock(void);
-
-/* ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
 }
