@@ -23,8 +23,11 @@
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
+#if defined(__PHIGEMM_PROFILE)
+const char base[] = "phigemm.profile";
+#endif
 
-void readEnv()
+void readEnv(int tag)
 {
 	/*
 	 * <phiGEMM data structure>.<field>       --> env variable
@@ -42,6 +45,8 @@ void readEnv()
 	 * myPhiGemmTng.UPPER_LIMIT_K             --> PHI_UPPER_LIMIT_K
 	 *
 	 * myPhiGemmEnv.cores                     --> OMP_NUM_THREADS
+	 * myPhiGemmEnv.filename                  --> base + PHI_PROFILE_PREFIX
+	 *
 	 */
 
 	float envar;
@@ -229,4 +234,22 @@ void readEnv()
 		printf ("[PHIGEMM_DEBUG] OMP_NUM_THREADS default (no-threading): %d \n", myPhiGemmEnv.cores);
 #endif
 	}
+
+#if defined(__PHIGEMM_PROFILE)
+	/* Create file descriptor where store the profiling information */
+
+	value = getenv("PHI_PROFILE_PREFIX");
+
+	if (tag < 0) {
+		if (value != NULL)
+			sprintf(myPhiGemmEnv.filename, "%s.%s.csv", base, value);
+		else
+			sprintf(myPhiGemmEnv.filename, "%s.csv", base);
+	} else {
+		if (value != NULL)
+			sprintf(myPhiGemmEnv.filename, "%s.%d.%s.csv", base, tag, value);
+		else
+			sprintf(myPhiGemmEnv.filename, "%s.%d.csv", base, tag);
+	}
+#endif
 }

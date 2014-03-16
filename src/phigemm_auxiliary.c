@@ -23,10 +23,6 @@
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
-#if defined(__PHIGEMM_PROFILE)
-const char base[] = "phigemm.profile";
-#endif
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -346,35 +342,14 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 {
 	unsigned int i;
 
-#if defined(__PHIGEMM_PROFILE)
-	char *value = NULL;
-#endif
 
 #if !defined(__PHIGEMM_CPUONLY)
 	struct cudaDeviceProp deviceProp;
 	int deviceCount;
 #endif
 
-#if defined(__PHIGEMM_PROFILE)
-	/* Create file descriptor where store the profiling information */
-
-	value = getenv("PHIGEMM_PROFILE_PREFIX");
-
-	if (tag < 0) {
-		if (value != NULL)
-			sprintf(myPhiGemmEnv.filename, "%s.%s.csv", base, value);
-		else
-			sprintf(myPhiGemmEnv.filename, "%s.csv", base);
-	} else {
-		if (value != NULL)
-			sprintf(myPhiGemmEnv.filename, "%s.%d.%s.csv", base, tag, value);
-		else
-			sprintf(myPhiGemmEnv.filename, "%s.%d.csv", base, tag);
-	}
-#endif
-
 	/* Read environment PHI_* variables (this reading override the default */
-	readEnv();
+	readEnv(tag);
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
