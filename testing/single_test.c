@@ -74,7 +74,7 @@
 #if !defined(__PHIGEMM_CPUONLY)
 #define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.95
 
-#define MAX_GPU_SERIAL_TEST 8
+#define MAX_GPU_SERIAL_TEST 4
 
 typedef void* serialTestMemDevPtr[MAX_GPU_SERIAL_TEST];
 typedef size_t serialTestMemSizes[MAX_GPU_SERIAL_TEST];

@@ -184,26 +184,20 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 // ----
 
 
-#if !defined(__PHIGEMM_CPUONLY)
 int phiGemmIsInit()
 {
 	return is_phigemm_init;
 }
-#endif
 
-#if !defined(__PHIGEMM_CPUONLY)
 int phiGemmIsInternalMemAlloc()
 {
 	return is_internal_memory_alloc;
 }
-#endif
 
-#if !defined(__PHIGEMM_CPUONLY)
 int phiGemmIsExternalMemAlloc()
 {
 	return is_external_memory_alloc;
 }
-#endif
 
 double phigemm_cclock(void)
 {
@@ -220,7 +214,6 @@ double phigemm_cclock(void)
 }
 
 
-#if !defined(__PHIGEMM_CPUONLY)
 void phigemmSetSplitFactor(float split_dgemm, float split_zgemm) {
 #if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
 	/* 0:DGEMM, 1:ZGEMM */
@@ -237,9 +230,7 @@ void phigemmSetSplitFactor(float split_dgemm, float split_zgemm) {
 #endif
 	return;
 }
-#endif
 
-#if !defined(__PHIGEMM_CPUONLY)
 float phigemmGetSplitFactor(int selection) {
 #if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
 	return myPhiGemmTng.split[selection];
@@ -247,9 +238,8 @@ float phigemmGetSplitFactor(int selection) {
 	return myPhiGemmTng.prevSplit[selection];
 #endif
 }
-#endif
 
-#if !defined(__PHIGEMM_CPUONLY)
+
 void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 {
 	unsigned int i;
@@ -336,24 +326,19 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 	is_internal_memory_alloc = 1;
 	return;
 }
-#endif
 
 void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag )
 {
 	unsigned int i;
 
-
-#if !defined(__PHIGEMM_CPUONLY)
 	struct cudaDeviceProp deviceProp;
 	int deviceCount;
-#endif
 
 	/* Read environment PHI_* variables (this reading override the default */
 	readEnv(tag);
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
-#if !defined(__PHIGEMM_CPUONLY)
 
 	if ( is_phigemm_init == 1 )
 		return;
@@ -457,17 +442,6 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	is_phigemm_init = 1;
 
 	return;
-
-#else
-
-#if defined(__PHIGEMM_PROFILE)
-	//printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
-	myPhiGemmEnv.profileFile = fopen (myPhiGemmEnv.filename, "a");
-#endif
-
-	return;
-
-#endif
 }
 
 
