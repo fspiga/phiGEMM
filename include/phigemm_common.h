@@ -80,12 +80,8 @@ typedef double phiDoubleComplex[2];
 #define __SPLITK_FACTOR 20
 #endif
 
-#ifndef __SPLITK_DGEMM
-#define __SPLITK_DGEMM 2048
-#endif
-
-#ifndef __SPLITK_ZGEMM
-#define __SPLITK_ZGEMM 2048
+#ifndef __SPLITK_GEMM
+#define __SPLITK_GEMM 2048
 #endif
 
 #ifndef __LOWER_LIMIT
@@ -121,7 +117,6 @@ typedef int phiGemmDeviceIds[MAX_GPUS*NSTREAMS];
 typedef struct phiGemmEnv
 {
 	int numDevices;
-	int cores;
 #if defined(__PHIGEMM_PROFILE)
 	FILE *profileFile;
 	char filename [ FILENAME_MAX ];
@@ -142,13 +137,9 @@ typedef struct phiGemmHandler
 
 typedef struct phiGemmTuning
 {
-	float split[2];
-	float prevSplit[2];
-	float lpSplit[2];
+	float split;
 	float SPLITK_FACTOR;
-	float THRESHOLD;
-	int SPLITK_DGEMM;
-	int SPLITK_ZGEMM;
+	int SPLITK_GEMM;
 	int LOWER_LIMIT;
 	int UPPER_LIMIT_NM;
 	int UPPER_LIMIT_K;

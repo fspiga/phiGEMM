@@ -32,19 +32,13 @@ void readEnv(int tag)
 	/*
 	 * <phiGEMM data structure>.<field>       --> env variable
 	 *
-	 * myPhiGemmTng.split[0] = prevSplit[0]   --> PHI_DGEMM_SPLIT
-	 * myPhiGemmTng.lpSplit[0]                --> 0.995
-	 * myPhiGemmTng.split[1] = prevSplit[1]   --> PHI_ZGEMM_SPLIT
-	 * myPhiGemmTng.lpSplit[1]                --> 0.995
+	 * myPhiGemmTng.split  					  --> PHI_GEMM_SPLIT
 	 * myPhiGemmTng.SPLITK_FACTOR             --> PHI_SPLITK_FACTOR
-	 * myPhiGemmTng.THRESHOLD                 --> PHI_THRESHOLD
-	 * myPhiGemmTng.SPLITK_DGEMM              --> PHI_SPLITK_DGEMM
-	 * myPhiGemmTng.SPLITK_ZGEMM              --> PHI_SPLITK_ZGEMM
+	 * myPhiGemmTng.SPLITK                    --> PHI_SPLITK_GEMM
 	 * myPhiGemmTng.LOWER_LIMIT               --> PHI_LOWER_LIMIT
 	 * myPhiGemmTng.UPPER_LIMIT_NM            --> PHI_UPPER_LIMIT_NM
 	 * myPhiGemmTng.UPPER_LIMIT_K             --> PHI_UPPER_LIMIT_K
 	 *
-	 * myPhiGemmEnv.cores                     --> OMP_NUM_THREADS
 	 * myPhiGemmEnv.filename                  --> base + PHI_PROFILE_PREFIX
 	 *
 	 */
@@ -52,131 +46,50 @@ void readEnv(int tag)
 	float envar;
 	char *value = NULL;
 
-#if !defined(__PHIGEMM_CPUONLY)
-	/* DGEMM */
-	value = getenv("PHI_DGEMM_SPLIT");
+	/* PHI_GEMM_SPLIT */
+	value = getenv("PHI_GEMM_SPLIT");
 	if (value != NULL)
 	{
 		envar = atof(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] DGEMM split factor from environment variable: %f \n", envar);
-#endif
 	} else {
 		/* Default if no env variable is specified */
 		envar = 0.95;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] DGEMM default split factor: %f \n", envar);
-#endif
 	}
-	myPhiGemmTng.split[0] = envar;
-	myPhiGemmTng.prevSplit[0] = envar;
-	myPhiGemmTng.lpSplit[0] = 0.995 ;
+	myPhiGemmTng.split = envar;
 
-	/* ZGEMM */
-	value = getenv("PHI_ZGEMM_SPLIT");
-	if (value != NULL)
-	{
-		envar = atof(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] ZGEMM split factor from environment variable: %f \n", envar);
-#endif
-	} else {
-		/* Default if no env variable is specified */
-		envar = 0.95;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] ZGEMM  default split factor: %f \n", envar);
-#endif
-	}
-	myPhiGemmTng.split[1] = envar;
-	myPhiGemmTng.prevSplit[1] = envar;
-	myPhiGemmTng.lpSplit[1] = 0.995 ;
 
 	/* SPLITK_FACTOR */
 	value = getenv("PHI_SPLITK_FACTOR");
 	if (value != NULL)
 	{
 		envar = atof(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SPLITK_FACTOR from environment variable: %f \n", envar);
-#endif
+
 	} else {
 		/* Default if no env variable is specified */
 		envar = __SPLITK_FACTOR;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SPLITK_FACTOR default: %f \n", envar);
-#endif
 	}
 	myPhiGemmTng.SPLITK_FACTOR = envar;
 
-
-	/* THRESHOLD */
-	value = getenv("PHI_THRESHOLD");
-	if (value != NULL)
-	{
-		envar = atof(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] THRESHOLD from environment variable: %f \n", envar);
-#endif
-	} else {
-		/* Default if no env variable is specified */
-		envar = (int) __SPLITK_FACTOR*1.5;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] THRESHOLD default: %f \n", envar);
-#endif
-	}
-	myPhiGemmTng.THRESHOLD = envar;
-
-
-	/* SPLITK_DGEMM */
-	value = getenv("PHI_SPLITK_DGEMM");
+	/* SPLITK_GEMM */
+	value = getenv("PHI_SPLITK_GEMM");
 	if (value != NULL)
 	{
 		envar = atoi(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SPLITK_DGEMM from environment variable: %f \n", envar);
-#endif
+
 	} else {
 		/* Default if no env variable is specified */
-		envar = __SPLITK_DGEMM;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SPLITK_DGEMM default: %f \n", envar);
-#endif
+		envar = __SPLITK_GEMM;
 	}
-	myPhiGemmTng.SPLITK_DGEMM = envar;
-
-
-	/* SPLITK_ZGEMM */
-	value = getenv("PHI_SPLITK_ZGEMM");
-	if (value != NULL)
-	{
-		envar = atoi(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SPLITK_ZGEMM from environment variable: %f \n", envar);
-#endif
-	} else {
-		/* Default if no env variable is specified */
-		envar = __SPLITK_ZGEMM;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] SPLITK_ZGEMM default: %f \n", envar);
-#endif
-	}
-	myPhiGemmTng.SPLITK_ZGEMM = envar;
-
+	myPhiGemmTng.SPLITK_GEMM = envar;
 
 	/* LOWER_LIMIT */
 	value = getenv("PHI_LOWER_LIMIT");
 	if (value != NULL)
 	{
 		envar = atoi(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] LOWER_LIMIT from environment variable: %f \n", envar);
-#endif
 	} else {
 		/* Default if no env variable is specified */
 		envar = __LOWER_LIMIT;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] LOWER_LIMIT default: %f \n", envar);
-#endif
 	}
 	myPhiGemmTng.LOWER_LIMIT = envar;
 
@@ -186,15 +99,9 @@ void readEnv(int tag)
 	if (value != NULL)
 	{
 		envar = atoi(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K from environment variable: %f \n", envar);
-#endif
 	} else {
 		/* Default if no env variable is specified */
 		envar = __UPPER_LIMIT_NM;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K default: %f \n", envar);
-#endif
 	}
 	myPhiGemmTng.UPPER_LIMIT_NM = envar;
 
@@ -204,36 +111,11 @@ void readEnv(int tag)
 	if (value != NULL)
 	{
 		envar = atoi(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K from environment variable: %f \n", envar);
-#endif
 	} else {
 		/* Default if no env variable is specified */
 		envar = __UPPER_LIMIT_K;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K default: %f \n", envar);
-#endif
 	}
 	myPhiGemmTng.UPPER_LIMIT_K = envar;
-
-#endif
-
-	/* This is to avoid not-defined OMP_NUM_THREADS in the environment.
-	 * Default threads num = 1 */
-	value = getenv("OMP_NUM_THREADS");
-	if (value != NULL)
-	{
-		myPhiGemmEnv.cores = atoi(value);
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] OMP_NUM_THREADS from environment variable: %d \n", myPhiGemmEnv.cores);
-#endif
-	} else {
-		/* Default threads num = 1 */
-		myPhiGemmEnv.cores = 1;
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] OMP_NUM_THREADS default (no-threading): %d \n", myPhiGemmEnv.cores);
-#endif
-	}
 
 #if defined(__PHIGEMM_PROFILE)
 	/* Create file descriptor where store the profiling information */
@@ -252,4 +134,15 @@ void readEnv(int tag)
 			sprintf(myPhiGemmEnv.filename, "%s.%d.csv", base, tag);
 	}
 #endif
+
+	// Debug output
+#if defined(__PHIGEMM_DEBUG)
+	printf ("[PHIGEMM_DEBUG] GEMM split : %f \n", myPhiGemmTng.split);
+	printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K : %f \n", myPhiGemmTng.UPPER_LIMIT_K);
+	printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_MN : %f \n", myPhiGemmTng.UPPER_LIMIT_NM);
+	printf ("[PHIGEMM_DEBUG] LOWER_LIMIT : %f \n", myPhiGemmTng.LOWER_LIMIT);
+	printf ("[PHIGEMM_DEBUG] SPLITK_GEMM : %f \n", myPhiGemmTng.PHI_SPLITK_GEMM);
+	printf ("[PHIGEMM_DEBUG] SPLITK_FACTOR : %f \n", myPhiGemmTng.PHI_SPLITK_FACTOR);
+#endif
+
 }

@@ -86,12 +86,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 	}
 
-#if defined(__PHIGEMM_CPUONLY)
-	select_case = 0;
-#elif defined(__PHIGEMM_GPUONLY)
-	select_case = 2;
-#else
-
 	if ( ground_level  ) {
 		if (!phiGemmIsInit() ) {
 			fprintf(stderr, "*** phiGEMM *** ERROR *** Missing initialization. Do CPU-only.\n"); fflush(stdout);
@@ -107,8 +101,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			select_case = cpuGPUheuristic( (*m), (*n), (*k), 'd');
 		}
 	}
-
-#endif
 
 	switch (select_case)
 	{

@@ -42,9 +42,7 @@ struct phiGemmHandler myPhiGemmHdl;
 // C99-compatible initialization
 struct phiGemmTuning myPhiGemmTng = {
 		.SPLITK_FACTOR  = __SPLITK_FACTOR,
-		.THRESHOLD      = (int) __SPLITK_FACTOR*1.5,
-		.SPLITK_DGEMM   = __SPLITK_DGEMM,
-		.SPLITK_ZGEMM   = __SPLITK_ZGEMM,
+		.SPLITK_DGEMM   = __SPLITK_GEMM,
 		.LOWER_LIMIT    = __LOWER_LIMIT,
 		.UPPER_LIMIT_NM = __UPPER_LIMIT_NM,
 		.UPPER_LIMIT_K  = __UPPER_LIMIT_K
@@ -143,7 +141,6 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 }
 #endif
 
-#if !defined(__PHIGEMM_CPUONLY)
 int cpuGPUheuristic(int m, int n, int k, char type)
 {
 
@@ -175,12 +172,16 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 	}
 #endif
 
-	if ( (n < myPhiGemmTng.LOWER_LIMIT) ||  (m < myPhiGemmTng.LOWER_LIMIT) || (k < myPhiGemmTng.LOWER_LIMIT)) return 0;
+	if ( (n < myPhiGemmTng.LOWER_LIMIT) ||  (m < myPhiGemmTng.LOWER_LIMIT) || (k < myPhiGemmTng.LOWER_LIMIT))
+		return 0;
 
+#if defined(__PHIGEMM_CPUONLY)
+	select_case = 0;
+#elif defined(__PHIGEMM_GPUONLY)
+	select_case = 2;
+#endif
 	return 2;
 }
-#endif
-
 // ----
 
 
