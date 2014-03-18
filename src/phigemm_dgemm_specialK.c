@@ -19,12 +19,7 @@
 #include "mkl.h"
 #endif
 
-#define PRECISION_D
-#if defined(PRECISION_D) || defined(PRECISION_S)
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
-#else
-#define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
-#endif
 
 #define cublasGemm cublasDgemm
 #define gemm_mkl dgemm_
