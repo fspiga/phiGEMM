@@ -23,15 +23,13 @@ extern "C"
 
 /* C interface */
 
-void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag);
+void phiGemmInit( void* dev_ptr, size_t dev_memsize, int deviceToBond, int tag );
 
 void phiGemmShutdown();
 
 int phiGemmIsInit();
 
-void phigemmSetSplitFactor(float split_dgemm, float split_zgemm);
-
-float phigemmGetSplitFactor(int selection);
+void phigemmSetSplitFactor(float split_gemm);
 
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize);
 
@@ -85,13 +83,13 @@ void phizgemm_specialK (const char *transa, const char *transb, const int *m,
 
 /* Fortran interface */
 
-void phigemminit_(int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag);
+void phigemminit_(void* dev_ptr, size_t dev_memsize, int deviceToBond, int tag );
 
 void phigemmshutdown_();
 
 int phigemmisinit_();
 
-void phigemmsetsplitfactor_(float split_dgemm, float split_zgemm);
+void phigemmsetsplitfactor_(float split_gemm);
 
 #if defined(__PHIGEMM_PROFILE)
 void phidgemm_ (const char *transa, const char *transb, const int *m,

@@ -31,11 +31,7 @@ extern "C"
 
 /* ------------------------- SHARED DATA STRUCTURES ------------------------ */
 
-extern phiGemmEnv_t myPhiGemmEnv;
-
 extern phiGemmHandler_t myPhiGemmHdl;
-
-extern phiGemmTuning_t myPhiGemmTng;
 
 
 /* --------------------- INTERNAL FUNCTIONS PROTOTYPES --------------------- */

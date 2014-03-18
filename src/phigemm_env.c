@@ -55,7 +55,7 @@ void readEnv(int tag)
 		/* Default if no env variable is specified */
 		envar = 0.95;
 	}
-	myPhiGemmTng.split = envar;
+	myPhiGemmHdl.SPLIT = envar;
 
 
 	/* SPLITK_FACTOR */
@@ -68,7 +68,7 @@ void readEnv(int tag)
 		/* Default if no env variable is specified */
 		envar = __SPLITK_FACTOR;
 	}
-	myPhiGemmTng.SPLITK_FACTOR = envar;
+	myPhiGemmHdl.SPLITK_FACTOR = envar;
 
 	/* SPLITK_GEMM */
 	value = getenv("PHI_SPLITK_GEMM");
@@ -80,7 +80,7 @@ void readEnv(int tag)
 		/* Default if no env variable is specified */
 		envar = __SPLITK_GEMM;
 	}
-	myPhiGemmTng.SPLITK_GEMM = envar;
+	myPhiGemmHdl.SPLITK_GEMM = envar;
 
 	/* LOWER_LIMIT */
 	value = getenv("PHI_LOWER_LIMIT");
@@ -91,7 +91,7 @@ void readEnv(int tag)
 		/* Default if no env variable is specified */
 		envar = __LOWER_LIMIT;
 	}
-	myPhiGemmTng.LOWER_LIMIT = envar;
+	myPhiGemmHdl.LOWER_LIMIT = envar;
 
 
 	/* UPPER_LIMIT_NM */
@@ -103,7 +103,7 @@ void readEnv(int tag)
 		/* Default if no env variable is specified */
 		envar = __UPPER_LIMIT_NM;
 	}
-	myPhiGemmTng.UPPER_LIMIT_NM = envar;
+	myPhiGemmHdl.UPPER_LIMIT_NM = envar;
 
 
 	/* UPPER_LIMIT_K */
@@ -115,7 +115,7 @@ void readEnv(int tag)
 		/* Default if no env variable is specified */
 		envar = __UPPER_LIMIT_K;
 	}
-	myPhiGemmTng.UPPER_LIMIT_K = envar;
+	myPhiGemmHdl.UPPER_LIMIT_K = envar;
 
 #if defined(__PHIGEMM_PROFILE)
 	/* Create file descriptor where store the profiling information */
@@ -124,25 +124,25 @@ void readEnv(int tag)
 
 	if (tag < 0) {
 		if (value != NULL)
-			sprintf(myPhiGemmEnv.filename, "%s.%s.csv", base, value);
+			sprintf(myPhiGemmHdl.filename, "%s.%s.csv", base, value);
 		else
-			sprintf(myPhiGemmEnv.filename, "%s.csv", base);
+			sprintf(myPhiGemmHdl.filename, "%s.csv", base);
 	} else {
 		if (value != NULL)
-			sprintf(myPhiGemmEnv.filename, "%s.%d.%s.csv", base, tag, value);
+			sprintf(myPhiGemmHdl.filename, "%s.%d.%s.csv", base, tag, value);
 		else
-			sprintf(myPhiGemmEnv.filename, "%s.%d.csv", base, tag);
+			sprintf(myPhiGemmHdl.filename, "%s.%d.csv", base, tag);
 	}
 #endif
 
 	// Debug output
 #if defined(__PHIGEMM_DEBUG)
-	printf ("[PHIGEMM_DEBUG] GEMM split : %f \n", myPhiGemmTng.split);
-	printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K : %f \n", myPhiGemmTng.UPPER_LIMIT_K);
-	printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_MN : %f \n", myPhiGemmTng.UPPER_LIMIT_NM);
-	printf ("[PHIGEMM_DEBUG] LOWER_LIMIT : %f \n", myPhiGemmTng.LOWER_LIMIT);
-	printf ("[PHIGEMM_DEBUG] SPLITK_GEMM : %f \n", myPhiGemmTng.PHI_SPLITK_GEMM);
-	printf ("[PHIGEMM_DEBUG] SPLITK_FACTOR : %f \n", myPhiGemmTng.PHI_SPLITK_FACTOR);
+	printf ("[PHIGEMM_DEBUG] GEMM split : %f \n", myPhiGemmHdl.SPLIT);
+	printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K : %f \n", myPhiGemmHdl.UPPER_LIMIT_K);
+	printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_MN : %f \n", myPhiGemmHdl.UPPER_LIMIT_NM);
+	printf ("[PHIGEMM_DEBUG] LOWER_LIMIT : %f \n", myPhiGemmHdl.LOWER_LIMIT);
+	printf ("[PHIGEMM_DEBUG] SPLITK_GEMM : %f \n", myPhiGemmHdl.PHI_SPLITK_GEMM);
+	printf ("[PHIGEMM_DEBUG] SPLITK_FACTOR : %f \n", myPhiGemmHdl.PHI_SPLITK_FACTOR);
 #endif
 
 }
