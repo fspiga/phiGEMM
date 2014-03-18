@@ -14,6 +14,8 @@
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
+#define NSTREAMS 1
+
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
 
 #define gpuGemm cublasDgemm
@@ -98,34 +100,13 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	case 0:
 		ground_level = 0;
 
-#if defined(__PHIGEMM_DEBUG_3)
-		printf ("[PHIGEMM_DEBUG][3] COMPUTE IN splitting_level=%d [CPU-ONLY]\n", splitting_level);  fflush(stdout);
-#endif
-
 		// cpuGPUheuristic(...) = 0 >> CPU-only
 		gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 
-#if defined(__PHIGEMM_DEBUG_3)
-		printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [CPU-ONLY]\n", splitting_level);  fflush(stdout);
-#endif
-
 		break;
-
-#if !defined(__PHIGEMM_CPUONLY)
 
 	case 1:
 		ground_level = 0;
-
-		if ( ground_level && !phiGemmIsExternalMemAlloc() ) {
-#if defined(__PHIGEMM_DEBUG_3)
-			printf ("[PHIGEMM_DEBUG][3] Internal allocation of the GPU memory \n");  fflush(stdout);
-#endif
-			/* init the memory */
-		}
-
-#if defined(__PHIGEMM_DEBUG_3)
-		printf ("[PHIGEMM_DEBUG][3] COMPUTE IN splitting_level=%d [SPECIAL-K]\n", splitting_level);  fflush(stdout);
-#endif
 
 		// cpuGPUheuristic(...) = 0 >> SPECIAL-K
 #if defined(__PHIGEMM_PROFILE)
@@ -134,38 +115,23 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		phidgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 #endif
 
-#if defined(__PHIGEMM_DEBUG_3)
-		printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [SPECIAL-K]\n", splitting_level);  fflush(stdout);
-#endif
-
-		if ( ground_level && phiGemmIsInternalMemAlloc() ) {
-#if defined(__PHIGEMM_DEBUG_3)
-			printf ("[PHIGEMM_DEBUG][3] Free GPU memory internally allocated\n" );  fflush(stdout);
-#endif
-			/* free the memory */
-		}
 		break;
 
 	case 2:
-		// cpuGPUheuristic(...) = 0 >> CPU+GPU
-		is_splitA = (*n > *m) ? 0:1;
 
-		/* Assign the split factor for phiDgemm (1: DGEMM) */
-#if !defined(__PHIGEMM_GPUONLY)
-		split = myPhiGemmTng.split[0];
-#else
-		split = 1.0;
-#endif
+		is_splitA = (*n > *m) ? 0 : 1;
+		split = myPhiGemmTng.split;
 
 		/* recursive splitting */
 		/* There is an assumption here: all the cards has the same amount of memory.
 		 * This can be not true at all! */
-		memsize_gpu = myPhiGemmHdl.smem[0] * myPhiGemmEnv.numDevices;
+		memsize_gpu = myPhiGemmHdl.smem;
 
 		if ( is_splitA ) {
+
 			mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(double);
 
-			if ( mem_gpu * myPhiGemmEnv.numDevices > memsize_gpu )
+			if ( mem_gpu > memsize_gpu )
 			{
 				ground_level = 0;
 
@@ -186,24 +152,17 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				splitting_level--;
 			} else {
 
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] COMPUTE IN splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
-#endif
-
 #if defined(__PHIGEMM_PROFILE)
 				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
 				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
 #endif
-
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
-#endif
 			}
 		} else {
+
 			mem_gpu = memOccupancy(is_splitA, split, *m, *n, *k) * sizeof(double);
 
-			if ( mem_gpu * myPhiGemmEnv.numDevices > memsize_gpu )
+			if ( mem_gpu > memsize_gpu )
 			{
 				ground_level = 0;
 				splitting_level++;
@@ -224,18 +183,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				splitting_level--;
 			} else {
 
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] COMPUTE IN splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
-#endif
-
 #if defined(__PHIGEMM_PROFILE)
 				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
 				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
-#endif
-
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
 #endif
 			}
 		}
@@ -250,35 +201,18 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		first_call = 0;
 		splitting_level = 0;
 
-		if ( cudaSetDevice(myPhiGemmHdl.devId[0]) != cudaSuccess) {
+		// ??
+		if ( cudaSetDevice(myPhiGemmHdl.devId) != cudaSuccess) {
 			printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
 			exit(EXIT_FAILURE);
 		}
 
 #if defined(__PHIGEMM_PROFILE)
 		stop = phigemm_cclock() - start;
-		switch (select_case)
-		{
-		case 0:
-			/* Comma-Separated Value (csv) format:
-			 * file, line, nGPU = 0, nThreads, transA, transB, m, n, k, 0 (=CPU-ONLY), time, GFlops */
-			fprintf (myPhiGemmEnv.profileFile, "%s, %s, 0, %d, %c, %c, %d, %d, %d, 0, %10.6f, %10.4f\n", file, line, myPhiGemmEnv.cores, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
-			break;
-
-		case 1:
-			/* Comma-Separated Value (csv) format:
-			 * file, line, nGPU, nThreads, transA, transB, m, n, k, -1 (=SPECIAL-K), time, GFlops */
-			fprintf (myPhiGemmEnv.profileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, -1, %10.6f, %10.4f\n", file, line, myPhiGemmEnv.numDevices, myPhiGemmEnv.cores, *transa, *transb, *m, *n, *k, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
-			break;
-
-		case 2:
-			/* Comma-Separated Value (csv) format:
-			 * file, line, nGPU, nThreads, transA, transB, m, n, k, split_factor, time, GFlops */
-			fprintf (myPhiGemmEnv.profileFile, "%s, %s, %d, %d, %c, %c, %d, %d, %d, %.3f, %10.6f, %10.4f\n", file, line, myPhiGemmEnv.numDevices, myPhiGemmEnv.cores, *transa, *transb, *m, *n, *k, split, stop, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
-			break;
-		}
+		/* Comma-Separated Value (csv) format:
+		 * file, line, transA, transB, m, n, k, (SPECIAL_K) ? -1 : split, time, GFlops */
+		fprintf (myPhiGemmEnv.profileFile, "%s, %s, %c, %c, %d, %d, %d, (select_case == 1) ? -1 : split, %10.6f, %10.4f\n", file, line, *transa, *transb, *m, *n, *k, myPhiGemmTng.split, 1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(stop*1000));
 #endif
-
 
 		if ( phiGemmIsInternalMemAlloc() ){
 			/* Since phiGemmIsInternalMemAlloc() is True then phiGEMM
@@ -287,7 +221,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			phiGemmShutdown();
 
 #if defined(__PHIGEMM_PROFILE)
-			// printf("\n\n*** phiGEMM *** close the file \n\n");fflush(stdout);
 			fclose (myPhiGemmEnv.profileFile);
 #endif
 
@@ -312,15 +245,15 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 #endif
 {
 	int iDev, i ,j, tmp, step, residual, gpu_lda, gpu_ldb;
-	int m_gpu[NSTREAMS *MAX_GPUS], n_gpu[NSTREAMS *MAX_GPUS], k_gpu[NSTREAMS *MAX_GPUS];
+	int m_gpu[NSTREAMS], n_gpu[NSTREAMS], k_gpu[NSTREAMS];
 	int m_cpu, n_cpu, k_cpu;
-	int m_h2d[NSTREAMS *MAX_GPUS], n_h2d[NSTREAMS *MAX_GPUS], k_h2d[NSTREAMS *MAX_GPUS];
+	int m_h2d[NSTREAMS], n_h2d[NSTREAMS], k_h2d[NSTREAMS];
 
 	size_t a_offset, b_offset, c_offset;
-	size_t a_offset_gpu[NSTREAMS *MAX_GPUS], b_offset_gpu[NSTREAMS *MAX_GPUS], c_offset_gpu[NSTREAMS *MAX_GPUS];
+	size_t a_offset_gpu[NSTREAMS], b_offset_gpu[NSTREAMS], c_offset_gpu[NSTREAMS];
 	size_t shiftA, shiftB, shiftC;
 
-	double *devPtrA[NSTREAMS *MAX_GPUS], *devPtrB[NSTREAMS *MAX_GPUS], *devPtrC[NSTREAMS *MAX_GPUS];
+	double *devPtrA[NSTREAMS], *devPtrB[NSTREAMS], *devPtrC[NSTREAMS];
 	cublasStatus_t status;
 	cudaError_t cudaErr;
 
@@ -358,22 +291,22 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 		// if (*m > 128) tmp = floor(tmp/64.0)*64;
 		m_cpu = *m - tmp;
 
-		for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
+		for (i = 0; iDev < * NSTREAMS; iDev++) {
 
 			step = (int) (tmp / ( myPhiGemmEnv.numDevices * NSTREAMS ) );
 			residual =  tmp - myPhiGemmEnv.numDevices * NSTREAMS * step;
 
-			n_h2d[iDev] = n_gpu[iDev] = n_cpu = *n;
-			k_h2d[iDev] = k_gpu[iDev] = k_cpu = *k;
-			m_h2d[iDev] = m_gpu[iDev] = (iDev==0) ? step + residual : step;
+			n_h2d[i] = n_gpu[i] = n_cpu = *n;
+			k_h2d[i] = k_gpu[i] = k_cpu = *k;
+			m_h2d[i] = m_gpu[i] = (i==0) ? step + residual : step;
 
 			if ( is_transa )
-				a_offset_gpu[iDev] = m_gpu[iDev] * (*lda);
+				a_offset_gpu[i] = m_gpu[i] * (*lda);
 			else
-				a_offset_gpu[iDev] = m_gpu[iDev] ;
+				a_offset_gpu[i] = m_gpu[i] ;
 
-			b_offset_gpu[iDev] = 0;
-			c_offset_gpu[iDev] = m_gpu[iDev] ;
+			b_offset_gpu[i] = 0;
+			c_offset_gpu[i] = m_gpu[i] ;
 		}
 
 		if ( is_transa )
