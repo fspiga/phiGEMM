@@ -17,12 +17,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#if !defined(__PHIGEMM_CPUONLY)
 #include "cuda.h"
 #include "cublas_api.h"
 #include <cuda_runtime.h>
 #include "cublas_v2.h"
-#endif
 
 #include "phigemm_common.h"
 
@@ -35,16 +33,13 @@ extern "C"
 
 extern phiGemmEnv_t myPhiGemmEnv;
 
-#if !defined(__PHIGEMM_CPUONLY)
 extern phiGemmHandler_t myPhiGemmHdl;
-#endif
 
 extern phiGemmTuning_t myPhiGemmTng;
 
 
 /* --------------------- INTERNAL FUNCTIONS PROTOTYPES --------------------- */
 
-#if !defined(__PHIGEMM_CPUONLY)
 int phiGemmIsInternalMemAlloc();
 
 int phiGemmIsExternalMemAlloc();
@@ -58,7 +53,6 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 int cpuGPUheuristic(int m, int n, int k, char type);
 
 void phiGemmInitScratchMemory( );
-#endif
 
 double phigemm_cclock(void);
 

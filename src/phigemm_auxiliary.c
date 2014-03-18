@@ -54,7 +54,6 @@ int stringCmp( const void *a, const void *b)
 	return strcmp((const char*)a,(const char*)b);
 }
 
-#if !defined(__PHIGEMM_CPUONLY)
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
 #if defined(__PHIGEMM_GPUONLY)
@@ -82,9 +81,7 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 	}
 #endif
 }
-#endif
 
-#if !defined(__PHIGEMM_CPUONLY)
 void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2) {
 
 	size_t memsize_gpu = myPhiGemmHdl.smem[0] * myPhiGemmEnv.numDevices;
@@ -139,14 +136,13 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 
 	return;
 }
-#endif
 
 int cpuGPUheuristic(int m, int n, int k, char type)
 {
 
 	/* 0  : CPU-only
 	 * 1  : special-K
-	 * 2  : standard (split A or B)
+	 * 2  : standard (split A or B) --> DEFAULT IS GPU ONLY !
 	 */
 
 #if defined(__PHIGEMM_ENABLE_SPECIALK)
@@ -154,55 +150,28 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 	float RATIO_KM = (float) k/m;
 	float RATIO_KN = (float) k/n;
 
-	if (type == 'd' || type == 'z') {
-
-#if defined(__PHIGEMM_DEBUG_4)
-		printf("[PHIGEMM_DEBUG][4] ratio_km=%f, ratio_kn=%f, threshold=%f\n", RATIO_KM, RATIO_KN, myPhiGemmTng.THRESHOLD); fflush(stdout);
-#endif
-
-		// Matrices are small but not so small...
-		if ( (n >= myPhiGemmTng.LOWER_LIMIT) && (m >= myPhiGemmTng.LOWER_LIMIT) ){
-			// over the UPPER limit, they have to be rectangular...
-			if ( ((n >= myPhiGemmTng.UPPER_LIMIT_K) && (m >= myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.SPLITK_FACTOR) || (RATIO_KN >= myPhiGemmTng.SPLITK_FACTOR)) )
-				return 1;
-			// below the UPPER limit, they have to be very rectangular...
-			if ( ((n < myPhiGemmTng.UPPER_LIMIT_K) && (m < myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.THRESHOLD) || (RATIO_KN >= myPhiGemmTng.THRESHOLD)) )
-				return 1;
-		}
+	// Matrices are small but not so small...
+	if ( (n >= myPhiGemmTng.LOWER_LIMIT) && (m >= myPhiGemmTng.LOWER_LIMIT) ){
+		// over the UPPER limit, they have to be rectangular...
+		if ( ((n >= myPhiGemmTng.UPPER_LIMIT_K) && (m >= myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.SPLITK_FACTOR) || (RATIO_KN >= myPhiGemmTng.SPLITK_FACTOR)) )
+			return 1;
+		// below the UPPER limit, they have to be very rectangular...
+		if ( ((n < myPhiGemmTng.UPPER_LIMIT_K) && (m < myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.THRESHOLD) || (RATIO_KN >= myPhiGemmTng.THRESHOLD)) )
+			return 1;
 	}
 #endif
 
 	if ( (n < myPhiGemmTng.LOWER_LIMIT) ||  (m < myPhiGemmTng.LOWER_LIMIT) || (k < myPhiGemmTng.LOWER_LIMIT))
 		return 0;
 
-#if defined(__PHIGEMM_CPUONLY)
-	select_case = 0;
-#elif defined(__PHIGEMM_GPUONLY)
-	select_case = 2;
-#endif
 	return 2;
 }
 // ----
 
 
-#if !defined(__PHIGEMM_CPUONLY)
 int phiGemmIsInit()
 {
 	return is_phigemm_init;
-}
-#endif
-
-#if !defined(__PHIGEMM_CPUONLY)
-int phiGemmIsInternalMemAlloc()
-{
-	return is_internal_memory_alloc;
-}
-#endif
-
-#if !defined(__PHIGEMM_CPUONLY)
-int phiGemmIsExternalMemAlloc()
-{
-	return is_external_memory_alloc;
 }
 #endif
 
@@ -221,36 +190,20 @@ double phigemm_cclock(void)
 }
 
 
-#if !defined(__PHIGEMM_CPUONLY)
-void phigemmSetSplitFactor(float split_dgemm, float split_zgemm) {
-#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
-	/* 0:DGEMM, 1:ZGEMM */
-	float tmp_split_dgemm, tmp_split_zgemm;
+void phigemmSetSplitFactor(float split_gemm) {
 
-	tmp_split_dgemm =  (100.0f * split_dgemm)/( 1.0f - split_dgemm);
-	tmp_split_zgemm =  (100.0f * split_zgemm)/( 1.0f - split_zgemm);
+	// BE AWARE: A MANUAL CHANGE IS PERMANENT ACROSS THE ENTIRE EXECUTION
 
-	myPhiGemmTng.split[0] = tmp_split_dgemm / (tmp_split_dgemm + 100.0f);
-	myPhiGemmTng.split[1] = tmp_split_zgemm / (tmp_split_zgemm + 100.0f);
+	float tmp_split_gemm;
 
+	tmp_split_gemm =  (100.0f * split_gemm)/( 1.0f - split_gemm);
+
+	myPhiGemmTng.split = tmp_split_gemm / (tmp_split_gemm + 100.0f);
 
 	}
-#endif
 	return;
 }
-#endif
 
-#if !defined(__PHIGEMM_CPUONLY)
-float phigemmGetSplitFactor(int selection) {
-#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
-	return myPhiGemmTng.split[selection];
-#else
-	return myPhiGemmTng.prevSplit[selection];
-#endif
-}
-#endif
-
-#if !defined(__PHIGEMM_CPUONLY)
 void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 {
 	unsigned int i;
@@ -343,18 +296,14 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 {
 	unsigned int i;
 
-
-#if !defined(__PHIGEMM_CPUONLY)
 	struct cudaDeviceProp deviceProp;
 	int deviceCount;
-#endif
 
 	/* Read environment PHI_* variables (this reading override the default */
 	readEnv(tag);
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
-#if !defined(__PHIGEMM_CPUONLY)
 
 	if ( is_phigemm_init == 1 )
 		return;
@@ -458,17 +407,6 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 	is_phigemm_init = 1;
 
 	return;
-
-#else
-
-#if defined(__PHIGEMM_PROFILE)
-	//printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
-	myPhiGemmEnv.profileFile = fopen (myPhiGemmEnv.filename, "a");
-#endif
-
-	return;
-
-#endif
 }
 
 
@@ -546,7 +484,6 @@ void phiGemmShutdown()
 #else
 
 #if defined(__PHIGEMM_PROFILE)
-	// printf("\n\n*** phiGEMM *** close the file \n\n");fflush(stdout);
 	fclose (myPhiGemmEnv.profileFile);
 #endif
 
@@ -554,17 +491,6 @@ void phiGemmShutdown()
 #endif
 
 }
-
-#if !defined(__PHIGEMM_CPUONLY)
-void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
-	myPhiGemmHdl.smem[ myPhiGemmHdl.devId[gpu_id] ] = (size_t) new_dev_memsize;
-
-#if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] %lu Bytes of GPU memory available %d\n", (unsigned long)myPhiGemmHdl.smem[gpu_id], myPhiGemmHdl.devId[gpu_id]);
-	fflush(stdout);
-#endif
-}
-#endif
 
 /* ------------ FORTRAN INTERFACES FOR PHIGEMM PUBLIC METHODS -------------- */
 void phigemminit_(int nGPU, phiGemmMemDevPtr* ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag ){ phiGemmInit( nGPU, ptr, dev_memsize, deviceToBond, tag); }
@@ -576,7 +502,6 @@ int phigemmisinit_(){return phiGemmIsInit();}
 
 void phigemmsetsplitfactor_(float split_dgemm, float split_zgemm) { phigemmSetSplitFactor(split_dgemm, split_zgemm); }
 
-void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize) { phiGemmSetAvaiableScratchSpace(gpu_id, new_dev_memsize); }
 #endif
 /* ------------------------------------------------------------------------- */
 

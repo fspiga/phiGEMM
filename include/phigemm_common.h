@@ -21,9 +21,7 @@
 #include <dlfcn.h>
 #include <ctype.h>
 
-#if !defined(__PHIGEMM_CPUONLY)
 #include "cublas_v2.h"
-#endif
 
 #include <time.h>
 #include <sys/types.h>
@@ -31,7 +29,6 @@
 #include <sys/time.h>
 
 // phiGEMM data-type <--> CUDA data-type
-#if !defined(__PHIGEMM_CPUONLY)
 typedef cuComplex phiComplex;
 typedef cuDoubleComplex phiDoubleComplex;
 
@@ -40,24 +37,7 @@ typedef cuDoubleComplex phiDoubleComplex;
 #define phigemm_set_real_part(data, value) data.x = value
 #define phigemm_set_img_part(data, value) data.y = value
 
-#else
-
-// Replacements if CUDA native data-types are not available
-typedef float phiComplex[2];
-typedef double phiDoubleComplex[2];
-
-#define phigemm_get_real_part(data) data[0]
-#define phigemm_get_img_part(data) data[1]
-#define phigemm_set_real_part(data, value) data[0] = value
-#define phigemm_set_img_part(data, value) data[1] = value
-
-#endif
-
 /* --------------------------- MAIN DEFAULF VALUES ------------------------- */
-
-#ifndef MAX_GPUS
-#define MAX_GPUS 4
-#endif
 
 // This feature is not tested/checked since long time...
 #if defined (__PHIGEMM_MULTI_STREAMS)
@@ -108,32 +88,29 @@ typedef double phiDoubleComplex[2];
 
 /* -------------------------------- TYPEDEFS ------------------------------- */
 
-typedef void* phiGemmMemDevPtr[MAX_GPUS*NSTREAMS];
+typedef void* phiGemmMemDevPtr[NSTREAMS];
 
-typedef size_t phiGemmMemSizes[MAX_GPUS*NSTREAMS];
+typedef size_t phiGemmMemSizes[NSTREAMS];
 
-typedef int phiGemmDeviceIds[MAX_GPUS*NSTREAMS];
+typedef int phiGemmDeviceIds[NSTREAMS];
 
 typedef struct phiGemmEnv
 {
-	int numDevices;
 #if defined(__PHIGEMM_PROFILE)
 	FILE *profileFile;
 	char filename [ FILENAME_MAX ];
 #endif
 } phiGemmEnv_t;
 
-#if !defined(__PHIGEMM_CPUONLY)
 typedef struct phiGemmHandler
 {
 	phiGemmMemDevPtr pmem;
 	phiGemmMemSizes smem;
 	phiGemmDeviceIds devId;
-	cudaStream_t  stream[ NSTREAMS * MAX_GPUS ];
-	cublasHandle_t handle[ NSTREAMS * MAX_GPUS ];
+	cudaStream_t  stream[ NSTREAMS];
+	cublasHandle_t handle[ NSTREAMS ];
 } phiGemmHandler_t;
 
-#endif
 
 typedef struct phiGemmTuning
 {
