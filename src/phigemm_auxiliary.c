@@ -35,12 +35,9 @@ static int is_external_memory_alloc = 0;
 static int is_internal_memory_alloc = 0;
 static int is_internal_memory_probed = 0;
 
-struct phiGemmHandler myPhiGemmHdl;
-
-// C99-compatible initialization
-struct phiGemmTuning myPhiGemmTng = {
+struct phiGemmHandler myPhiGemmHdl = {
 		.SPLITK_FACTOR  = __SPLITK_FACTOR,
-		.SPLITK_DGEMM   = __SPLITK_GEMM,
+		.SPLITK_GEMM   = __SPLITK_GEMM,
 		.LOWER_LIMIT    = __LOWER_LIMIT,
 		.UPPER_LIMIT_NM = __UPPER_LIMIT_NM,
 		.UPPER_LIMIT_K  = __UPPER_LIMIT_K
@@ -170,7 +167,6 @@ int phiGemmIsInit()
 {
 	return is_phigemm_init;
 }
-#endif
 
 double phigemm_cclock(void)
 {
@@ -195,9 +191,8 @@ void phigemmSetSplitFactor(float split_gemm) {
 
 	tmp_split_gemm =  (100.0f * split_gemm)/( 1.0f - split_gemm);
 
-	myPhiGemmHdl.split = tmp_split_gemm / (tmp_split_gemm + 100.0f);
+	myPhiGemmHdl.SPLIT  = tmp_split_gemm / (tmp_split_gemm + 100.0f);
 
-	}
 	return;
 }
 
@@ -209,7 +204,7 @@ void phiGemmInitMemory( size_t dev_memsize )
 
 	if (myPhiGemmHdl.smem == 0)
 	{
-		if(dev_memsize == NULL) {
+		if(dev_memsize == 0) {
 
 			// Detect how much memory is available
 			// Assuming a process has exclusive access to the GPU
@@ -235,7 +230,7 @@ void phiGemmInitMemory( size_t dev_memsize )
 
 		} else {
 
-			myPhiGemmHdl.smem  = ( *dev_memsize )[ i ];
+			myPhiGemmHdl.smem  = dev_memsize ;
 		}
 	}
 
@@ -280,7 +275,6 @@ void phiGemmInitMemory( size_t dev_memsize )
 	is_internal_memory_alloc = 1;
 	return;
 }
-#endif
 
 void phiGemmInit( void* dev_ptr, size_t dev_memsize, int deviceToBond, int tag )
 {
@@ -339,10 +333,9 @@ void phiGemmInit( void* dev_ptr, size_t dev_memsize, int deviceToBond, int tag )
 //			myPhiGemmHdl.pmem[ i ] = (void*) (tmp_ptr + offset) ;
 
 #if defined(__PHIGEMM_DEBUG)
-			printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long) myPhiGemmHdl.smem, myPhiGemmHdl.devId);
-			fflush(stdout);
+		printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long) myPhiGemmHdl.smem, myPhiGemmHdl.devId);
+		fflush(stdout);
 #endif
-		}
 
 		/* Attempt to initialize CUBLAS */
 		if ( cublasCreate( &(myPhiGemmHdl.handle) ) != CUBLAS_STATUS_SUCCESS ) {
@@ -358,9 +351,9 @@ void phiGemmInit( void* dev_ptr, size_t dev_memsize, int deviceToBond, int tag )
 		}
 		cublasSetStream( myPhiGemmHdl.handle, myPhiGemmHdl.stream );
 
-	#if defined(__PHIGEMM_PROFILE)
+#if defined(__PHIGEMM_PROFILE)
 		myPhiGemmHdl.profileFile = fopen (myPhiGemmEnv.filename, "a");
-	#endif
+#endif
 		is_external_memory_alloc = 1;
 	}
 
@@ -436,7 +429,7 @@ void phiGemmShutdown()
 }
 
 /* ------------ FORTRAN INTERFACES FOR PHIGEMM PUBLIC METHODS -------------- */
-void phigemminit_(void* dev_ptr, size_t dev_memsize, int deviceToBond, int tag  ){ phiGemmInit( ptr, dev_memsize, deviceToBond, tag); }
+void phigemminit_(void* dev_ptr, size_t dev_memsize, int deviceToBond, int tag  ){ phiGemmInit( dev_ptr, dev_memsize, deviceToBond, tag); }
 
 void phigemmshutdown_(){ phiGemmShutdown(); }
 
