@@ -103,6 +103,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		break;
 
+#if defined(__PHIGEMM_ENABLE_SPECIALK)
 	case 1:
 		ground_level = 0;
 
@@ -114,6 +115,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 
 		break;
+#endif
 
 	case 2:
 

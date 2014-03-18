@@ -71,19 +71,11 @@
 
 #endif
 
-#if !defined(__PHIGEMM_CPUONLY)
 #define __FRACTION_OF_DEVICE_MEM_TO_USE__ 0.95
 
-#define MAX_GPU_SERIAL_TEST 8
-
-typedef void* serialTestMemDevPtr[MAX_GPU_SERIAL_TEST];
-typedef size_t serialTestMemSizes[MAX_GPU_SERIAL_TEST];
-typedef int serialTestDeviceIds[MAX_GPU_SERIAL_TEST];
-
-serialTestMemDevPtr test_scratch;
-serialTestMemSizes memsize;
-serialTestDeviceIds devicesToBond;
-#endif
+void* test_scratch;
+size_t memsize;
+int devicesToBond;
 
 typedef struct timestruct
 {
@@ -117,7 +109,7 @@ int main(int argc, char **argv)
 #endif
 
 	XTYPE *A, *B, *C, *C_mkl, *C_phigemm, *C_cuda, * GPU_buffer_memory_ptr;
-	void *d_A[MAX_GPUS], *d_B[MAX_GPUS], *d_C[MAX_GPUS];
+	void *d_A, *d_B, *d_C;
 
 	int m, n, k, i, j, err, is_transa[4], is_transb[4], nGPU, count;
 	float lowerSplitFactor, upperSplitFactor, stepSplitFactor, currentSplitFactor;
@@ -125,102 +117,53 @@ int main(int argc, char **argv)
 
 	unsigned int tmp_error, tmp_flags;
 
-	if( argc != 8 ) {
-		fprintf( stderr, "\nLaunch ERROR: Use ${Executable} <nGPU> <m> <n> <k> <lower split-factor> <upper split-factor> <step>\nfor matrix multiplication C( m, n ) = A( m, k ) x B( k, n )\n" );
+	if( argc != 7 ) {
+		fprintf( stderr, "\nLaunch ERROR: Use ${Executable} <m> <n> <k> <lower split-factor> <upper split-factor> <step>\nfor matrix multiplication C( m, n ) = A( m, k ) x B( k, n )\n" );
 		exit(EXIT_FAILURE );
 	}
 
-	nGPU = atoi( argv[ 1 ] );
-	m = atoi( argv[ 2 ] );
-	n = atoi( argv[ 3 ] );
-	k = atoi( argv[ 4 ] );
-	lowerSplitFactor = atof(argv[ 5 ]);
-	upperSplitFactor = atof(argv[ 6 ]);
-	stepSplitFactor = atof(argv[ 7 ]);
+	m = atoi( argv[ 1 ] );
+	n = atoi( argv[ 2 ] );
+	k = atoi( argv[ 3 ] );
+	lowerSplitFactor = atof(argv[ 4 ]);
+	upperSplitFactor = atof(argv[ 5 ]);
+	stepSplitFactor = atof(argv[ 6 ]);
 
-	phiGemmNumDevices = 0;
+	test_scratch = NULL;
+	memsize =  0;
 
-#if !defined(__PHIGEMM_CPUONLY)
-	cudaGetDeviceCount( &phiGemmNumDevices );
-	if(  nGPU < 1 || nGPU > phiGemmNumDevices ) {
-		fprintf( stderr, "\nLaunch ERROR: The number of nGPU needs to be within the [ 1, %d ] interval.", phiGemmNumDevices  );
-		exit( EXIT_FAILURE);
+	/* Attempt to establish a runtime API context */
+	if ( cudaSetDevice( 0 ) != cudaSuccess ) {
+		printf( "*** ERROR cudaSetDevice( 0 ) failed!" );
+		exit( EXIT_FAILURE );
 	}
 
-	phiGemmNumDevices = nGPU;
+	memsize = (size_t) 0;
 
-	for ( i = 0 ; i < nGPU ; i += 1 ) {
-		test_scratch[ i ] = NULL;
-		memsize[ i ] =  0;
+	ierr = cudaMalloc ( (void**) &test_scratch, memsize );
+	if ( ierr != cudaSuccess) {
+		fprintf( stderr, "\nError in (first zero) memory allocation [GPU 0] , program will be terminated!!! Bye...\n\n");
+		exit(EXIT_FAILURE);
 	}
 
-#if defined(__PERFORM_PHIGEMM_INIT)
-	/* GPU environment initialization */
-	for ( i = 0; i < nGPU; i++ ) {
-
-		/* bound the device */
-		devicesToBond[i] = i;
-
-		/* Attempt to establish a runtime API context */
-		if ( cudaSetDevice( devicesToBond[i] ) != cudaSuccess ) {
-			printf( "*** ERROR cudaSetDevice( %d ) failed!",i );
-			exit( EXIT_FAILURE );
-		}
-
-		memsize[ i ] = (size_t) 0;
-
-		ierr = cudaMalloc ( (void**) &(test_scratch[ i ]), memsize[ i ] );
-		if ( ierr != cudaSuccess) {
-			fprintf( stderr, "\nError in (first zero) memory allocation [GPU %d] , program will be terminated!!! Bye...\n\n", i);
-			exit(EXIT_FAILURE);
-		}
-
-		cudaMemGetInfo((size_t*)&freeMem, (size_t*)&totalMem);
+	cudaMemGetInfo((size_t*)&freeMem, (size_t*)&totalMem);
 
 #if defined(__PHIGEMM_TESTCASE_DEBUG)
 		printf("[GPU %d] before: %lu (total: %lu)\n", i, (unsigned long)freeMem, (unsigned long)totalMem); fflush(stdout);
 #endif
 
-		memsize[ i ] = (size_t) (freeMem * __FRACTION_OF_DEVICE_MEM_TO_USE__);
+	memsize = (size_t) (freeMem * __FRACTION_OF_DEVICE_MEM_TO_USE__);
 
-#if !defined(__PERFORM_ONLY_GPU_BIND)
-		ierr = cudaMalloc ( (void**) &(test_scratch[ i ]), (size_t) memsize[ i ] );
-		if ( ierr != cudaSuccess) {
-			fprintf( stderr, "\nError in memory allocation [GPU %d] , program will be terminated (%d)!!! Bye...\n\n", i, ierr );
-			exit(EXIT_FAILURE);
-		}
-#endif
-
-#if defined(__PHIGEMM_TESTCASE_DEBUG)
-		cudaMemGetInfo((size_t*)&freeMem, (size_t*)&totalMem);
-		printf("[GPU %d] after: %lu (total: %lu)\n", i, (unsigned long)freeMem, (unsigned long)totalMem); fflush(stdout);
-#endif
-
-		cudaMemset( test_scratch[ i ], 0, memsize[ i ] );
+	ierr = cudaMalloc ( (void**) &(test_scratch), (size_t) memsize );
+	if ( ierr != cudaSuccess) {
+		fprintf( stderr, "\nError in memory allocation [GPU 0] , program will be terminated (%d)!!! Bye...\n\n",  ierr );
+		exit(EXIT_FAILURE);
 	}
-#endif
 
-#if defined(__PERFORM_PHIGEMM_INIT)
-	// tag = 0 (fake value)
+	cudaMemset( test_scratch , 0, memsize );
 
-#if !defined(__PERFORM_ONLY_GPU_BIND)
-	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
-#else
+	phiGemmInit( &test_scratch, memsize, 0, 0);
 
-#if defined(__PERFORM_MEM_DETECT)
-	phiGemmInit( nGPU, NULL, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
-#else
-	phiGemmInit( nGPU, NULL, NULL, (int *)&devicesToBond, 0);
-#endif
-#endif
-
-#endif
-	cudaDeviceSynchronize();
-
-#else
-	// CPU-only ... some sort of init is still necessary to allow call-to-call profiling
-	phiGemmInit( nGPU, NULL, NULL, NULL, 0);
-#endif
 
 	/* Allocating memory on the CPU ... */
 	byte_GPU_buffer = ( size_t ) ( ( ( ((m * k)%2==0) ? (m * k) : (m * k)+1 ) +
@@ -237,19 +180,6 @@ int main(int argc, char **argv)
 		printf( "*** ERROR allocating MEMORY on CPU\n"  );
 		exit( EXIT_FAILURE );
 	}
-
-#if defined(__PHITEST_FORCE_PINNED)
-
-	/* the first call makes no sense */
-	tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
-	printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
-
-	tmp_error = (int) cudaHostRegister(GPU_buffer_memory_ptr, byte_GPU_buffer, CU_MEMHOSTALLOC_PORTABLE);
-	printf("[cuMemHostRegister] tmp_error=%d\n", tmp_error); fflush(stdout);
-
-	tmp_error = (int) cudaHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
-	printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
-#endif
 #endif
 
 	fprintf( stdout, "\nsizeof(XTYPE) = %lu ~ ", (size_t) sizeof(XTYPE) );
@@ -326,7 +256,8 @@ int main(int argc, char **argv)
 	}
 
 
-	transa[0] = 'n'; transb[0] = 'n';
+	transa[0] = 'n';
+	transb[0] = 'n';
 
 #if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 	transa[1] = 'c';
@@ -396,14 +327,14 @@ int main(int argc, char **argv)
 
 		mem_gpu = ( m*k + k*n + m*n ) * sizeof(XTYPE);
 
-		if (mem_gpu > memsize[ 0 ] ) {
+		if (mem_gpu > memsize ) {
 			/* I simply cannot run this GEMM on one single GPU ... */
 			gpu_time = 0;
 		} else {
 			cublasHandle_t handle;
 
 			/* Attempt to establish a runtime API context */
-			if ( cudaSetDevice( devicesToBond[0] ) != cudaSuccess ) {
+			if ( cudaSetDevice( devicesToBond ) != cudaSuccess ) {
 				printf( "*** ERROR cudaSetDevice( %d ) failed!",i );
 				exit( EXIT_FAILURE );
 			}
@@ -431,7 +362,7 @@ int main(int argc, char **argv)
 				}
 			}
 
-			if ( cudaSetDevice(devicesToBond[0]) != cudaSuccess) {
+			if ( cudaSetDevice(devicesToBond) != cudaSuccess) {
 				printf("*** ERROR cudaSetDevice\n");
 				exit(EXIT_FAILURE);
 			}
@@ -443,11 +374,11 @@ int main(int argc, char **argv)
 
 			// Be AWARE when you load data in this way... always align by 16!
 			shift = 0;
-			d_A[0] = (char*) test_scratch[0] + shift;
+			d_A = (char*) test_scratch + shift;
 			shift += ( ((m * k)%2==0) ? (m * k) : (m * k)+1 )*sizeof(XTYPE);
-			d_B[0] = (char*) test_scratch[0] + shift;
+			d_B = (char*) test_scratch + shift;
 			shift += ( ((k * n)%2==0) ? (k * n) : (k * n)+1 )*sizeof(XTYPE);
-			d_C[0] = (char*) test_scratch[0] + shift;
+			d_C = (char*) test_scratch + shift;
 
 			cublasOperation_t cu_transa, cu_transb;
 			cu_transa =  ( (transa[ count ] == 'c') || (transa[ count ] == 'C') ) ? CUBLAS_OP_C : CUBLAS_OP_N;
@@ -460,26 +391,26 @@ int main(int argc, char **argv)
 			t1 = seconds();
 
 			if ( is_transa[count] )
-				cublasSetMatrix(k, m, sizeof(XTYPE), A, lda, (XTYPE*) d_A[0], lda);
+				cublasSetMatrix(k, m, sizeof(XTYPE), A, lda, (XTYPE*) d_A, lda);
 			else
-				cublasSetMatrix(m, k, sizeof(XTYPE), A, lda, (XTYPE*) d_A[0], lda);
+				cublasSetMatrix(m, k, sizeof(XTYPE), A, lda, (XTYPE*) d_A, lda);
 
 			if ( is_transb[count] )
-				cublasSetMatrix(n, k, sizeof(XTYPE), B, ldb, (XTYPE*) d_B[0], ldb);
+				cublasSetMatrix(n, k, sizeof(XTYPE), B, ldb, (XTYPE*) d_B, ldb);
 			else
-				cublasSetMatrix(k, n, sizeof(XTYPE), B, ldb, (XTYPE*) d_B[0], ldb);
+				cublasSetMatrix(k, n, sizeof(XTYPE), B, ldb, (XTYPE*) d_B, ldb);
 
-			cublasSetMatrix(m, n, sizeof(XTYPE), C_cuda, m, (XTYPE*) d_C[0], m);
+			cublasSetMatrix(m, n, sizeof(XTYPE), C_cuda, m, (XTYPE*) d_C, m);
 
 			h2d_time = seconds() - t1;
 
 			t2 = seconds();
-			CUBLAS_GEMM(handle, cu_transa, cu_transb, m, n, k, &alpha, d_A[0], lda, d_B[0], ldb, &beta, d_C[0], m);
+			CUBLAS_GEMM(handle, cu_transa, cu_transb, m, n, k, &alpha, d_A, lda, d_B, ldb, &beta, d_C, m);
 			cudaDeviceSynchronize();
 			kernel_time = seconds() - t2;
 
 			t3 = seconds();
-			cublasGetMatrix(m, n, sizeof(XTYPE), (XTYPE*) d_C[0], m, C_cuda, m);
+			cublasGetMatrix(m, n, sizeof(XTYPE), (XTYPE*) d_C, m, C_cuda, m);
 
 			/* gpu_time =  H2D + COMPUTATION + D2H */
 			gpu_time = seconds() - t1;
@@ -511,14 +442,7 @@ int main(int argc, char **argv)
 				}
 			}
 
-#if !defined(__PHIGEMM_CPUONLY)
-			/* Optimal.... but probably not optimal anymore! */
-			// currentSplitFactor = (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU / ((( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / kernel_time)*nGPU + (( 2.e-9 ) * ( double ) m * ( double ) n * ( double ) k / cpu_time) );
-			float splits[4];
-			splits[0] = currentSplitFactor;
-			splits[1] = currentSplitFactor;
-			phigemmSetSplitFactor(splits[0], splits[1]);
-#endif
+			phigemmSetSplitFactor(currentSplitFactor);
 
 			t1 = seconds();
 #if defined(__PHIGEMM_PROFILE)
@@ -588,54 +512,31 @@ int main(int argc, char **argv)
 		/* end */
 	}
 
-#if defined(__PERFORM_PHIGEMM_INIT)&& !defined(__PHIGEMM_CPUONLY)
 
-	for( i = 0 ; i < nGPU ; i++) {
-
-		if( cudaSetDevice( devicesToBond[i] ) != cudaSuccess )
-		{
-			fprintf( stderr, "*** ERROR cudaSetDevice\n");
-			exit( EXIT_FAILURE );
-		}
-
-		if( cudaFree( test_scratch[ i ] ) != cudaSuccess )
-		{
-			fprintf( stderr, "[device:%d] Error cudaFree.\n", i);
-			exit( EXIT_FAILURE );
-		}
+	if( cudaSetDevice( 0 ) != cudaSuccess )
+	{
+		fprintf( stderr, "*** ERROR cudaSetDevice\n");
+		exit( EXIT_FAILURE );
 	}
-#endif
+
+	if( cudaFree( test_scratch ) != cudaSuccess )
+	{
+		fprintf( stderr, "[device:%d] Error cudaFree.\n", i);
+		exit( EXIT_FAILURE );
+	}
 
 	/* RELEASE RESOURCES */
-#if defined(__PERFORM_PHIGEMM_INIT)
 	phiGemmShutdown();
-#endif
 
 	free( C_mkl );
 
-#if defined(__PHITEST_MEM_PINNED) && !defined(__PHIGEMM_CPUONLY)
+#if defined(__PHITEST_MEM_PINNED)
 
 	cudaFreeHost( GPU_buffer_memory_ptr );
-	if ( !(mem_gpu > memsize[ 0 ]) ) cudaFreeHost( C_cuda );
+	if ( !(mem_gpu > memsize) ) cudaFreeHost( C_cuda );
 #else
-
-#if defined(__PHITEST_FORCE_PINNED) && !defined(__PHIGEMM_CPUONLY)
-
-	/* the first call makes no sense */
-//        tmp_error = (int) cuMemHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
-//        printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
-
-	tmp_error = (int) cudaHostUnregister(GPU_buffer_memory_ptr);
-	printf("[cuMemHostUnregister] tmp_error=%d\n", tmp_error); fflush(stdout);
-
-	tmp_error = (int) cudaHostGetFlags(&tmp_flags, GPU_buffer_memory_ptr);
-	printf("[cuMemHostGetFlags] tmp_error=%d, tmp_flags=%d\n",tmp_error, tmp_flags); fflush(stdout);
-#endif
-
-#if !defined(__PHIGEMM_CPUONLY)
 	free( GPU_buffer_memory_ptr );
-	if ( !(mem_gpu > memsize[ 0 ]) ) free( C_cuda );
-#endif
+	if ( !(mem_gpu > memsize) ) free( C_cuda );
 #endif
 
 	return 0;

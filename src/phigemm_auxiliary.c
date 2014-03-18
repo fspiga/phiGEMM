@@ -162,6 +162,15 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 }
 // ----
 
+int phiGemmIsInternalMemAlloc()
+{
+ 	return is_internal_memory_alloc;
+}
+
+int phiGemmIsExternalMemAlloc()
+{
+ 	return is_external_memory_alloc;
+}
 
 int phiGemmIsInit()
 {
