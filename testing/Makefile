@@ -34,12 +34,11 @@ prereq:
 	mkdir -p .objs
 
 test:
-	rm -rf $(TOPDIR)/bin/*.x
-	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(TOPDIR)/bin/single_test.x single_test.c $(EXT_INC) $(LD_LIB)
+	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o ../bin/single_test.x single_test.c $(EXT_INC) $(LD_LIB)
 	
 run:
 	./testsuite.sh
 
 clean:
 	rm -rf .objs *.o
-	rm -f $(TOPDIR)/bin/*
+	rm -f ../bin/*
