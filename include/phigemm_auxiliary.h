@@ -54,7 +54,7 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in);
 
 void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2);
 
-int cpuGPUheuristic(int m, int n, int k, char type);
+int cpuGPUheuristic(int m, int n, int k);
 
 void phiGemmInitScratchMemory( );
 #endif

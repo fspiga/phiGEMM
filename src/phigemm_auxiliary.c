@@ -40,8 +40,7 @@ struct phiGemmHandler myPhiGemmHdl;
 struct phiGemmTuning myPhiGemmTng = {
 		.SPLITK_FACTOR  = __SPLITK_FACTOR,
 		.THRESHOLD      = (int) __SPLITK_FACTOR*1.5,
-		.SPLITK_DGEMM   = __SPLITK_DGEMM,
-		.SPLITK_ZGEMM   = __SPLITK_ZGEMM,
+		.SPLITK_GEMM   = __SPLITK_GEMM,
 		.LOWER_LIMIT    = __LOWER_LIMIT,
 		.UPPER_LIMIT_NM = __UPPER_LIMIT_NM,
 		.UPPER_LIMIT_K  = __UPPER_LIMIT_K
@@ -136,7 +135,7 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 	return;
 }
 
-int cpuGPUheuristic(int m, int n, int k, char type)
+int cpuGPUheuristic(int m, int n, int k)
 {
 
 	/* 0  : CPU-only
@@ -149,22 +148,16 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 	float RATIO_KM = (float) k/m;
 	float RATIO_KN = (float) k/n;
 
-	if (type == 'd' || type == 'z') {
-
-#if defined(__PHIGEMM_DEBUG_4)
-		printf("[PHIGEMM_DEBUG][4] ratio_km=%f, ratio_kn=%f, threshold=%f\n", RATIO_KM, RATIO_KN, myPhiGemmTng.THRESHOLD); fflush(stdout);
-#endif
-
-		// Matrices are small but not so small...
-		if ( (n >= myPhiGemmTng.LOWER_LIMIT) && (m >= myPhiGemmTng.LOWER_LIMIT) ){
-			// over the UPPER limit, they have to be rectangular...
-			if ( ((n >= myPhiGemmTng.UPPER_LIMIT_K) && (m >= myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.SPLITK_FACTOR) || (RATIO_KN >= myPhiGemmTng.SPLITK_FACTOR)) )
-				return 1;
-			// below the UPPER limit, they have to be very rectangular...
-			if ( ((n < myPhiGemmTng.UPPER_LIMIT_K) && (m < myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.THRESHOLD) || (RATIO_KN >= myPhiGemmTng.THRESHOLD)) )
-				return 1;
-		}
+	// Matrices are small but not so small...
+	if ( (n >= myPhiGemmTng.LOWER_LIMIT) && (m >= myPhiGemmTng.LOWER_LIMIT) ){
+		// over the UPPER limit, they have to be rectangular...
+		if ( ((n >= myPhiGemmTng.UPPER_LIMIT_K) && (m >= myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.SPLITK_FACTOR) || (RATIO_KN >= myPhiGemmTng.SPLITK_FACTOR)) )
+			return 1;
+		// below the UPPER limit, they have to be very rectangular...
+		if ( ((n < myPhiGemmTng.UPPER_LIMIT_K) && (m < myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.THRESHOLD) || (RATIO_KN >= myPhiGemmTng.THRESHOLD)) )
+			return 1;
 	}
+}
 #endif
 
 	if ( (n < myPhiGemmTng.LOWER_LIMIT) ||  (m < myPhiGemmTng.LOWER_LIMIT) || (k < myPhiGemmTng.LOWER_LIMIT)) return 0;
@@ -205,30 +198,20 @@ double phigemm_cclock(void)
 }
 
 
-void phigemmSetSplitFactor(float split_dgemm, float split_zgemm) {
-#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
-	/* 0:DGEMM, 1:ZGEMM */
-	float tmp_split_dgemm, tmp_split_zgemm;
+void phigemmSetSplitFactor(float split_gemm) {
 
-	tmp_split_dgemm =  (100.0f * split_dgemm)/( 1.0f - split_dgemm);
-	tmp_split_zgemm =  (100.0f * split_zgemm)/( 1.0f - split_zgemm);
+	// BE AWARE THIS IS A PERMANENT OPERATION
 
-	myPhiGemmTng.split[0] = tmp_split_dgemm / (tmp_split_dgemm + 100.0f);
-	myPhiGemmTng.split[1] = tmp_split_zgemm / (tmp_split_zgemm + 100.0f);
+	float tmp_split;
 
+	tmp_split =  (100.0f * split_gemm)/( 1.0f - split_gemm);
 
-	}
-#endif
+	myPhiGemmTng.split = tmp_split / (tmp_split + 100.0f);
+
 	return;
 }
 
-float phigemmGetSplitFactor(int selection) {
-#if defined(__PHIGEMM_EXPLICIT_SPLITFACTOR)
-	return myPhiGemmTng.split[selection];
-#else
-	return myPhiGemmTng.prevSplit[selection];
-#endif
-}
+float phigemmGetSplitFactor(int selection) { return myPhiGemmTng.split; }
 
 
 void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
@@ -520,13 +503,11 @@ void phigemminit_(int nGPU, phiGemmMemDevPtr* ptr, phiGemmMemSizes* dev_memsize,
 
 void phigemmshutdown_(){ phiGemmShutdown(); }
 
-#if !defined(__PHIGEMM_CPUONLY)
 int phigemmisinit_(){return phiGemmIsInit();}
 
-void phigemmsetsplitfactor_(float split_dgemm, float split_zgemm) { phigemmSetSplitFactor(split_dgemm, split_zgemm); }
+void phigemmsetsplitfactor_(float split_gemm) { phigemmSetSplitFactor(split_gemm); }
 
 void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize) { phiGemmSetAvaiableScratchSpace(gpu_id, new_dev_memsize); }
-#endif
 /* ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus

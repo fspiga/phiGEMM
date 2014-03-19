@@ -91,7 +91,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				phiGemmInitMemory(NULL);
 				//phiGemmInitScratchMemory();
 			}
-			select_case = cpuGPUheuristic( (*m), (*n), (*k), 'z');
+			select_case = cpuGPUheuristic( (*m), (*n), (*k));
 		}
 	}
 #endif
@@ -132,7 +132,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		/* Assign the split factor for phiZgemm (3: ZGEMM) */
 #if !defined(__PHIGEMM_GPUONLY)
-		split = myPhiGemmTng.split[1];
+		split = myPhiGemmTng.split;
 #else
 		split = 1.0;
 #endif

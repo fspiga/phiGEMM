@@ -26,15 +26,15 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 void phiGemmShutdown();
 
-#if !defined(__PHIGEMM_CPUONLY)
 int phiGemmIsInit();
 
-void phigemmSetSplitFactor(float split_dgemm, float split_zgemm);
+void phigemmSetSplitFactor(float split_gemm);
 
-float phigemmGetSplitFactor(int selection);
+// Only in C???
+float phigemmGetSplitFactor();
 
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize);
-#endif
+
 
 #if defined(__PHIGEMM_PROFILE)
 void phiDgemm (const char *transa, const char *transb, const int *m,
@@ -90,13 +90,11 @@ void phigemminit_(int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 
 void phigemmshutdown_();
 
-#if !defined(__PHIGEMM_CPUONLY)
 int phigemmisinit_();
 
-void phigemmsetsplitfactor_(float split_dgemm, float split_zgemm);
+void phigemmsetsplitfactor_(float split_gemm);
 
 void phiremmsetavaiablescratchspace_(int gpu_id, size_t new_dev_memsize);
-#endif
 
 #if defined(__PHIGEMM_PROFILE)
 void phidgemm_ (const char *transa, const char *transb, const int *m,

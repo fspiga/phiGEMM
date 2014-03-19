@@ -20,9 +20,7 @@
 #include <dlfcn.h>
 #include <ctype.h>
 
-#if !defined(__PHIGEMM_CPUONLY)
 #include "cublas_v2.h"
-#endif
 
 #include <time.h>
 #include <sys/types.h>
@@ -30,7 +28,6 @@
 #include <sys/time.h>
 
 // phiGEMM data-type <--> CUDA data-type
-#if !defined(__PHIGEMM_CPUONLY)
 typedef cuComplex phiComplex;
 typedef cuDoubleComplex phiDoubleComplex;
 
@@ -39,8 +36,8 @@ typedef cuDoubleComplex phiDoubleComplex;
 #define phigemm_set_real_part(data, value) data.x = value
 #define phigemm_set_img_part(data, value) data.y = value
 
-#else
 
+#if 0
 // Replacements if CUDA native data-types are not available
 typedef float phiComplex[2];
 typedef double phiDoubleComplex[2];
@@ -69,22 +66,12 @@ typedef double phiDoubleComplex[2];
 #define __SCALING_INIT_MEM 0.95
 #endif
 
-#if defined(__CUDA_GET_MEM_HACK)
-#ifndef __GPU_MEM_AMOUNT_HACK__
-#define __GPU_MEM_AMOUNT_HACK__ 2400000000
-#endif
-#endif
-
 #ifndef __SPLITK_FACTOR
 #define __SPLITK_FACTOR 20
 #endif
 
-#ifndef __SPLITK_DGEMM
-#define __SPLITK_DGEMM 2048
-#endif
-
-#ifndef __SPLITK_ZGEMM
-#define __SPLITK_ZGEMM 2048
+#ifndef __SPLITK_GEMM
+#define __SPLITK_GEMM 2048
 #endif
 
 #ifndef __LOWER_LIMIT
@@ -120,7 +107,6 @@ typedef int phiGemmDeviceIds[MAX_GPUS*NSTREAMS];
 typedef struct phiGemmEnv
 {
 	int numDevices;
-	int cores;
 #if defined(__PHIGEMM_PROFILE)
 	FILE *profileFile;
 	char filename [ FILENAME_MAX ];
@@ -141,13 +127,10 @@ typedef struct phiGemmHandler
 
 typedef struct phiGemmTuning
 {
-	float split[2];
-	float prevSplit[2];
-	float lpSplit[2];
+	float split;
 	float SPLITK_FACTOR;
 	float THRESHOLD;
-	int SPLITK_DGEMM;
-	int SPLITK_ZGEMM;
+	int SPLITK_GEMM;
 	int LOWER_LIMIT;
 	int UPPER_LIMIT_NM;
 	int UPPER_LIMIT_K;
