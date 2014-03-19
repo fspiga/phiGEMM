@@ -1,4 +1,4 @@
-/*
+/*****************************************************************************\
  * Copyright (C) 2011-2014 Quantum ESPRESSO Foundation
  * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
@@ -8,24 +8,14 @@
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
  * Filippo Spiga (filippo.spiga@quantum-espresso.org)
- *
- */
+\*****************************************************************************/
 
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
-#define PRECISION_D
-#if defined(PRECISION_D) || defined(PRECISION_S)
 #define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
-#else
-#define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
-#endif
 
-#if defined(__PHIGEMM_MAGMABLAS)
-#define gpuGemm magmablas_dgemm
-#else
 #define gpuGemm cublasDgemm
-#endif
 #define gemm_mkl dgemm_
 #define PHIGEMM_M phidgemm_
 #define phiDgemm PHIGEMM_M
@@ -320,15 +310,6 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 	if ( (*transa != 'n') && (*transa != 'N') )	is_transa = 1;
 	if ( (*transb != 'n') && (*transb != 'N') ) is_transb = 1;
 
-#if !defined(__PHIGEMM_MAGMABLAS)
-	cu_transa = ((*transa == 'c')||(*transa == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
-	cu_transa = ((*transa == 't')||(*transa == 'T')) ? CUBLAS_OP_T : cu_transa;
-	cu_transa = ((*transa == 'n')||(*transa == 'N')) ? CUBLAS_OP_N : cu_transa;
-	cu_transb = ((*transb == 'c')||(*transb == 'C')) ? CUBLAS_OP_C : CUBLAS_OP_N;
-	cu_transb = ((*transb == 't')||(*transb == 'T')) ? CUBLAS_OP_T : cu_transb;
-	cu_transb = ((*transb == 'n')||(*transb == 'N')) ? CUBLAS_OP_N : cu_transb;
-#endif
-
 	// if split == 1 --> all GPU (is it working?)
 
 	/* split A only */
@@ -552,17 +533,10 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 		if ( is_transa ) gpu_lda = k_gpu[iDev];
 		if ( is_transb ) gpu_ldb = n_gpu[iDev];
 
-#if defined(__PHIGEMM_MAGMABLAS)
-		gpuGemm (*transa, *transb, m_gpu[iDev],
-				n_gpu[iDev], k_gpu[iDev], alpha, devPtrA[iDev],
-				gpu_lda, devPtrB[iDev], gpu_ldb, beta, devPtrC[iDev],
-				gpu_lda);
-#else
 		gpuGemm (myPhiGemmHdl.handle[ iDev ], cu_transa, cu_transb, m_gpu[iDev],
 				n_gpu[iDev], k_gpu[iDev], alpha, devPtrA[iDev],
 				gpu_lda, devPtrB[iDev], gpu_ldb, beta, devPtrC[iDev],
 				m_gpu[iDev]);
-#endif
 
 #if defined(__PHIGEMM_DEBUG)
 		cudaEventRecord(events[iDev][4], myPhiGemmHdl.stream[iDev] );
@@ -688,18 +662,10 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 		if ( is_splitA ) {
 
 #if defined(__PHIGEMM_PROFILE)
-#if defined(__PHIGEMM_MAGMABLAS)
-			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) MAGMABLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
-#else
 			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
-#endif
 			file, line, iDev % myPhiGemmEnv.numDevices,
 #else
-#if defined(__PHIGEMM_MAGMABLAS)
-			printf ("[PHIGEMM_DEBUG GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) MAGMABLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
-#else
 			printf ("[PHIGEMM_DEBUG GPU %d] %d (%d %d, %5.4f) %d %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs ~ Total: %9.6fs (%7.4fGflops)\n",
-#endif
 			iDev % myPhiGemmEnv.numDevices,
 #endif
 			*m,
@@ -725,18 +691,10 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			1.e-6 * PHIGEMM_FLOPS( (double)(*m), (double)(*n), (double)(*k) )/(time_total*1000));
 		} else {
 #if defined(__PHIGEMM_PROFILE)
-#if defined(__PHIGEMM_MAGMABLAS)
-			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) MAGMABLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-#else
 			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-#endif
 			file, line, iDev % myPhiGemmEnv.numDevices,
 #else
-#if defined(__PHIGEMM_MAGMABLAS)
-			printf ("[PHIGEMM_DEBUG GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) MAGMABLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-#else
 			printf ("[PHIGEMM_DEBUG GPU %d] %d %d (%d %d, %5.4f) %d ~ H2D:%9.6fs (%6.4fGB/s) MKL:%9.6fs (%5.4fGflops) CUBLAS: %9.6fs (%7.4fGflops) D2H:%9.6fs (%6.4fGb/s) ~ BALANCE: %9.6fs~ Total: %9.6fs (%7.4fGflops)\n",
-#endif
 			iDev % myPhiGemmEnv.numDevices,
 #endif
 			*m,

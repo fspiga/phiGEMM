@@ -1,4 +1,4 @@
-/*
+/*****************************************************************************\
  * Copyright (C) 2011-2014 Quantum ESPRESSO Foundation
  * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
@@ -8,8 +8,7 @@
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
  * Filippo Spiga (filippo.spiga@quantum-espresso.org)
- *
- */
+\*****************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>

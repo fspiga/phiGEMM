@@ -1,4 +1,4 @@
-/*
+/*****************************************************************************\
  * Copyright (C) 2011-2014 Quantum ESPRESSO Foundation
  * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
@@ -8,19 +8,12 @@
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
  * Filippo Spiga (filippo.spiga@quantum-espresso.org)
- *
- */
-
+\*****************************************************************************/
 
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
-#define PRECISION_D
-#if defined(PRECISION_D) || defined(PRECISION_S)
-#define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
-#else
 #define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
-#endif
 
 #define cublasGemm cublasZgemm
 #define gemm_mkl zgemm_

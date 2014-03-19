@@ -1,4 +1,4 @@
-/*
+/*****************************************************************************\
  * Copyright (C) 2011-2014 Quantum ESPRESSO Foundation
  * Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
  *
@@ -8,24 +8,14 @@
  * or http://www.gnu.org/copyleft/gpl.txt .
  *
  * Filippo Spiga (filippo.spiga@quantum-espresso.org)
- *
- */
+\*****************************************************************************/
 
 #include "phigemm.h"
 #include "phigemm_auxiliary.h"
 
-#define PRECISION_Z
-#if defined(PRECISION_D) || defined(PRECISION_S)
-#define PHIGEMM_FLOPS(m, n, k) (      GEMM_MUL(m, n, k) +      GEMM_ADD(m, n, k))
-#else
 #define PHIGEMM_FLOPS(m, n, k) (  6 * GEMM_MUL(m, n, k) +  2 * GEMM_ADD(m, n, k))
-#endif
 
-#if defined(__PHIGEMM_MAGMABLAS)
-#define gpuGemm magmablas_zgemm
-#else
 #define gpuGemm cublasZgemm
-#endif
 #define gemm_mkl zgemm_
 #define PHIGEMM_M phizgemm_
 #define phiZgemm PHIGEMM_M
@@ -85,9 +75,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 	}
 
-#if defined(__PHIGEMM_CPUONLY)
-	select_case = 0;
-#elif defined(__PHIGEMM_GPUONLY)
+#if defined(__PHIGEMM_GPUONLY)
 	select_case = 2;
 #else
 
