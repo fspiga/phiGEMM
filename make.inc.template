@@ -11,6 +11,8 @@
 
 # This is a template. Edit it.
 
+MANUAL_GEMM_OPT =
+
 TOPDIR		= /home/fs395/scratch/QE-SOURCES/devel/phiGEMM
 CUDA_PATH   = /usr/local/Cluster-Users/fs395/cuda/6.0-RC
 
@@ -38,4 +40,4 @@ EXT_INC     = -I$(CUDA_PATH) -I$(TOPDIR)/include
 CUDA_LIB    = -L$(CUDA_PATH) -lcublas -lcudart
 LD_LIB      = $(TOPDIR)/lib/libphigemm.a $(CUDA_LIB) -lmkl_intel_lp64  -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 
-GEMM_OPT    = -D__INTEL -D__MKL -D__OMP -D__PHIGEMM_CUBLAS
+GEMM_OPT    = -D__INTEL -D__MKL -D__OMP -D__PHIGEMM_CUBLAS $(MANUAL_GEMM_OPT)
