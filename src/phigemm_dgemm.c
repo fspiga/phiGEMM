@@ -115,28 +115,15 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	case 0:
 		ground_level = 0;
 
-#if defined(__PHIGEMM_DEBUG_3)
-		printf ("[PHIGEMM_DEBUG][3] COMPUTE IN splitting_level=%d [CPU-ONLY]\n", splitting_level);  fflush(stdout);
-#endif
-
 		// cpuGPUheuristic(...) = 0 >> CPU-only
 		gemm_mkl(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta,C, ldc);
 
-#if defined(__PHIGEMM_DEBUG_3)
-		printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [CPU-ONLY]\n", splitting_level);  fflush(stdout);
-#endif
-
 		break;
-
-#if !defined(__PHIGEMM_CPUONLY)
 
 	case 1:
 		ground_level = 0;
 
 		if ( ground_level && !phiGemmIsExternalMemAlloc() ) {
-#if defined(__PHIGEMM_DEBUG_3)
-			printf ("[PHIGEMM_DEBUG][3] Internal allocation of the GPU memory \n");  fflush(stdout);
-#endif
 			/* init the memory */
 		}
 
@@ -151,14 +138,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		phidgemm_specialK( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 #endif
 
-#if defined(__PHIGEMM_DEBUG_3)
-		printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [SPECIAL-K]\n", splitting_level);  fflush(stdout);
-#endif
-
 		if ( ground_level && phiGemmIsInternalMemAlloc() ) {
-#if defined(__PHIGEMM_DEBUG_3)
-			printf ("[PHIGEMM_DEBUG][3] Free GPU memory internally allocated\n" );  fflush(stdout);
-#endif
 			/* free the memory */
 		}
 		break;
@@ -202,19 +182,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 				splitting_level--;
 			} else {
-
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] COMPUTE IN splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
-#endif
-
 #if defined(__PHIGEMM_PROFILE)
 				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
 				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
-#endif
-
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
 #endif
 			}
 		} else {
@@ -241,25 +212,14 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 				splitting_level--;
 			} else {
 
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] COMPUTE IN splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
-#endif
-
 #if defined(__PHIGEMM_PROFILE)
 				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split, file, line);
 #else
 				PHIGEMM_DGEMM_MF(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc, is_splitA, split);
 #endif
-
-#if defined(__PHIGEMM_DEBUG_3)
-				printf ("[PHIGEMM_DEBUG][3] COMPUTE OUT splitting_level=%d [CPU+GPU]\n", splitting_level); fflush(stdout);
-#endif
 			}
 		}
 		break;
-
-#endif
-
 	}
 
 	if ( first_call) {
@@ -267,12 +227,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		first_call = 0;
 		splitting_level = 0;
 
-#if !defined(__PHIGEMM_CPUONLY)
 		if ( cudaSetDevice(myPhiGemmHdl.devId[0]) != cudaSuccess) {
 			printf("*** phiGEMM *** ERROR *** cudaSetDevice failed!\n");
 			exit(EXIT_FAILURE);
 		}
-#endif
 
 #if defined(__PHIGEMM_PROFILE)
 		stop = phigemm_cclock() - start;
@@ -299,7 +257,6 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 
 
-#if !defined(__PHIGEMM_CPUONLY)
 		if ( phiGemmIsInternalMemAlloc() ){
 			/* Since phiGemmIsInternalMemAlloc() is True then phiGEMM
 			   is still in a initialized state, it means that GPU-process
@@ -312,13 +269,10 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 #endif
 
 		}
-#endif
-
 	}
+
 	return;
 }
-
-#if !defined(__PHIGEMM_CPUONLY)
 
 #if defined(__PHIGEMM_PROFILE)
 void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
@@ -348,7 +302,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 	cublasStatus_t status;
 	cudaError_t cudaErr;
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 	/* timing using CUDA events */
 	cudaEvent_t events[myPhiGemmEnv.numDevices * NSTREAMS][__PHIGEMM_EVENTS];
 
@@ -453,7 +407,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 
 		devPtrA[iDev]=(double *)(myPhiGemmHdl.pmem[iDev]);
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		for (j = 0; j < __PHIGEMM_EVENTS; j++)
 			cudaEventCreate(&(events[iDev % myPhiGemmEnv.numDevices][j]));
 
@@ -472,7 +426,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			shiftA += m_h2d[iDev];
 		}
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		cudaEventRecord(events[iDev][1], myPhiGemmHdl.stream[iDev] );
 #endif
 
@@ -493,7 +447,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			shiftB += n_h2d[iDev] * (*ldb);
 		}
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		cudaEventRecord(events[iDev][2], myPhiGemmHdl.stream[iDev] );
 #endif
 
@@ -514,7 +468,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			}
 		}
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		cudaEventRecord(events[iDev][3], myPhiGemmHdl.stream[iDev] );
 #endif
 
@@ -538,7 +492,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 				beta, devPtrC[iDev], m_gpu[iDev]);
 #endif
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		cudaEventRecord(events[iDev][4], myPhiGemmHdl.stream[iDev] );
 #endif
 
@@ -550,7 +504,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		cudaEventRecord(events[iDev][5], myPhiGemmHdl.stream[iDev] );
 #endif
 
@@ -563,7 +517,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 		}
 	}
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 	start_gemm_cpu = phigemm_cclock();
 #endif
 
@@ -572,14 +526,14 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			lda, B+b_offset, ldb, beta, C+c_offset, ldc);
 #endif
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 	stop_gemm_cpu= phigemm_cclock();
 #endif
 
 	// Sync stream by stream.... we can do better
 	for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		cudaSetDevice(myPhiGemmHdl.devId[iDev % myPhiGemmEnv.numDevices]);
 #endif
 
@@ -610,7 +564,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 				m_gpu[iDev]);
 #endif
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		cudaEventRecord(events[iDev][4], myPhiGemmHdl.stream[iDev] );
 #endif
 
@@ -623,7 +577,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 		}
 	}
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 	start_gemm_cpu = phigemm_cclock();
 #endif
 
@@ -632,7 +586,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			lda, B+b_offset, ldb, beta, C+c_offset, ldc);
 #endif
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 	stop_gemm_cpu= phigemm_cclock();
 #endif
 
@@ -640,7 +594,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 	for (iDev = 0; iDev < myPhiGemmEnv.numDevices * NSTREAMS; iDev++) {
 		cudaSetDevice(myPhiGemmHdl.devId[iDev % myPhiGemmEnv.numDevices]);
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		cudaEventRecord(events[iDev][5], myPhiGemmHdl.stream[iDev] );
 #endif
 
@@ -652,7 +606,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			fprintf (stderr, "!!!! GPU %d: device access error (D2H C) %d\n", iDev, status); fflush(stderr);
 		}
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 		cudaEventRecord(events[iDev][6], myPhiGemmHdl.stream[iDev] );
 #endif
 
@@ -672,7 +626,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 	}
 #endif
 
-#if defined(__PHIGEMM_DEBUG) || defined(__PHIGEMM_SELFTUNE)
+#if defined(__PHIGEMM_DEBUG)
 	stop_gemm_total = phigemm_cclock();
 
 	float time_temp, time_mem_h2d, time_dgemm_cuda, time_mem_d2h;
@@ -729,55 +683,6 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 		unbalance = time_dgemm_cuda - time_mkl;
 #endif
 
-#if defined(__PHIGEMM_SELFTUNE)&& !defined(__PHIGEMM_GPUONLY)
-		// Default tolerance: >0.0025
-		if ((unbalance > 0.0f) && (fabs(unbalance) > 0.0005f ) ) {
-			/* Decremento lo split, piu' lavoro alla CPU */
-			if (fabs(unbalance) > 0.1)
-				new_split = split - 0.005;
-			else if (fabs(unbalance) > 0.03)
-				new_split = split - 0.002;
-			else
-				new_split = split - 0.001;
-
-			myPhiGemmTng.lpSplit[0] = split;
-			myPhiGemmTng.prevSplit[0] = split;
-			myPhiGemmTng.split[0] = new_split;
-
-#if defined(__PHIGEMM_DEBUG_2)
-#if defined(__PHIGEMM_PROFILE)
-			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] Adjusting split-factor (balance %9.6f), previous: %5.4f - new: %5.4f \n",
-					file, line, iDev % myPhiGemmEnv.numDevices, unbalance, split, new_split); fflush(stdout);
-#else
-			printf ("[PHIGEMM_DEBUG GPU %d] Adjusting split-factor (balance %9.6f), previous: %5.4f - new: %5.4f \n",
-					iDev % myPhiGemmEnv.numDevices, unbalance, split, new_split); fflush(stdout);
-#endif
-#endif
-		}
-
-		// Default tolerance: >0.005
-		if ((unbalance < 0.0f) && (fabs(unbalance) > 0.001f) ) {
-			/* Incremento (ma non troppo) lo split, piu' lavoro alla GPU */
-			//			if (fabs(unbalance) > 0.05)
-			//					new_split = split + 0.0025;
-			//			else
-			new_split = (myPhiGemmTng.lpSplit[0] + 2*split) / 3;
-
-			myPhiGemmTng.prevSplit[0] = split;
-			myPhiGemmTng.split[0] = new_split;
-
-#if defined(__PHIGEMM_DEBUG_2)
-#if defined(__PHIGEMM_PROFILE)
-			printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] Adjusting split-factor (balance %9.6f), previous: %5.4f - new: %5.4f \n",
-					file, line, iDev % myPhiGemmEnv.numDevices, unbalance, split, new_split); fflush(stdout);
-#else
-			printf ("[PHIGEMM_DEBUG GPU %d] Adjusting split-factor (balance %9.6f), previous: %5.4f - new: %5.4f \n",
-					iDev % myPhiGemmEnv.numDevices, unbalance, split, new_split); fflush(stdout);
-#endif
-#endif
-		}
-#endif
-
 #if defined(__PHIGEMM_DEBUG)
 
 		if ( is_splitA ) {
@@ -800,11 +705,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			*m,
 			m_gpu[iDev],
 			m_cpu,
-#if defined(__PHIGEMM_SELFTUNE)
-			myPhiGemmTng.prevSplit[0],
-#else                                   
 			split,
-#endif  
 			*n,
 			*k,
 			time_mem_h2d,
@@ -842,11 +743,7 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 			*n,
 			n_gpu[iDev],
 			n_cpu,
-#if defined(__PHIGEMM_SELFTUNE)
-			myPhiGemmTng.prevSplit[0],
-#else                                   
 			split,
-#endif  
 			*k,
 			time_mem_h2d,
 			(k_gpu[iDev]*(m_gpu[iDev]+n_gpu[iDev])+m_gpu[iDev]*n_gpu[iDev])/time_mem_h2d/(1024*1024*1024/sizeof(double)),
@@ -876,5 +773,3 @@ void PHIGEMM_DGEMM_MF (const char *transa, const char *transb, const int *m,
 	}
 #endif
 }
-
-#endif

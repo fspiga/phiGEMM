@@ -35,9 +35,7 @@ static int is_internal_memory_probed = 0;
 
 struct phiGemmEnv myPhiGemmEnv;
 
-#if !defined(__PHIGEMM_CPUONLY)
 struct phiGemmHandler myPhiGemmHdl;
-#endif
 
 // C99-compatible initialization
 struct phiGemmTuning myPhiGemmTng = {
@@ -56,7 +54,6 @@ int stringCmp( const void *a, const void *b)
 	return strcmp((const char*)a,(const char*)b);
 }
 
-#if !defined(__PHIGEMM_CPUONLY)
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
 #if defined(__PHIGEMM_GPUONLY)
@@ -84,9 +81,7 @@ size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 	}
 #endif
 }
-#endif
 
-#if !defined(__PHIGEMM_CPUONLY)
 void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2) {
 
 	size_t memsize_gpu = myPhiGemmHdl.smem[0] * myPhiGemmEnv.numDevices;
@@ -141,9 +136,7 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 
 	return;
 }
-#endif
 
-#if !defined(__PHIGEMM_CPUONLY)
 int cpuGPUheuristic(int m, int n, int k, char type)
 {
 
@@ -179,7 +172,6 @@ int cpuGPUheuristic(int m, int n, int k, char type)
 
 	return 2;
 }
-#endif
 
 // ----
 
@@ -319,7 +311,6 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 	}
 
 #if defined(__PHIGEMM_PROFILE)
-	// printf("\n\n*** phiGEMM *** open the file \n\n");fflush(stdout);
 	myPhiGemmEnv.profileFile = fopen (myPhiGemmEnv.filename, "a");
 #endif
 
@@ -451,7 +442,6 @@ void phiGemmShutdown()
 
 	/* Skip all the initialization: phiGEMM becomes a simple interface to CPU GEMM so it is possible
 	 * to capture all the GEMM call and profile them */
-#if !defined(__PHIGEMM_CPUONLY)
 
 #if defined(__PHIGEMM_DEBUG)
 	printf("[PHIGEMM_DEBUG] *** shutdown *** is_phigemm_init:%d, is_external_memory_alloc:%d, is_internal_memory_alloc:%d, devices: %d\n",is_phigemm_init, is_external_memory_alloc, is_internal_memory_alloc, myPhiGemmEnv.numDevices);
@@ -515,20 +505,8 @@ void phiGemmShutdown()
 	}
 
 	return;
-
-#else
-
-#if defined(__PHIGEMM_PROFILE)
-	// printf("\n\n*** phiGEMM *** close the file \n\n");fflush(stdout);
-	fclose (myPhiGemmEnv.profileFile);
-#endif
-
-	return;
-#endif
-
 }
 
-#if !defined(__PHIGEMM_CPUONLY)
 void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
 	myPhiGemmHdl.smem[ myPhiGemmHdl.devId[gpu_id] ] = (size_t) new_dev_memsize;
 
@@ -537,7 +515,6 @@ void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
 	fflush(stdout);
 #endif
 }
-#endif
 
 /* ------------ FORTRAN INTERFACES FOR PHIGEMM PUBLIC METHODS -------------- */
 void phigemminit_(int nGPU, phiGemmMemDevPtr* ptr, phiGemmMemSizes* dev_memsize, int * deviceToBond, int tag ){ phiGemmInit( nGPU, ptr, dev_memsize, deviceToBond, tag); }
