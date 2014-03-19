@@ -40,4 +40,4 @@ EXT_INC     = -I$(CUDA_PATH) -I$(TOPDIR)/include
 CUDA_LIB    = -L$(CUDA_PATH) -lcublas -lcudart
 LD_LIB      = $(TOPDIR)/lib/libphigemm.a $(CUDA_LIB) -lmkl_intel_lp64  -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 
-GEMM_OPT    = -D__INTEL -D__MKL -D__OMP -D__PHIGEMM_CUBLAS $(MANUAL_GEMM_OPT)
+GEMM_OPT    = -D__INTEL -D__MKL -D__OMP $(MANUAL_GEMM_OPT)
