@@ -16,12 +16,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#if !defined(__PHIGEMM_CPUONLY)
 #include "cuda.h"
 #include "cublas_api.h"
 #include <cuda_runtime.h>
 #include "cublas_v2.h"
-#endif
 
 #include "phigemm_common.h"
 
