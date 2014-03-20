@@ -128,13 +128,10 @@ void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int
 
 int cpuGPUheuristic(int m, int n, int k)
 {
-
-	/* 0  : CPU-only
-	 * 1  : special-K
-	 * 2  : standard (split A or B)
-	 */
-
-#if defined(__PHIGEMM_ENABLE_SPECIALK)
+	// Return codes:
+	// 0  : CPU-only
+	// 1  : special-K
+	// 2  : standard -- split A or B or GPU-only iff split=1.0
 
 	float RATIO_KM = (float) k/m;
 	float RATIO_KN = (float) k/n;
@@ -148,7 +145,6 @@ int cpuGPUheuristic(int m, int n, int k)
 		if ( ((n < myPhiGemmTng.UPPER_LIMIT_K) && (m < myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.THRESHOLD) || (RATIO_KN >= myPhiGemmTng.THRESHOLD)) )
 			return 1;
 	}
-#endif
 
 	if ( (n < myPhiGemmTng.LOWER_LIMIT) ||  (m < myPhiGemmTng.LOWER_LIMIT) || (k < myPhiGemmTng.LOWER_LIMIT)) return 0;
 
@@ -265,7 +261,7 @@ void phiGemmInitMemory( phiGemmMemSizes* dev_memsize )
 		}
 
 #if defined(__PHIGEMM_DEBUG)
-		printf("\n\n[PHIGEMM_DEBUG] %lu Bytes of memory is allocated internally on GPU %d\n\n", (unsigned long)myPhiGemmHdl.smem[i], myPhiGemmHdl.devId[i]);
+		printf("\n\n[PHIGEMM_DEBUG][1] %lu Bytes of memory is allocated internally on GPU %d\n\n", (unsigned long)myPhiGemmHdl.smem[i], myPhiGemmHdl.devId[i]);
 		fflush(stdout);
 #endif
 
@@ -367,7 +363,7 @@ void phiGemmInit( int nGPU, phiGemmMemDevPtr* dev_ptr, phiGemmMemSizes* dev_mems
 			myPhiGemmHdl.pmem[ i ] = (void*) (tmp_ptr + offset) ;
 
 #if defined(__PHIGEMM_DEBUG)
-			printf("[PHIGEMM_DEBUG] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long) myPhiGemmHdl.smem[i], myPhiGemmHdl.devId[i]);
+			printf("[PHIGEMM_DEBUG][1] %lu Bytes of memory is allocated externally on GPU %d\n", (unsigned long) myPhiGemmHdl.smem[i], myPhiGemmHdl.devId[i]);
 			fflush(stdout);
 #endif
 		}
@@ -418,7 +414,7 @@ void phiGemmShutdown()
 	 * to capture all the GEMM call and profile them */
 
 #if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] *** shutdown *** is_phigemm_init:%d, is_external_memory_alloc:%d, is_internal_memory_alloc:%d, devices: %d\n",is_phigemm_init, is_external_memory_alloc, is_internal_memory_alloc, myPhiGemmEnv.numDevices);
+	printf("[PHIGEMM_DEBUG][1] *** shutdown *** is_phigemm_init:%d, is_external_memory_alloc:%d, is_internal_memory_alloc:%d, devices: %d\n",is_phigemm_init, is_external_memory_alloc, is_internal_memory_alloc, myPhiGemmEnv.numDevices);
 	fflush(stdout);
 #endif
 
@@ -485,7 +481,7 @@ void phiGemmSetAvaiableScratchSpace(int gpu_id, size_t new_dev_memsize) {
 	myPhiGemmHdl.smem[ myPhiGemmHdl.devId[gpu_id] ] = (size_t) new_dev_memsize;
 
 #if defined(__PHIGEMM_DEBUG)
-	printf("[PHIGEMM_DEBUG] %lu Bytes of GPU memory available %d\n", (unsigned long)myPhiGemmHdl.smem[gpu_id], myPhiGemmHdl.devId[gpu_id]);
+	printf("[PHIGEMM_DEBUG][1] %lu Bytes of GPU memory available %d\n", (unsigned long)myPhiGemmHdl.smem[gpu_id], myPhiGemmHdl.devId[gpu_id]);
 	fflush(stdout);
 #endif
 }
