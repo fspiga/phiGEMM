@@ -51,9 +51,7 @@ typedef double phiDoubleComplex[2];
 
 /* --------------------------- MAIN DEFAULF VALUES ------------------------- */
 
-#ifndef MAX_GPUS
 #define MAX_GPUS 4
-#endif
 
 // This feature is not tested/checked since long time...
 #if defined (__PHIGEMM_MULTI_STREAMS)
@@ -62,33 +60,18 @@ typedef double phiDoubleComplex[2];
 #define NSTREAMS 1
 #endif
 
-#ifndef __SCALING_INIT_MEM
 #define __SCALING_INIT_MEM 0.95
-#endif
-
-#ifndef __SPLITK_FACTOR
 #define __SPLITK_FACTOR 20
-#endif
-
-#ifndef __SPLITK_GEMM
 #define __SPLITK_GEMM 2048
-#endif
 
-#ifndef __LOWER_LIMIT
 #if defined(__PHIGEMM_ENABLE_SPECIALK)
 #define __LOWER_LIMIT 63
 #else
 #define __LOWER_LIMIT 127
 #endif
-#endif
 
-#ifndef __UPPER_LIMIT_NM
 #define __UPPER_LIMIT_NM 255
-#endif
-
-#ifndef __UPPER_LIMIT_K
 #define __UPPER_LIMIT_K 1023
-#endif
 
 #if defined(__PHIGEMM_PINNED) || defined(__PHIGEMM_MULTI_GPU)
 #define __PHIGEMM_EVENTS 6
@@ -113,7 +96,6 @@ typedef struct phiGemmEnv
 #endif
 } phiGemmEnv_t;
 
-#if !defined(__PHIGEMM_CPUONLY)
 typedef struct phiGemmHandler
 {
 	phiGemmMemDevPtr pmem;
@@ -122,8 +104,6 @@ typedef struct phiGemmHandler
 	cudaStream_t  stream[ NSTREAMS * MAX_GPUS ];
 	cublasHandle_t handle[ NSTREAMS * MAX_GPUS ];
 } phiGemmHandler_t;
-
-#endif
 
 typedef struct phiGemmTuning
 {
