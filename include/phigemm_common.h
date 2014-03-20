@@ -63,13 +63,8 @@ typedef double phiDoubleComplex[2];
 #define __SCALING_INIT_MEM 0.95
 #define __SPLITK_FACTOR 20
 #define __SPLITK_GEMM 2048
-
-#if defined(__PHIGEMM_ENABLE_SPECIALK)
 #define __LOWER_LIMIT 63
-#else
-#define __LOWER_LIMIT 127
-#endif
-
+//#define __LOWER_LIMIT 127
 #define __UPPER_LIMIT_NM 255
 #define __UPPER_LIMIT_K 1023
 
