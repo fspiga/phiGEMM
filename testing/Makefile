@@ -15,10 +15,6 @@
 
 include ../make.inc
 
-
-# supported TEST_DATATYPE_FLAGS flags = __CUDA_TYPE_DOUBLE, __CUDA_TYPE_DOUBLE_COMPLEX (one is mandatory)
-TEST_DATATYPE_FLAGS = -D__CUDA_TYPE_DOUBLE
-
 # supported TEST_OUTPUT_FLAGS flags = __CHECK_ERROR __PERFORM_PHIGEMM_INIT __PERFORM_ONLY_GPU_BIND __PERFORM_MEM_DETECT
 # ** FOR DEBUGGING ONLY ** = __PHIGEMM_TESTCASE_DEBUG
 # NOTE1: -D__PERFORM_PHIGEMM_INIT and -D__PHIGEMM_EXPLICIT_SPLITFACTOR are mutually exclusive
@@ -26,7 +22,7 @@ TEST_DATATYPE_FLAGS = -D__CUDA_TYPE_DOUBLE
 # NOTE3: pinned memory options are -D__PHITEST_MEM_PINNED (native), -D__PHITEST_FORCE_PINNED (by API call)
 TEST_FLAGS = -D__PERFORM_PHIGEMM_INIT -D__PHIGEMM_TESTCASE_DEBUG -D__CHECK_ERROR
 
-TESTFLAGS = $(TEST_DATATYPE_FLAGS) $(TEST_FLAGS) $(GEMM_OPT) $(EXTRA_TEST_FLAGS)
+TESTFLAGS = $(TEST_FLAGS) $(GEMM_OPT) $(EXTRA_TEST_FLAGS)
 
 all: prereq test
 
@@ -34,7 +30,8 @@ prereq:
 	mkdir -p .objs
 
 test:
-	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o ../bin/single_test.x single_test.c $(EXT_INC) $(LD_LIB)
+	$(CC) -g $(CFLAGS) -D__CUDA_TYPE_DOUBLE $(TESTFLAGS) -o ../bin/single_test-dgemm.x single_test.c $(EXT_INC) $(LD_LIB)
+	$(CC) -g $(CFLAGS) -D__CUDA_TYPE_DOUBLE_COMPLEX $(TESTFLAGS) -o ../bin/single_test-zgemm.x single_test.c $(EXT_INC) $(LD_LIB)
 	
 run:
 	./testsuite.sh

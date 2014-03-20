@@ -27,7 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 ## Releases
 
-- v2.0.0   - March 23, 2014
+- v2.0.0rc - March 20, 2014 (RC-3)
 - v2.0.0rc - December 15, 2012
 - v1.9.9   - October 1, 2012
 - v1.9     - May 23, 2012
