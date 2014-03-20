@@ -53,7 +53,7 @@ void readEnv(int tag)
 		envar = atof(value);
 	} else {
 		/* Default if no env variable is specified */
-		envar = 0.95;
+		envar = 1.0;
 	}
 	myPhiGemmTng.split = envar;
 
@@ -148,13 +148,17 @@ void readEnv(int tag)
 	}
 #endif
 
+	// This is a fixed value, not sure how much it impacts varying it...
+	myPhiGemmTng.THRESHOLD = myPhiGemmTng.SPLITK_FACTOR*1.5,
+
 #if defined(__PHIGEMM_DEBUG)
 		printf ("[PHIGEMM_DEBUG] GEMM split factor from environment variable: %f \n", myPhiGemmTng.split);
 		printf ("[PHIGEMM_DEBUG] SPLITK_FACTOR from environment variable: %f \n", myPhiGemmTng.SPLITK_FACTOR);
 		printf ("[PHIGEMM_DEBUG] THRESHOLD from environment variable: %f \n", myPhiGemmTng.THRESHOLD);
-		printf ("[PHIGEMM_DEBUG] SPLITK_DGEMM from environment variable: %f \n", myPhiGemmTng.SPLITK_GEMM);
+		printf ("[PHIGEMM_DEBUG] SPLITK_GEMM from environment variable: %f \n", myPhiGemmTng.SPLITK_GEMM);
 		printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_MN from environment variable: %f \n", myPhiGemmTng.UPPER_LIMIT_NM);
 		printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K from environment variable: %f \n", myPhiGemmTng.UPPER_LIMIT_K);
 		printf ("[PHIGEMM_DEBUG] LOWER_LIMIT from environment variable: %f \n", myPhiGemmTng.LOWER_LIMIT);
+		fflush(stdout);
 #endif
 }
