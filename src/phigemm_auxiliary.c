@@ -130,21 +130,8 @@ int cpuGPUheuristic(int m, int n, int k)
 {
 	// Return codes:
 	// 0  : CPU-only
-	// 1  : special-K
+	// 1  : special-K -- DEPRECATED IN THIS BRANCH
 	// 2  : standard -- split A or B or GPU-only iff split=1.0
-
-	float RATIO_KM = (float) k/m;
-	float RATIO_KN = (float) k/n;
-
-	// Matrices are small but not so small...
-	if ( (n >= myPhiGemmTng.LOWER_LIMIT) && (m >= myPhiGemmTng.LOWER_LIMIT) ){
-		// over the UPPER limit, they have to be rectangular...
-		if ( ((n >= myPhiGemmTng.UPPER_LIMIT_K) && (m >= myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.SPLITK_FACTOR) || (RATIO_KN >= myPhiGemmTng.SPLITK_FACTOR)) )
-			return 1;
-		// below the UPPER limit, they have to be very rectangular...
-		if ( ((n < myPhiGemmTng.UPPER_LIMIT_K) && (m < myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.THRESHOLD) || (RATIO_KN >= myPhiGemmTng.THRESHOLD)) )
-			return 1;
-	}
 
 	if ( (n < myPhiGemmTng.LOWER_LIMIT) ||  (m < myPhiGemmTng.LOWER_LIMIT) || (k < myPhiGemmTng.LOWER_LIMIT)) return 0;
 

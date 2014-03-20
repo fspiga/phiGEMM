@@ -3,9 +3,3 @@ phigemm_dgemm.o : phigemm_auxiliary.o
 phigemm_dgemm.o : phigemm_env.o
 phigemm_zgemm.o : phigemm_auxiliary.o
 phigemm_zgemm.o : phigemm_env.o
-phigemm_dgemm_specialK.o : phigemm_auxiliary.o
-phigemm_dgemm_specialK.o : phigemm_env.o
-phigemm_dgemm_specialK.o : phigemm_dgemm.o
-phigemm_dgemm_specialK.o : phigemm_auxiliary.o
-phigemm_zgemm_specialK.o : phigemm_env.o
-phigemm_zgemm_specialK.o : phigemm_zgemm.o

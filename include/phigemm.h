@@ -43,41 +43,19 @@ void phiDgemm (const char *transa, const char *transb, const int *m,
 		const int *ldb, const double *beta, double *C, const int *ldc,
 		const char *file, const char * line );
 
-void phidgemm_specialK(const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const double *alpha,
-		const double *A, const int *lda, const double *B,
-		const int *ldb, const double *beta, double *C, const int *ldc,
-		const char *file, const char * line );
-
 void phiZgemm (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const phiDoubleComplex *alpha,
 		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
 		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
 		const int *ldc, const char *file, const char * line );
 
-void phizgemm_specialK (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const phiDoubleComplex *alpha,
-		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
-		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
-		const int *ldc, const char *file, const char * line );
 #else
 	void phiDgemm (const char *transa, const char *transb, const int *m,
 			const int *n, const int *k, const double *alpha,
 			const double *A, const int *lda, const double *B,
 			const int *ldb, const double *beta, double *C, const int *ldc);
 
-	void phidgemm_specialK(const char *transa, const char *transb, const int *m,
-			const int *n, const int *k, const double *alpha,
-			const double *A, const int *lda, const double *B,
-			const int *ldb, const double *beta, double *C, const int *ldc);
-
 	void phiZgemm (const char *transa, const char *transb, const int *m,
-			const int *n, const int *k, const phiDoubleComplex *alpha,
-			const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
-			const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
-			const int *ldc);
-
-	void phizgemm_specialK (const char *transa, const char *transb, const int *m,
 			const int *n, const int *k, const phiDoubleComplex *alpha,
 			const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
 			const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
@@ -103,19 +81,7 @@ void phidgemm_ (const char *transa, const char *transb, const int *m,
 		const int *ldb, const double *beta, double *C, const int *ldc,
 		const char *file, const char * line );
 
-void phidgemm_specialk_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const double *alpha,
-		const double *A, const int *lda, const double *B,
-		const int *ldb, const double *beta, double *C, const int *ldc,
-		const char *file, const char * line );
-
 void phizgemm_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const phiDoubleComplex *alpha,
-		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
-		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
-		const int *ldc, const char *file, const char * line );
-
-void phizgemm_specialk_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const phiDoubleComplex *alpha,
 		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
 		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
@@ -126,18 +92,7 @@ void phidgemm_ (const char *transa, const char *transb, const int *m,
 		const double *A, const int *lda, const double *B,
 		const int *ldb, const double *beta, double *C, const int *ldc);
 
-void phidgemm_specialk_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const double *alpha,
-		const double *A, const int *lda, const double *B,
-		const int *ldb, const double *beta, double *C, const int *ldc);
-
 void phizgemm_ (const char *transa, const char *transb, const int *m,
-		const int *n, const int *k, const phiDoubleComplex *alpha,
-		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
-		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
-		const int *ldc);
-
-void phizgemm_specialk_ (const char *transa, const char *transb, const int *m,
 		const int *n, const int *k, const phiDoubleComplex *alpha,
 		const phiDoubleComplex *A, const int *lda, const phiDoubleComplex *B,
 		const int *ldb, const phiDoubleComplex *beta, phiDoubleComplex *C,
