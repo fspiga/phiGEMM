@@ -116,7 +116,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 		}
 
 #if defined(__PHIGEMM_DEBUG_2)
-		fprintf( stdout,"[PHIGEMM_DEBUG][2] SPECIAL-K (%d, %d, %d) \n", m, n, k); fflush(stdout);
+		fprintf( stdout,"[PHIGEMM_DEBUG][2] SPECIAL-K (%d, %d, %d) \n", *m, *n, *k); fflush(stdout);
 #endif
 
 		// cpuGPUheuristic(...) = 0 >> SPECIAL-K
