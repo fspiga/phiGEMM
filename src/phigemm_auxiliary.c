@@ -36,15 +36,7 @@ struct phiGemmEnv myPhiGemmEnv;
 
 struct phiGemmHandler myPhiGemmHdl;
 
-// C99-compatible initialization
-struct phiGemmTuning myPhiGemmTng = {
-		.SPLITK_FACTOR  = __SPLITK_FACTOR,
-		.THRESHOLD      = (int) __SPLITK_FACTOR*1.5,
-		.SPLITK_GEMM   = __SPLITK_GEMM,
-		.LOWER_LIMIT    = __LOWER_LIMIT,
-		.UPPER_LIMIT_NM = __UPPER_LIMIT_NM,
-		.UPPER_LIMIT_K  = __UPPER_LIMIT_K
-};
+struct phiGemmTuning myPhiGemmTng;
 
 
 int stringCmp( const void *a, const void *b)
@@ -54,30 +46,29 @@ int stringCmp( const void *a, const void *b)
 
 size_t memOccupancy(int is_splitA, float split, int m_in, int n_in, int k_in) {
 
-#if defined(__PHIGEMM_GPUONLY)
-	return ( m_in*k_in + k_in*n_in + m_in*n_in );
-#else
 	int m_split, n_split, tmp;
 
-	if (is_splitA) {
-		tmp = (m_in) * split;
-		//		if (m_in < 128)
-		m_split = tmp;
-		//		else
-		//			m_split = floor(tmp/64.0)*64;
+	if (split < 1.0 ) {
+		if (is_splitA) {
+			tmp = (m_in) * split;
+			//		if (m_in < 128)
+			m_split = tmp;
+			//		else
+			//			m_split = floor(tmp/64.0)*64;
+			return ( m_split*k_in/myPhiGemmEnv.numDevices + k_in*n_in + m_split*n_in/myPhiGemmEnv.numDevices );
 
-		return ( m_split*k_in/myPhiGemmEnv.numDevices + k_in*n_in + m_split*n_in/myPhiGemmEnv.numDevices );
+		} else {
+			tmp = (n_in) * split;
+			//		if (n_in < 128)
+			n_split = tmp;
+			//		else
+			//			n_split = floor(tmp/64.0)*64;
 
-	} else {
-		tmp = (n_in) * split;
-		//		if (n_in < 128)
-		n_split = tmp;
-		//		else
-		//			n_split = floor(tmp/64.0)*64;
-
-		return( m_in*k_in + k_in*n_split/myPhiGemmEnv.numDevices + m_in*n_split/myPhiGemmEnv.numDevices );
+			return( m_in*k_in + k_in*n_split/myPhiGemmEnv.numDevices + m_in*n_split/myPhiGemmEnv.numDevices );
+		}
 	}
-#endif
+	else
+		return ( m_in*k_in + k_in*n_in + m_in*n_in );
 }
 
 void bestFit(int is_splitA, float split, int m, int n, int k, int type_size, int *p1, int *p2) {
@@ -157,15 +148,12 @@ int cpuGPUheuristic(int m, int n, int k)
 		if ( ((n < myPhiGemmTng.UPPER_LIMIT_K) && (m < myPhiGemmTng.UPPER_LIMIT_K)) && ((RATIO_KM >= myPhiGemmTng.THRESHOLD) || (RATIO_KN >= myPhiGemmTng.THRESHOLD)) )
 			return 1;
 	}
-}
 #endif
 
 	if ( (n < myPhiGemmTng.LOWER_LIMIT) ||  (m < myPhiGemmTng.LOWER_LIMIT) || (k < myPhiGemmTng.LOWER_LIMIT)) return 0;
 
 	return 2;
 }
-
-// ----
 
 
 int phiGemmIsInit()
@@ -202,11 +190,15 @@ void phigemmSetSplitFactor(float split_gemm) {
 
 	// BE AWARE THIS IS A PERMANENT OPERATION
 
+#if 0
 	float tmp_split;
 
 	tmp_split =  (100.0f * split_gemm)/( 1.0f - split_gemm);
 
 	myPhiGemmTng.split = tmp_split / (tmp_split + 100.0f);
+#endif
+
+	myPhiGemmTng.split = split_gemm;
 
 	return;
 }
