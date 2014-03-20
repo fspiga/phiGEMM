@@ -56,6 +56,7 @@ void readEnv(int tag)
 		envar = 1.0;
 	}
 	myPhiGemmTng.split = envar;
+	// free(value); value = NULL;
 
 	/* SPLITK_FACTOR */
 	value = getenv("PHI_SPLITK_FACTOR");
@@ -69,7 +70,6 @@ void readEnv(int tag)
 	}
 	myPhiGemmTng.SPLITK_FACTOR = envar;
 
-
 	/* THRESHOLD */
 	value = getenv("PHI_THRESHOLD");
 	if (value != NULL)
@@ -81,7 +81,6 @@ void readEnv(int tag)
 		envar = (int) __SPLITK_FACTOR*1.5;
 	}
 	myPhiGemmTng.THRESHOLD = envar;
-
 
 	/* SPLITK_GEMM */
 	value = getenv("PHI_SPLITK_GEMM");
@@ -106,7 +105,6 @@ void readEnv(int tag)
 	}
 	myPhiGemmTng.LOWER_LIMIT = envar;
 
-
 	/* UPPER_LIMIT_NM */
 	value = getenv("PHI_UPPER_LIMIT_NM");
 	if (value != NULL)
@@ -117,7 +115,6 @@ void readEnv(int tag)
 		envar = __UPPER_LIMIT_NM;
 	}
 	myPhiGemmTng.UPPER_LIMIT_NM = envar;
-
 
 	/* UPPER_LIMIT_K */
 	value = getenv("PHI_UPPER_LIMIT_K");
@@ -151,14 +148,14 @@ void readEnv(int tag)
 	// This is a fixed value, not sure how much it impacts varying it...
 	myPhiGemmTng.THRESHOLD = myPhiGemmTng.SPLITK_FACTOR*1.5,
 
-#if defined(__PHIGEMM_DEBUG)
-		printf ("[PHIGEMM_DEBUG] GEMM split factor from environment variable: %f \n", myPhiGemmTng.split);
-		printf ("[PHIGEMM_DEBUG] SPLITK_FACTOR from environment variable: %f \n", myPhiGemmTng.SPLITK_FACTOR);
-		printf ("[PHIGEMM_DEBUG] THRESHOLD from environment variable: %f \n", myPhiGemmTng.THRESHOLD);
-		printf ("[PHIGEMM_DEBUG] SPLITK_GEMM from environment variable: %f \n", myPhiGemmTng.SPLITK_GEMM);
-		printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_MN from environment variable: %f \n", myPhiGemmTng.UPPER_LIMIT_NM);
-		printf ("[PHIGEMM_DEBUG] UPPER_LIMIT_K from environment variable: %f \n", myPhiGemmTng.UPPER_LIMIT_K);
-		printf ("[PHIGEMM_DEBUG] LOWER_LIMIT from environment variable: %f \n", myPhiGemmTng.LOWER_LIMIT);
+#if defined(__PHIGEMM_DEBUG_2)
+		printf ("[PHIGEMM_DEBUG][2] GEMM split factor from environment variable: %f \n", myPhiGemmTng.split);
+		printf ("[PHIGEMM_DEBUG][2] SPLITK_FACTOR from environment variable: %f \n", myPhiGemmTng.SPLITK_FACTOR);
+		printf ("[PHIGEMM_DEBUG][2] THRESHOLD from environment variable: %f \n", myPhiGemmTng.THRESHOLD);
+		printf ("[PHIGEMM_DEBUG][2] SPLITK_GEMM from environment variable: %d \n", myPhiGemmTng.SPLITK_GEMM);
+		printf ("[PHIGEMM_DEBUG][2] UPPER_LIMIT_MN from environment variable: %d \n", myPhiGemmTng.UPPER_LIMIT_NM);
+		printf ("[PHIGEMM_DEBUG][2] UPPER_LIMIT_K from environment variable: %d \n", myPhiGemmTng.UPPER_LIMIT_K);
+		printf ("[PHIGEMM_DEBUG][2] LOWER_LIMIT from environment variable: %d \n", myPhiGemmTng.LOWER_LIMIT);
 		fflush(stdout);
 #endif
 }
