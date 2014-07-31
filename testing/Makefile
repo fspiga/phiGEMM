@@ -28,7 +28,7 @@ TEST_FLAGS = -D__PERFORM_PHIGEMM_INIT -D__PHIGEMM_TESTCASE_DEBUG
 
 EXTRA_TEST_FLAGS = 
 
-TESTFLAGS = $(TEST_DATATYPE_FLAGS) $(TEST_FLAGS) $(GEMM_OPT) $(EXTRA_TEST_FLAGS)
+TESTFLAGS = $(TEST_DATATYPE_FLAGS) $(TEST_FLAGS) $(PHIGEMM_GEMM_OPT) $(EXTRA_TEST_FLAGS)
 
 all: prereq test
 
@@ -37,7 +37,7 @@ prereq:
 
 test:
 	rm -rf $(PHIGEMM)/bin/*.x
-	$(CC) -g $(CFLAGS) $(TESTFLAGS) -o $(PHIGEMM)/bin/single_test.x $(CSCRPATH)/single_test.c $(EXT_INC) $(LD_LIB)
+	$(PHIGEMM_CC) -g $(PHIGEMM_CFLAGS) $(TESTFLAGS) -o $(PHIGEMM)/bin/single_test.x $(CSCRPATH)/single_test.c $(PHIGEMM_EXT_INC) $(PHIGEMM_LD_LIB)
 	#gcc $(GEMM_OPT) -c $(CSCRPATH)/cptimer.c -o .objs/cptimer.o
 	#gcc $(GEMM_OPT) -c $(CUDA_PATH)/src/fortran_thunking.c -I$(CUDA_PATH)/src $(EXT_INC) -o .objs/fortran_thunking.o
 	#gcc $(GEMM_OPT) -c $(CSCRPATH)/cuda_env.c -I$(CSCRPATH) $(EXT_INC) -o .objs/cuda_env.o

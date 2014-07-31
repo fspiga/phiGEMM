@@ -1,0 +1,54 @@
+#
+# Copyright (C) 2011-2012 Quantum ESPRESSO Foundation
+# Copyright (C) 2010-2011 Irish Centre for High-End Computing (ICHEC)
+#
+# This file is distributed under the terms of the
+# GNU General Public License. See the file `License'
+# in the root directory of the present package,
+# or http://www.gnu.org/copyleft/gpl.txt .
+#
+# Author: Filippo Spiga (spiga.filippo@gmail.com)
+
+.SUFFIXES :
+.SUFFIXES : .o .c
+
+# *** from Quantum ESPRESSO ***
+# most FORTRAN compilers can directly preprocess c-like directives: use
+# 	$(MPIF90) $(F90FLAGS) -c $<
+# if explicit preprocessing by the C preprocessor is needed, use:
+# 	$(CPP) $(CPPFLAGS) $< -o $*.F90 
+#	$(MPIF90) $(F90FLAGS) -c $*.F90 -o $*.o
+# remember the tabulator in the first column !!!
+
+.c.o:
+	$(PHIGEMM_NVCC) $(PHIGEMM_NVCC_FLAGS) $(PHIGEMM_GEMM_OPT) $(PHIGEMM_EXT_INC) -I../include/ -c $< -o $*.o 
+
+PHIGEMM_TOP = .
+
+PHIGEMM_AR          = ar
+PHIGEMM_ARFLAGS     = ruv
+
+PHIGEMM_CC          = icc
+PHIGEMM_CFLAGS      = -O3 -openmp -fPIC
+
+PHIGEMM_FC          = ifort
+PHIGEMM_FFLAGS      = -module ../include/
+
+PHIGEMM_CPP         = cpp
+PHIGEMM_CPPFLAGS    = -P -traditional
+
+PHIGEMM_LD              = icc
+PHIGEMM_LD_FLAGS        = -O3 -openmp -fPIC -zmuldefs
+PHIGEMM_LD_SHARED_FLAGS = --shared
+PHIGEMM_FC_PREPROC_FLAG = -module ../include/
+
+PHIGEMM_NVCC        = nvcc
+PHIGEMM_NVCC_FLAGS  = -ccbin gcc -O3 --compiler-options '-c -fPIC -fopenmp'
+
+PHIGEMM_EXT_INC     = -I/home/fs395/scratch/QE/q-e/GPU/..//phiGEMM/include -I/include
+PHIGEMM_CUDA_LIB    = -L/lib64 -lcublas  -lcufft -lcudart
+PHIGEMM_LD_LIB      = /home/fs395/scratch/QE/q-e/GPU/..//phiGEMM/lib/libphigemm.a    -lmkl_intel_lp64  -lmkl_intel_thread -lmkl_core -L/lib64 -lcublas  -lcufft -lcudart 
+
+PHIGEMM_CUDA_PATH   = 
+
+PHIGEMM_GEMM_OPT    = -D__PHIGEMM_WEAK_INTERFACES -D__PHIGEMM_ENABLE_SPECIALK

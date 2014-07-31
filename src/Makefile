@@ -26,19 +26,19 @@ phigemm_sgemm.o
 
 static: $(PHIGEMM_OBJS)
 	mkdir -p ../bin ../lib
-	$(AR) $(ARFLAGS) libphigemm.a ${PHIGEMM_OBJS}
+	$(PHIGEMM_AR) $(PHIGEMM_ARFLAGS) libphigemm.a ${PHIGEMM_OBJS}
 	mv libphigemm.a ../lib/.
 
 shared: $(PHIGEMM_OBJS)
 	mkdir -p ../bin ../lib
-	$(LD) $(LD_FLAGS) $(LD_SHARED_FLAGS) -o libphigemm.so.2.0 $(PHIGEMM_OBJS) $(CUDA_LIB) $(LD_LIB)
+	$(PHIGEMM_LD) $(PHIGEMM_LD_FLAGS) $(PHIGEMM_LD_SHARED_FLAGS) -o libphigemm.so.2.0 $(PHIGEMM_OBJS) $(PHIGEMM_CUDA_LIB) $(PHIGEMM_LD_LIB)
 	ln -sf libphigemm.so.2.0 libphigemm.so.2
 	ln -sf libphigemm.so.2 libphigemm.so
 	mv libphigemm.so* ../lib/.
 
 fortran:
-	$(CPP) $(CPPFLAGS) $(GEMM_OPT) phigemm.f90 phigemm.F90
-	$(FC) $(FFLAGS) -c phigemm.F90 -o phigemm.o
+	$(PHIGEMM_CPP) $(PHIGEMM_CPPFLAGS) $(PHIGEMM_GEMM_OPT) phigemm.f90 phigemm.F90
+	$(PHIGEMM_FC) $(PHIGEMM_FFLAGS) -c phigemm.F90 -o phigemm.o
 	chmod 755 ../include/*.mod
 
 clean:
