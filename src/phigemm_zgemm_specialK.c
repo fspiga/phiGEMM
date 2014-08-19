@@ -69,7 +69,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	phiDoubleComplex DA = {1.0, 0.0};
 	phiDoubleComplex gpu_beta = {0.0, 0.0};
 
-	int last_split = 0, local_split = myPhiGemmTng.SPLITK_ZGEMM, splitted_size;
+	int last_split = 0, local_split = myPhiGemmHdl.SPLITK_GEMM, splitted_size;
 	size_t mem_buffer = 0L, memsize_gpu = myPhiGemmHdl.smem[iDev];
 
 #if defined(__PHIGEMM_DEBUG)

@@ -32,12 +32,12 @@ void readEnv(int tag)
 	/*
 	 * <phiGEMM data structure>.<field>       --> env variable
 	 *
-	 * myPhiGemmTng.split  					  --> PHI_GEMM_SPLIT
-	 * myPhiGemmTng.SPLITK_FACTOR             --> PHI_SPLITK_FACTOR
-	 * myPhiGemmTng.SPLITK                    --> PHI_SPLITK_GEMM
-	 * myPhiGemmTng.LOWER_LIMIT               --> PHI_LOWER_LIMIT
-	 * myPhiGemmTng.UPPER_LIMIT_NM            --> PHI_UPPER_LIMIT_NM
-	 * myPhiGemmTng.UPPER_LIMIT_K             --> PHI_UPPER_LIMIT_K
+	 * myPhiGemmHdl.split  					  --> PHI_GEMM_SPLIT
+	 * myPhiGemmHdl.SPLITK_FACTOR             --> PHI_SPLITK_FACTOR
+	 * myPhiGemmHdl.SPLITK                    --> PHI_SPLITK_GEMM
+	 * myPhiGemmHdl.LOWER_LIMIT               --> PHI_LOWER_LIMIT
+	 * myPhiGemmHdl.UPPER_LIMIT_NM            --> PHI_UPPER_LIMIT_NM
+	 * myPhiGemmHdl.UPPER_LIMIT_K             --> PHI_UPPER_LIMIT_K
 	 *
 	 * myPhiGemmEnv.filename                  --> base + PHI_PROFILE_PREFIX
 	 *
