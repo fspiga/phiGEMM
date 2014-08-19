@@ -73,7 +73,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	double DA = 1.0;
 	double gpu_beta = 0.0;
 	int last_split = 0, local_split = myPhiGemmHdl.SPLITK_GEMM, splitted_size;
-	size_t mem_buffer = 0L, memsize_gpu = myPhiGemmHdl.smem[iDev];
+	size_t mem_buffer = 0L, memsize_gpu = myPhiGemmHdl.smem;
 
 #if defined(__PHIGEMM_DEBUG)
 	double start_axpy, start_gemm_total, stop_axpy, stop_gemm_total;
@@ -102,7 +102,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	cu_transb = ((*transb == 't')||(*transb == 'T')) ? CUBLAS_OP_T : cu_transb;
 	cu_transb = ((*transb == 'n')||(*transb == 'N')) ? CUBLAS_OP_N : cu_transb;
 
-	devPtrA[0] = (double *)(myPhiGemmHdl.pmem[iDev]);
+	devPtrA[0] = (double *)(myPhiGemmHdl.pmem);
 	devPtrA[1] = devPtrA[0] + (* m) * (last_split != 0 ? last_split : local_split);
 	devPtrB[0] = devPtrA[1] + (* m) * (last_split != 0 ? last_split : local_split);
 	devPtrB[1] = devPtrB[0] + (* n) * (last_split != 0 ? last_split : local_split);
@@ -138,7 +138,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 
 		stream = count % MAX_N_STREAM;
 
-		cublasSetStream( myPhiGemmHdl.handle[ iDev ], streamPtr[stream] );
+		cublasSetStream( myPhiGemmHdl.handle, streamPtr[stream] );
 
 		if( is_transa ){
 			status = cublasSetMatrixAsync ( splitted_size, (* m), sizeof(double), A + offsetA, (* lda), devPtrA[stream], gpu_lda, streamPtr[stream] );
@@ -152,7 +152,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 			status = cublasSetMatrixAsync ( splitted_size, (* n), sizeof(double), B + offsetB, (* ldb), devPtrB[stream], gpu_ldb, streamPtr[stream] );
 		}
 
-		status = cublasGemm ( myPhiGemmHdl.handle[ iDev ], cu_transa, cu_transb, (* m), (* n), splitted_size, alpha, devPtrA[stream], gpu_lda, devPtrB[stream], gpu_ldb, &gpu_beta, devPtrC[stream], (* m) );
+		status = cublasGemm ( myPhiGemmHdl.handle, cu_transa, cu_transb, (* m), (* n), splitted_size, alpha, devPtrA[stream], gpu_lda, devPtrB[stream], gpu_ldb, &gpu_beta, devPtrC[stream], (* m) );
 
 		status = cublasGetMatrixAsync ( (* m), (* n), sizeof(double), devPtrC[stream], (* m), C_buf[stream], *ldc, streamPtr[stream] );
 
@@ -227,7 +227,7 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	cudaStreamDestroy( streamPtr[1] );
 
 	for (i = 0; i < myPhiGemmEnv.numDevices * NSTREAMS; i++)
-		cublasSetStream( myPhiGemmHdl.handle[ i ], myPhiGemmHdl.stream[ i ] );
+		cublasSetStream( myPhiGemmHdl.handle, myPhiGemmHdl.stream[ i ] /;
 
 	for( i = 0; i < MAX_N_STREAM; i++){
 		cudaFreeHost( C_buf[i] );
@@ -240,16 +240,16 @@ void PHIGEMM_M (const char *transa, const char *transb, const int *m,
 	double time_total = stop_gemm_total - start_gemm_total;
 
 #if defined(__PHIGEMM_PROFILE)
-	printf ("[PHIGEMM_DEBUG - %s:%s - GPU %d] %d %d %d ~ Special K ~ local_split:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
-			file, line, iDev % myPhiGemmEnv.numDevices, *m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
+	printf ("[PHIGEMM_DEBUG - %s:%s ] %d %d %d ~ Special K ~ local_split:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
+			file, line, *m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
 #else
-	printf ("[PHIGEMM_DEBUG - GPU %d] %d %d %d ~ Special K ~ local_split:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
-			iDev % myPhiGemmEnv.numDevices, *m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
+	printf ("[PHIGEMM_DEBUG] %d %d %d ~ Special K ~ local_split:%d (loop_times=%d, last_split:%d) ~ Total:%9.6fs (axpy:%9.6fs)\n",
+			*m, *n, *k, local_split, loop_times, last_split, time_total, time_axpy); fflush(stdout);
 #endif
 #endif
 
 #if defined(__PHIGEMM_MEMSET)
-	cudaMemset( myPhiGemmHdl.pmem[iDev], 0, mem_buffer );
+	cudaMemset( myPhiGemmHdl.pmem, 0, mem_buffer );
 #endif
 
 	return;
