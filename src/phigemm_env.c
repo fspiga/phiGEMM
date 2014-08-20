@@ -146,7 +146,7 @@ void readEnv(int tag)
 #endif
 
 	// This is a fixed value, not sure how much it impacts varying it...
-	myPhiGemmTng.THRESHOLD = myPhiGemmTng.SPLITK_FACTOR*1.5,
+	myPhiGemmTng.THRESHOLD = myPhiGemmTng.SPLITK_FACTOR*1.5;
 
 #if defined(__PHIGEMM_DEBUG_2)
 		printf ("[PHIGEMM_DEBUG][2] GEMM split factor from environment variable: %f \n", myPhiGemmTng.split);
