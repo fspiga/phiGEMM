@@ -1,20 +1,25 @@
 #!/bin/bash
 
-NUMA_CTL="numactl -m 1 -c 1"
-
+export NUMA_CTL="numactl -m 1 -c 1"
 export OMP_NUM_THREADS=6 
 export MKL_NUM_THREADS=6
-
-sleep 1
-
 export CUDA_VISIBLE_DEVICES=0
 
-echo "'\nTesting DGEMM\n"
-make TEST_DATATYPE_FLAGS=-D__CUDA_TYPE_DOUBLE
-env LD_LIBRARY_PATH=../lib:${LD_LIBRARY_PATH} ${NUMA_CTL} ../bin/single_test-dgemm.x 1 N N 4096 4096 4096 0.95 0.995 0.01
+#export EXE=single_test-zgemm.x
+export EXE=single_test-dgemm.x
 
-sleep 1
+if [ -z "$1" ]; then
+cat  << 'EOF' > .list_tests
+N N 4096 4096 4096
+EOF
+export TEST_FILENAME=.list_tests
+else
+export TEST_FILENAME=$1
+fi
 
-echo "'\nTesting ZGEMM\n"
-make TEST_DATATYPE_FLAGS=-D__CUDA_TYPE_DOUBLE_COMPLEX
-env LD_LIBRARY_PATH=../lib:${LD_LIBRARY_PATH} ${NUMA_CTL} ../bin/single_test-zgemm.x 1 N N 4096 4096 4096 0.95 0.995 0.01
+while read -r x
+do
+	env LD_LIBRARY_PATH=../lib:${LD_LIBRARY_PATH} ${NUMA_CTL} ../bin/${EXE} 1 ${x} 0.95 0.995 0.01
+done < ${TEST_FILENAME}
+
+rm -f .list_tests
