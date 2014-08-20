@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 		memsize[ i ] =  0;
 	}
 
-#if defined(__PERFORM_PHIGEMM_INIT)
+#if defined(__PHITEST_PHIGEMM_INIT)
 	/* GPU environment initialization */
 	for ( i = 0; i < nGPU; i++ ) {
 
@@ -178,13 +178,13 @@ int main(int argc, char **argv)
 
 		cudaMemGetInfo((size_t*)&freeMem, (size_t*)&totalMem);
 
-#if defined(__PHIGEMM_TESTCASE_DEBUG)
+#if defined(__PHITEST_TESTCASE_DEBUG)
 		printf("[GPU %d] before: %lu (total: %lu)\n", i, (unsigned long)freeMem, (unsigned long)totalMem); fflush(stdout);
 #endif
 
 		memsize[ i ] = (size_t) (freeMem * __FRACTION_OF_DEVICE_MEM_TO_USE__);
 
-#if !defined(__PERFORM_ONLY_GPU_BIND)
+#if !defined(__PHITEST_PERFORM_ONLY_GPU_BIND)
 		ierr = cudaMalloc ( (void**) &(test_scratch[ i ]), (size_t) memsize[ i ] );
 		if ( ierr != cudaSuccess) {
 			fprintf( stderr, "\nError in memory allocation [GPU %d] , program will be terminated (%d)!!! Bye...\n\n", i, ierr );
@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 		}
 #endif
 
-#if defined(__PHIGEMM_TESTCASE_DEBUG)
+#if defined(__PHITEST_TESTCASE_DEBUG)
 		cudaMemGetInfo((size_t*)&freeMem, (size_t*)&totalMem);
 		printf("[GPU %d] after: %lu (total: %lu)\n", i, (unsigned long)freeMem, (unsigned long)totalMem); fflush(stdout);
 #endif
@@ -201,14 +201,14 @@ int main(int argc, char **argv)
 	}
 #endif
 
-#if defined(__PERFORM_PHIGEMM_INIT)
+#if defined(__PHITEST_PHIGEMM_INIT)
 	// tag = 0 (fake value)
 
-#if !defined(__PERFORM_ONLY_GPU_BIND)
+#if !defined(__PHITEST_PERFORM_ONLY_GPU_BIND)
 	phiGemmInit( nGPU, (serialTestMemDevPtr*)&test_scratch, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
 #else
 
-#if defined(__PERFORM_MEM_DETECT)
+#if defined(__PHITEST_PERFORM_MEM_DETECT)
 	phiGemmInit( nGPU, NULL, (serialTestMemSizes *)&memsize, (int *)&devicesToBond, 0);
 #else
 	phiGemmInit( nGPU, NULL, NULL, (int *)&devicesToBond, 0);
@@ -504,7 +504,7 @@ int main(int argc, char **argv)
 		hybrid_time = seconds() - t1;
 
 		int errors = 0;
-#if defined(__CHECK_ERROR)
+#if defined(__PHITEST_CHECK_ERROR)
 #if defined(__CUDA_TYPE_DOUBLE_COMPLEX)
 		SUBXTYPE tmp_error;
 #pragma omp parallel for reduction (+ : errors)
@@ -556,7 +556,7 @@ int main(int argc, char **argv)
 
 	/* end */
 
-#if defined(__PERFORM_PHIGEMM_INIT)&& !defined(__PHIGEMM_CPUONLY)
+#if defined(__PHITEST_PHIGEMM_INIT)&& !defined(__PHIGEMM_CPUONLY)
 
 	for( i = 0 ; i < nGPU ; i++) {
 
@@ -575,7 +575,7 @@ int main(int argc, char **argv)
 #endif
 
 	/* RELEASE RESOURCES */
-#if defined(__PERFORM_PHIGEMM_INIT)
+#if defined(__PHITEST_PHIGEMM_INIT)
 	phiGemmShutdown();
 #endif
 
