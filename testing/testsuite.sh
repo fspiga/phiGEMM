@@ -2,6 +2,9 @@
 
 NUMA_CTL="numactl -m 1 -c 1"
 
+export OMP_NUM_THREADS=6 
+export MKL_NUM_THREADS=6
+
 sleep 1
 
 export CUDA_VISIBLE_DEVICES=0
