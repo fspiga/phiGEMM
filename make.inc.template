@@ -13,31 +13,30 @@
 
 MANUAL_GEMM_OPT =
 
-TOPDIR		= /home/fs395/scratch/QE-SOURCES/devel/phiGEMM
-CUDA_PATH   = /usr/local/Cluster-Users/fs395/cuda/6.0-RC
+PHIGEMM_TOPDIR	    = /home/fs395/scratch/QE-SOURCES/devel/phiGEMM
 
-AR          = ar
-ARFLAGS     = ruv
+PHIGEMM_AR          = ar
+PHIGEMM_ARFLAGS     = ruv
 
-CC          = icc
-CFLAGS      = -O3 -fPIC -openmp
+PHIGEMM_CC          = icc
+PHIGEMM_CFLAGS      = -O3 -fPIC -openmp
 
-FC          = ifort
-FFLAGS      = -module ../include/ -openmp
+PHIGEMM_FC          = ifort
+PHIGEMM_FFLAGS      = -module ../include/ -openmp
 
-CPP         = cpp
-CPPFLAGS    = -P -traditional
+PHIGEMM_CPP         = cpp
+PHIGEMM_CPPFLAGS    = -P -traditional
 
-LD              = icc
-LD_FLAGS        =  -O3 -fPIC -openmp
-LD_SHARED_FLAGS = --shared
-FC_PREPROC_FLAG = -fpp
+PHIGEMM_LD              = icc
+PHIGEMM_LD_FLAGS        =  -O3 -fPIC -openmp
+PHIGEMM_LD_SHARED_FLAGS = --shared
+PHIGEMM_FC_PREPROC_FLAG = -fpp
 
-NVCC        = $(CUDA_PATH)/bin/nvcc
-NVCC_FLAGS  = -O3 -ccbin gcc --compiler-options '-fPIC -fopenmp'
+PHIGEMM_NVCC        = $(CUDA_INSTALL_PATH)/bin/nvcc
+PHIGEMM_NVCC_FLAGS  = -O3 -ccbin gcc --compiler-options '-fPIC -fopenmp'
 
-EXT_INC     = -I$(CUDA_PATH) -I$(TOPDIR)/include
-CUDA_LIB    = -L$(CUDA_PATH) -lcublas -lcudart
-LD_LIB      = $(TOPDIR)/lib/libphigemm.a $(CUDA_LIB) -lmkl_intel_lp64  -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+PHIGEMM_EXT_INC     = -I$(CUDA_INSTALL_PATH) -I$(TOPDIR)/include
+PHIGEMM_CUDA_LIB    = -L$(CUDA_INSTALL_PATH) -lcublas -lcudart
+PHIGEMM_LD_LIB      = $(TOPDIR)/lib/libphigemm.a $(CUDA_LIB) -lmkl_intel_lp64  -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 
-GEMM_OPT    = -D__INTEL -D__MKL -D__OMP $(MANUAL_GEMM_OPT)
+PHIGEMM_GEMM_OPT    = -D__PHIGEMM_WEAK_INTERFACES -D__PHIGEMM_ENABLE_SPECIALK $(MANUAL_GEMM_OPT)
