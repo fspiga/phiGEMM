@@ -22,27 +22,29 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
                                * * * * *
 
-Note from the project maintainer
---------------------------------
+## Note from the Project Maintainer
+
 
 I do not earn a salary for my work on phiGEMM which is pro bono and performed
 during my spare time. If you have benefited from this project or you are simply
 interested to leave a feedback, please consider to get in contact with me by 
-email. Since CUDA 6.0 NVBLAS covers most of the concept address by phiGEMM.
+email. Since CUDA 6.0 NVBLAS covers most of the concept address by phiGEMM. 
+
+phiGEMM v2.0.0 is the last version available as separate download from QE-GPU.
+Only sporadic bug fixes will be committed to this code repository without any
+formal committment.
 
  -- Filippo
 
                                * * * * *
 
-Authors & Maintainers
----------------------
+## Authors & Maintainers
 
 - Filippo Spiga, filippo.spiga(at)quantum-espresso.org (main contact)
 - Ivan Girotto, ivan.girotto(at)ictp.it
 
 
-Releases
---------
+## Releases
 
 - v2.0.0   - October 26, 2014
 - v2.0.0rc - December 15, 2012
@@ -68,8 +70,7 @@ Releases
 - v0.1     - January 27, 2011
 
 
-References
-----------
+## References
 
 * F. Spiga and I. Girotto, "phiGEMM: a CPU-GPU library for porting Quantum 
 ESPRESSO on hybrid systems", Proceeding of 20th Euromicro International 
